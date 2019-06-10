@@ -1,0 +1,11 @@
+use_frameworks!
+
+target 'HoloflowsKit_Example' do
+  pod 'HoloflowsKit', :path => '../'
+
+  target 'HoloflowsKit_Tests' do
+    inherit! :search_paths
+
+    
+  end
+end
