@@ -72,7 +72,7 @@ createProperties | { url: "https://example.com" } | CreateProperties |
 ### Callback payload: 
  key | value | type | note 
 ---- | ----- | ---- | ---- 
- | { id: 42 } | Tab | Tab as payload  
+&nbsp; | { id: 42 } | Tab | Tab as payload  
 
 ## browserTabsRemove
 [POST] browserTabsRemove:
@@ -85,7 +85,7 @@ tabIds | 42 \| [42, 43] | Int \| [Int] |
 ### Callback payload: 
  key | value | type | note 
 ---- | ----- | ---- | ---- 
- | undefined | undefined | undefined as payload 
+&nbsp; | undefined | undefined | undefined as payload 
 
 
 ## webNavigationOnCommitted
@@ -93,7 +93,7 @@ tabIds | 42 \| [42, 43] | Int \| [Int] |
 
  key | value | type | note 
 ---- | ----- | ---- | ----
- | { tabId: 42, url: "https://example.com" } | NavigationDetails | NavigationDetails as payload 
+&nbsp; | { tabId: 42, url: "https://example.com" } | NavigationDetails | NavigationDetails as payload 
 
 ## browserTabsExecuteScript
 [POST] browserTabsExecuteScript
