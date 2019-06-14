@@ -15,6 +15,9 @@ public enum ScriptEvent: String, CaseIterable {
     case browserTabsCreate
     case browserTabsRemove
     case browserTabsExecuteScript
+
+    case browserStorageLocalGet
+    case browserStorageLocalSet
 }
 
 

@@ -2,6 +2,8 @@
 
 Limited implement for [browser extension](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/Browser_support_for_JavaScript_APIs) of WKWebView
 
+All definition is in JSON format
+
 # Object Definition
 ## Tab
  key | value | type | note 
@@ -103,4 +105,19 @@ tabIds | 42 \| [42, 43] | Int \| [Int] |
 messageID | "0.ptdck9eme9" | String | callback message ID
 tabId | 42 | Int | optional. default 0
 details | { code: "console.log('location', window.location.href);" } | ExecuteScriptDetails |
+
+
+## browserStorageLocalSet
+[POST] browserStorageLocalSet
+
+ key | value | type | note 
+---- | ----- | ---- | ----
+messageID | "0.ptdck9eme9" | String | callback message ID
+keys  | { kitten: { name:"Moggy", tentacles: false, eyeCount: 2} }<br/> or<br/>{ kitten: { name:"Moggy", tentacles: false, eyeCount: 2}, <br/>monster: { name: "Kraken", tentacles: true, eyeCount: 10 } } | Object | any object composed by primitive type <br/> Object will be parse as [String: JSON] dictionary
+
+## browserStorageLocalGet
+[POST] browserStorageLocalGet
+
+ key | value | type | note 
+---- | ----- | ---- | ----
 

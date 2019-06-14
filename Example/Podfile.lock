@@ -2,10 +2,17 @@ PODS:
   - ConsolePrint (0.1.0)
   - HoloflowsKit (0.1.0):
     - ConsolePrint
+    - RealmSwift
     - SwiftyJSON (~> 5.0.0)
   - HoloflowsKit/Tests (0.1.0):
     - ConsolePrint
+    - RealmSwift
     - SwiftyJSON (~> 5.0.0)
+  - Realm (3.16.0):
+    - Realm/Headers (= 3.16.0)
+  - Realm/Headers (3.16.0)
+  - RealmSwift (3.16.0):
+    - Realm (= 3.16.0)
   - SwiftyJSON (5.0.0)
 
 DEPENDENCIES:
@@ -15,6 +22,8 @@ DEPENDENCIES:
 SPEC REPOS:
   https://github.com/cocoapods/specs.git:
     - ConsolePrint
+    - Realm
+    - RealmSwift
     - SwiftyJSON
 
 EXTERNAL SOURCES:
@@ -23,7 +32,9 @@ EXTERNAL SOURCES:
 
 SPEC CHECKSUMS:
   ConsolePrint: 695d494f0a2595d1792ec19483f2aa16e4501c19
-  HoloflowsKit: fec94b4bc68e383dcc0c38bcf1ba3640f5db141e
+  HoloflowsKit: 74df112e9e9862701585c98a7cbc76d1b361e177
+  Realm: 5ca1b8c472dfc532cd0ba0bfe2ce49f97130158f
+  RealmSwift: 2ee401dbcc188706261921326146f5a539d4d4a7
   SwiftyJSON: 36413e04c44ee145039d332b4f4e2d3e8d6c4db7
 
 PODFILE CHECKSUM: 0e54ea459ff5abd598b038baa0f43d15ecc113d2

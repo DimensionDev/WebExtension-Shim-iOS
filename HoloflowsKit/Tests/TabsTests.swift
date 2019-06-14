@@ -2,6 +2,7 @@ import XCTest
 import WebKit
 import HoloflowsKit
 import ConsolePrint
+import RealmSwift
 
 class TabsTests: XCTestCase {
 
@@ -11,6 +12,10 @@ class TabsTests: XCTestCase {
         super.setUp()
         browser = Browser()
     }
+
+}
+
+extension TabsTests {
     
     func testCreate() {
         XCTAssertEqual(browser.tabs.storage.count, 0)
@@ -27,6 +32,10 @@ class TabsTests: XCTestCase {
         browser.tabs.remove(id: tab.id)
         XCTAssertEqual(browser.tabs.storage.count, 0)
     }
+
+}
+
+extension TabsTests {
 
     func testEcho() {
         let tab = browser.tabs.create(createProperties: nil)
@@ -51,6 +60,10 @@ class TabsTests: XCTestCase {
         wait(for: [waitEchoConsolePrintExpectation], timeout: 4)
         // ^ Tab.swift[87], userContentController(_:didReceive:): [echo]: {"messageID":"0.o1brjamoei","key":"Hello, World!"}
     }
+
+}
+
+extension TabsTests {
 
     func testScriptExecute() {
         let tab = browser.tabs.create(createProperties: nil)
@@ -133,6 +146,33 @@ class TabsTests: XCTestCase {
 
 extension TabsTests {
 
+    func testStorageLocalSet() {
+        let tab = browser.tabs.create(createProperties: nil)
+        prepareTest(tab: tab)
+
+        let setScript = """
+        browser.storageLocalSet({
+            keys: {
+                kitten: { name:"Moggy", tentacles: false, eyeCount: 2 },
+                monster: { name: "Kraken", tentacles: true, eyeCount: 10 }
+            }
+        });
+        """
+        let scriptExpectation = expectEvaluateJavaScript(in: tab.webView, script: setScript) { any, error in
+            // do nothing
+        }
+        wait(for: [scriptExpectation], timeout: 3.0)
+
+        consolePrint(try! Realm().configuration.fileURL)
+        // file:///Users/MainasuK/Library/Developer/CoreSimulator/Devices/52666318-D601-4CFF-B697-4DCAF255E8CD/data/Documents/default.realm
+
+        waitCallback(5)
+    }
+
+}
+
+extension TabsTests {
+
     private func prepareTest(tab: Tab) {
         if tab.webView.url == nil {
             tab.webView.loadHTMLString("", baseURL: nil)
@@ -144,6 +184,32 @@ extension TabsTests {
             sleepExpectation.fulfill()
         }
         wait(for: [sleepExpectation], timeout: 6.0)
+    }
+
+}
+
+extension TabsTests {
+
+    func expectEvaluateJavaScript(in webView: WKWebView, script: String, completionHandler: @escaping ((Any?, Error?) -> Void)) -> XCTestExpectation {
+        let scriptExpectation = expectation(description: "evaluate java script")
+
+        webView.evaluateJavaScript(script) { (any, error) in
+            consolePrint("\(String(describing: any)) \(error?.localizedDescription ?? "")")
+            completionHandler(any, error)
+            scriptExpectation.fulfill()
+        }
+
+        return scriptExpectation
+    }
+
+    func waitCallback(_ timeout: TimeInterval) {
+        let waitCallbackExpectation = expectation(description: "waitCallback")
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + timeout) {
+            waitCallbackExpectation.fulfill()
+        }
+
+        wait(for: [waitCallbackExpectation], timeout: timeout * 2)
     }
 
 }

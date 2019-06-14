@@ -24,7 +24,7 @@ pod 'HoloflowsKit'
 ```
 
 ## Documents
-[Implement documents](./Documents.md)
+[HoloflowsKit-iOS Documents](./Documents.md)
 
 <!--## Author
 

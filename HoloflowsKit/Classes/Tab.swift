@@ -72,7 +72,7 @@ extension Tab: WKScriptMessageHandler {
 
     static let completionHandler: ((Any?, Error?) -> Void) = { any, error in
         guard let error = error else {
-            consolePrint("\(any)")
+            consolePrint("\(String(describing: any))")
             return
         }
         consolePrint(error.localizedDescription)
@@ -104,79 +104,13 @@ extension Tab: WKScriptMessageHandler {
             }
             tabs?.sendMessage(message, from: self)
 
-        case .browserTabsCreate:
-            let messageResult: Result<ScriptMessage.TabsCreate, Error> = ScriptMessage.receiveMessage(messageBody: messageBody)
-            switch messageResult {
-            case let .success(tabsCreate):
-                let tab = (tabs.flatMap { tabs -> Result<Tab, Error> in
-                    return .success(tabs.create(createProperties: tabsCreate.createProperties))
-                }) ?? .failure(ScriptMessage.InternalError.tabsCreateFail)
-                ScriptMessage.dispatchEvent(webView: webView, eventName: id, result: tab, completionHandler: Tab.completionHandler)
-                consolePrint(tabs?.storage)
+        case .browserTabsCreate:        browserTabsCreate(messageID: id, messageBody: messageBody)
+        case .browserTabsRemove:        browserTabsRemove(messageID: id, messageBody: messageBody)
+        case .browserTabsExecuteScript: browserTabsExecuteScript(messageID: id, messageBody: messageBody)
 
-            case let .failure(error):
-                let result: Result<Tab, Error> = .failure(error)
-                ScriptMessage.dispatchEvent(webView: webView, eventName: id, result: result, completionHandler: Tab.completionHandler)
-            }
-
-        case .browserTabsRemove:
-            let messageResult: Result<ScriptMessage.TabsRemove, Error> = ScriptMessage.receiveMessage(messageBody: messageBody)
-            switch messageResult {
-            case let .success(tabsRemove):
-                switch tabsRemove.tabID {
-                case .integer(let tabID):
-                    if let _ = tabs?.remove(id: tabID) {
-                        let result: Result<Void, Error> = .success(Void())
-                        ScriptMessage.dispatchEvent(webView: webView, eventName: id, result: result, completionHandler: Tab.completionHandler)
-                    } else {
-                        let result: Result<Void, Error> = .failure(ScriptMessage.InternalError.tabsRemoveFail)
-                        ScriptMessage.dispatchEvent(webView: webView, eventName: id, result: result, completionHandler: Tab.completionHandler)
-                    }
-
-                case .integerArray(let tabIDs):
-                    if let _ = tabs?.remove(ids: tabIDs) {
-                        let result: Result<Void, Error> = .success(Void())
-                        ScriptMessage.dispatchEvent(webView: webView, eventName: id, result: result, completionHandler: Tab.completionHandler)
-                    } else {
-                        let result: Result<Void, Error> = .failure(ScriptMessage.InternalError.tabsRemoveFail)
-                        ScriptMessage.dispatchEvent(webView: webView, eventName: id, result: result, completionHandler: Tab.completionHandler)
-                    }
-                }
-
-
-            case let .failure(error):
-                let result: Result<Void, Error> = .failure(error)
-                ScriptMessage.dispatchEvent(webView: webView, eventName: id, result: result, completionHandler: Tab.completionHandler)
-            }
-            consolePrint(tabs?.storage)
-
-        case .browserTabsExecuteScript:
-            let messageResult: Result<ScriptMessage.TabsExecuteScript, Error> = ScriptMessage.receiveMessage(messageBody: messageBody)
-            guard let message = try? messageResult.get(),
-            let tabs = tabs,
-            let targetTab = tabs.storage.first(where: { $0.id == (message.tabId ?? 0) }) else {
-                assertionFailure()
-                return
-            }
-
-            let script = message.details.code
-            targetTab.webView.evaluateJavaScript(script) { [weak self] any, error in
-                guard let `self` = self else { return }
-                if let error = error {
-                    let result: Result<Void, Error> = .failure(error)
-                    ScriptMessage.dispatchEvent(webView: self.webView, eventName: id, result: result, completionHandler: Tab.completionHandler)
-                } else {
-                    let payload: Result<Any, Error> = {
-                        guard let value = any else {
-                            return .failure(ScriptMessage.InternalError.tabsExecuteScriptReturnNil)
-                        }
-                        return .success(value)
-                    }()
-                    consolePrint("\(payload), \(any)")
-                    ScriptMessage.dispatchEvent(webView: self.webView, eventName: id, result: payload, completionHandler: Tab.completionHandler)
-                }
-            }
-
+        case .browserStorageLocalGet:   browserStorageLocalGet(messageID: id, messageBody: messageBody)
+        case .browserStorageLocalSet:   browserStorageLocalSet(messageID: id, messageBody: messageBody)
+            
         }   // end switch eventType
     }   // end func userContentController
 
