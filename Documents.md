@@ -42,6 +42,15 @@ Navtive dispatch callback event with payload:
 document.dispatchEvent(new CustomEvent(eventName, { detail: payload }))
 ```
 
+HoloflowsKit:
+
+```javascript
+browser.tabsCreate({ createProperties: { url: "https://www.apple.com" } }).then(val => {
+    console.log(val.id);
+});
+
+```
+
 ## send & receive
 Script use `send` message pass message to specific tab or all other tabs.  
 No callback return after native recieve message.    
@@ -209,4 +218,22 @@ messageID | "0.ptdck9eme9" | String | callback message ID
 #### Example
 ```javascript
 browser.storageLocalRemove(); 
+```
+
+
+## browserRuntimeGetManifest
+[POST] browserRuntimeGetManifest
+
+ key | value | type | note 
+---- | ----- | ---- | ----
+messageID | "0.ptdck9eme9" | String | callback message ID
+
+#### Callback payload: 
+ key | value | type | note 
+---- | ----- | ---- | ---- 
+&nbsp; | { "$schema": "http://json.schemastore.org/chrome-manifest", … }  | JSON  | manifest JSON
+
+#### Example
+```javascript
+browser.getManifest();
 ```

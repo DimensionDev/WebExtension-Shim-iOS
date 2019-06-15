@@ -318,6 +318,80 @@ extension TabsTests {
 
 extension TabsTests {
 
+    public func testRuntimeGetManifest() {
+        let tab = browser.tabs.create(createProperties: nil)
+        let tabDelegate = TabDelegateStub()
+        tab.delegate = tabDelegate
+        prepareTest(tab: tab)
+
+        let getManifestScript = """
+        var manifest = "";
+        browser.getManifest().then(val => {
+            browser.echo({ manifest: val });
+            manifest = val;
+        });
+        """
+        let getManifestExpectation = expectEvaluateJavaScript(in: tab.webView, script: getManifestScript) { (any, error) in
+            // do nothing
+        }
+        wait(for: [getManifestExpectation], timeout: 3.0)
+        waitCallback(3)
+
+        let checkManifestExpectation = expectEvaluateJavaScript(in: tab.webView, script: "manifest;") { (any, error) in
+            XCTAssertNil(error)
+            XCTAssertNotNil(any)
+            let manifest = JSON(rawValue: any!)
+            XCTAssertEqual(manifest, JSON(rawValue: TabsTests.manifest))
+            XCTAssertEqual(manifest!["content_scripts"].arrayValue.first?["all_frames"].bool, true)
+        }
+        wait(for: [checkManifestExpectation], timeout: 3.0)
+    }
+
+    private class TabDelegateStub: TabDelegate {
+        func tab(_ tab: Tab, requestManifest: Void) -> String {
+            return String(data: TabsTests.manifest, encoding: .utf8)!
+        }
+    }
+
+    private static var manifest = """
+    {
+        "$schema": "http://json.schemastore.org/chrome-manifest",
+        "name": "Maskbook",
+        "version": "1.3.2",
+        "manifest_version": 2,
+        "content_scripts": [
+            {
+                "matches": ["https://www.facebook.com/*"],
+                "js": ["polyfill/adoptedStyleSheets.js", "polyfill/browser-polyfill.min.js", "js/contentscript.js"],
+                "run_at": "document_idle",
+                "all_frames": true
+            }
+        ],
+        "web_accessible_resources": ["*.css", "*.js", "*.jpg", "*.png"],
+        "permissions": ["https://www.facebook.com/*", "storage", "downloads", "background", "webNavigation"],
+        "background": {
+            "scripts": ["polyfill/webcrypto-liner.shim.js", "polyfill/browser-polyfill.min.js", "js/backgroundservice.js"]
+        },
+        "options_ui": {
+            "page": "index.html",
+            "open_in_tab": true
+        },
+        "icons": {
+            "16": "16x16.png",
+            "48": "48x48.png",
+            "128": "128x128.png",
+            "256": "256x256.png"
+        },
+        "homepage_url": "https://maskbook.io",
+        "description": "__MSG_manifest_description__",
+        "default_locale": "en"
+    }
+    """.data(using: .utf8)!
+
+}
+
+extension TabsTests {
+
     private func prepareTest(tab: Tab) {
         if tab.webView.url == nil {
             tab.webView.loadHTMLString("", baseURL: nil)

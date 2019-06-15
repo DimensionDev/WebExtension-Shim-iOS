@@ -31,7 +31,8 @@
       storageLocalGet: obj => post('browserStorageLocalGet', obj),
       storageLocalSet: obj => post('browserStorageLocalSet', obj),
       storageLocalRemove: obj => post('browserStorageLocalRemove', obj),
-      storageLocalClear: obj => post('browserStorageLocalClear', obj)
+      storageLocalClear: obj => post('browserStorageLocalClear', obj),
+      getManifest: obj => post('browserRuntimeGetManifest', obj)
    }
 }
 

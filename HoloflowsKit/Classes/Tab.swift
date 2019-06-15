@@ -9,6 +9,11 @@ import Foundation
 import WebKit
 import JavaScriptCore
 import ConsolePrint
+import SwiftyJSON
+
+public protocol TabDelegate: class {
+    func tab(_ tab: Tab, requestManifest: Void) -> String
+}
 
 public class Tab: NSObject {
 
@@ -18,6 +23,7 @@ public class Tab: NSObject {
     public let userContentController: WKUserContentController
     public let webView: WKWebView
 
+    public weak var delegate: TabDelegate?
 
     public init(id: Int, createProperties properties: WebExtensionAPI.CreateProperties? = nil, webViewConfiguration configuration: WKWebViewConfiguration = WKWebViewConfiguration()) {
         self.id = id
@@ -112,6 +118,8 @@ extension Tab: WKScriptMessageHandler {
         case .browserStorageLocalSet:    browserStorageLocalSet(messageID: id, messageBody: messageBody)
         case .browserStorageLocalRemove: browserStorageLocalRemove(messageID: id, messageBody: messageBody)
         case .browserStorageLocalClear:  browserStorageLocalClear(messageID: id, messageBody: messageBody)
+
+        case .browserRuntimeGetManifest: browserRuntimeGetManifest(messageID: id, messageBody: messageBody)
             
         }   // end switch eventType
     }   // end func userContentController
