@@ -8,7 +8,7 @@
 import Foundation
 import WebKit
 import enum Swift.Result
-
+import ConsolePrint
 
 extension ScriptMessage {
 
@@ -28,10 +28,14 @@ extension ScriptMessage {
     public static func dispatchEvent(webView: WKWebView, eventName: String, result: Result<Void, Error>, completionHandler: ((Any?, Error?) -> Void)?) {
         switch result {
         case .success:
-            webView.evaluateJavaScript("document.dispatchEvent(new CustomEvent('\(eventName)', {detail: undefined}))", completionHandler: completionHandler)
+            let script = "document.dispatchEvent(new CustomEvent('\(eventName)', {detail: undefined}))"
+            webView.evaluateJavaScript(script, completionHandler: completionHandler)
+            consolePrint(script)
 
         case let .failure(error):
-            webView.evaluateJavaScript("document.dispatchEvent(new CustomEvent('\(eventName)', {error: '\(error.localizedDescription)'}))", completionHandler: completionHandler)
+            let script = "document.dispatchEvent(new CustomEvent('\(eventName)', {error: '\(error.localizedDescription)'}))"
+            webView.evaluateJavaScript(script, completionHandler: completionHandler)
+            consolePrint(script)
         }
     }
 
@@ -45,17 +49,30 @@ extension ScriptMessage {
                     assertionFailure()
                     return
                 }
-                webView.evaluateJavaScript("document.dispatchEvent(new CustomEvent('\(eventName)', \(jsonString)))", completionHandler: completionHandler)
+                let script = "document.dispatchEvent(new CustomEvent('\(eventName)', \(jsonString)))"
+                webView.evaluateJavaScript(script, completionHandler: completionHandler)
+                consolePrint(script)
+
             } else if let double = value as? Double {
-                webView.evaluateJavaScript("document.dispatchEvent(new CustomEvent('\(eventName)', {detail: \(double)}))", completionHandler: completionHandler)
+                let script = "document.dispatchEvent(new CustomEvent('\(eventName)', {detail: \(double)}))"
+                webView.evaluateJavaScript(script, completionHandler: completionHandler)
+                consolePrint(script)
+
             } else if let int = value as? Int {
-                webView.evaluateJavaScript("document.dispatchEvent(new CustomEvent('\(eventName)', {detail: \(int)}))", completionHandler: completionHandler)
+                let script = "document.dispatchEvent(new CustomEvent('\(eventName)', {detail: \(int)}))"
+                webView.evaluateJavaScript(script, completionHandler: completionHandler)
+                consolePrint(script)
+
             } else {
-                webView.evaluateJavaScript("document.dispatchEvent(new CustomEvent('\(eventName)', {detail: undefined}))", completionHandler: completionHandler)
+                let script = "document.dispatchEvent(new CustomEvent('\(eventName)', {detail: undefined}))"
+                webView.evaluateJavaScript(script, completionHandler: completionHandler)
+                consolePrint(script)
             }
 
         case let .failure(error):
-            webView.evaluateJavaScript("document.dispatchEvent(new CustomEvent('\(eventName)', {error: '\(error.localizedDescription)'}))", completionHandler: completionHandler)
+            let script = "document.dispatchEvent(new CustomEvent('\(eventName)', {error: '\(error.localizedDescription)'}))"
+            webView.evaluateJavaScript(script, completionHandler: completionHandler)
+            consolePrint(script)
         }
     }
 
@@ -72,15 +89,22 @@ extension ScriptMessage {
                     return
                 }
 
-                webView.evaluateJavaScript("document.dispatchEvent(new CustomEvent('\(eventName)', \(jsonString)))", completionHandler: completionHandler)
+                let script = "document.dispatchEvent(new CustomEvent('\(eventName)', \(jsonString)))"
+                webView.evaluateJavaScript(script, completionHandler: completionHandler)
+                consolePrint(script)
 
             } catch {
                 assertionFailure(error.localizedDescription)
-                webView.evaluateJavaScript("document.dispatchEvent(new CustomEvent('\(eventName)', {error: '\(error.localizedDescription)'}))", completionHandler: completionHandler)
+                let script = "document.dispatchEvent(new CustomEvent('\(eventName)', {error: '\(error.localizedDescription)'}))"
+                webView.evaluateJavaScript(script, completionHandler: completionHandler)
+                consolePrint(script)
             }
 
         case let .failure(error):
-            webView.evaluateJavaScript("document.dispatchEvent(new CustomEvent('\(eventName)', {error: '\(error.localizedDescription)'}))", completionHandler: completionHandler)
+            let script = "document.dispatchEvent(new CustomEvent('\(eventName)', {error: '\(error.localizedDescription)'}))"
+            webView.evaluateJavaScript(script, completionHandler: completionHandler)
+            consolePrint(script)
+            
         }
     }
 

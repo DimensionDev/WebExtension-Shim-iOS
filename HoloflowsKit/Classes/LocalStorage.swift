@@ -10,8 +10,8 @@ import RealmSwift
 import SwiftyJSON
 
 public class LocalStorage: Object {
-    @objc dynamic var key: String = ""
-    @objc dynamic var value: String = ""
+    @objc public dynamic var key: String = ""
+    @objc public dynamic var value: String = ""
 
     override public static func primaryKey() -> String? {
         return "key"

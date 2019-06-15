@@ -106,6 +106,11 @@ messageID | "0.ptdck9eme9" | String | callback message ID
 tabId | 42 | Int | optional. default 0
 details | { code: "console.log('location', window.location.href);" } | ExecuteScriptDetails |
 
+### Callback payload: 
+ key | value | type | note 
+---- | ----- | ---- | ---- 
+&nbsp; | 1 | Object or primitive type  | return type depends on code eval result
+
 
 ## browserStorageLocalSet
 [POST] browserStorageLocalSet
@@ -113,11 +118,34 @@ details | { code: "console.log('location', window.location.href);" } | ExecuteSc
  key | value | type | note 
 ---- | ----- | ---- | ----
 messageID | "0.ptdck9eme9" | String | callback message ID
-keys  | { kitten: { name:"Moggy", tentacles: false, eyeCount: 2} }<br/> or<br/>{ kitten: { name:"Moggy", tentacles: false, eyeCount: 2}, <br/>monster: { name: "Kraken", tentacles: true, eyeCount: 10 } } | Object | any object composed by primitive type <br/> Object will be parse as [String: JSON] dictionary
+keys  | { kitten: { name:"Moggy", tentacles: false, eyeCount: 2} }<br/> or<br/>{ kitten: { name:"Moggy", tentacles: false, eyeCount: 2}, <br/>monster: { name: "Kraken", tentacles: true, eyeCount: 10 } } | Object | any object composed by primitive type <br/> Object will be parse as [String: JSON] dictionary <br/>And the JSON will be store in native database for latter retrieve
+
+```javascript
+browser.storageLocalSet({ keys: { 
+        kitten: { name:"Moggy", tentacles: false, eyeCount: 2}, 
+        monster: { name: "Kraken", tentacles: true, eyeCount: 10 } 
+    }
+});
+```
+
+### Callback payload: 
+ key | value | type | note 
+---- | ----- | ---- | ---- 
+&nbsp; | undefined | undefined  | return undefined when success set
 
 ## browserStorageLocalGet
 [POST] browserStorageLocalGet
 
  key | value | type | note 
 ---- | ----- | ---- | ----
+messageID | "0.ptdck9eme9" | String | callback message ID
+keys | "kitten" <br/>or<br/>["kitten", "monster"] | String \| [String] | key or array of keys
 
+```javascript
+browser.storageLocalGet({ keys: ['kitten', 'monster'] }); 
+```
+
+### Callback payload: 
+ key | value | type | note 
+---- | ----- | ---- | ---- 
+&nbsp; | { kitten: { name:"Moggy", tentacles: false, eyeCount: 2} }<br/> or<br/>{ kitten: { name:"Moggy", tentacles: false, eyeCount: 2}, <br/>monster: { name: "Kraken", tentacles: true, eyeCount: 10 }  | Object  | return Object hold keys and values

@@ -9,7 +9,7 @@
             document.addEventListener(
                messageID,
                (/** @type{CustomEvent} */ event) => {
-                  const result = JSON.parse(event.detail)
+                  const result = event.detail
                   resolve(result)
                },
                { once: true }
