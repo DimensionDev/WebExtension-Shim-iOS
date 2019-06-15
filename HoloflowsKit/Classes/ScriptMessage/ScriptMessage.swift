@@ -19,6 +19,7 @@ extension ScriptMessage {
     }
 
     public static func receiveMessage<T: Decodable>(messageBody message: String) -> Result<T, Error> {
+        consolePrint(message)
         let decoder = JSONDecoder()
         return Result {
             try decoder.decode(T.self, from: Data(message.utf8))

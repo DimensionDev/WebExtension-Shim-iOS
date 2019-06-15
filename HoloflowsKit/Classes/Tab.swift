@@ -104,12 +104,14 @@ extension Tab: WKScriptMessageHandler {
             }
             tabs?.sendMessage(message, from: self)
 
-        case .browserTabsCreate:        browserTabsCreate(messageID: id, messageBody: messageBody)
-        case .browserTabsRemove:        browserTabsRemove(messageID: id, messageBody: messageBody)
-        case .browserTabsExecuteScript: browserTabsExecuteScript(messageID: id, messageBody: messageBody)
+        case .browserTabsCreate:         browserTabsCreate(messageID: id, messageBody: messageBody)
+        case .browserTabsRemove:         browserTabsRemove(messageID: id, messageBody: messageBody)
+        case .browserTabsExecuteScript:  browserTabsExecuteScript(messageID: id, messageBody: messageBody)
 
-        case .browserStorageLocalGet:   browserStorageLocalGet(messageID: id, messageBody: messageBody)
-        case .browserStorageLocalSet:   browserStorageLocalSet(messageID: id, messageBody: messageBody)
+        case .browserStorageLocalGet:    browserStorageLocalGet(messageID: id, messageBody: messageBody)
+        case .browserStorageLocalSet:    browserStorageLocalSet(messageID: id, messageBody: messageBody)
+        case .browserStorageLocalRemove: browserStorageLocalRemove(messageID: id, messageBody: messageBody)
+        case .browserStorageLocalClear:  browserStorageLocalClear(messageID: id, messageBody: messageBody)
             
         }   // end switch eventType
     }   // end func userContentController

@@ -149,13 +149,7 @@ extension TabsTests {
     func testStorageLocalSet() {
         let tab = browser.tabs.create(createProperties: nil)
         prepareTest(tab: tab)
-
-        let realm = try! Realm()
-        // purge database
-        let entriesToRemove = realm.objects(LocalStorage.self).filter { ["kitten", "monster"].contains($0.key) }
-        realm.beginWrite()
-        realm.delete(entriesToRemove)
-        try! realm.commitWrite()
+        removeRealmDataStub()
 
         let setScript = """
         browser.storageLocalSet({
@@ -175,15 +169,95 @@ extension TabsTests {
 
         waitCallback(5)
 
-        let entriesRetrieved = realm.objects(LocalStorage.self).filter { ["kitten", "monster"].contains($0.key) }
+        let entriesRetrieved = getRealmDataStub()
         XCTAssertEqual(entriesRetrieved.count, 2)
     }
 
     func testStorageLocalGet() {
         let tab = browser.tabs.create(createProperties: nil)
         prepareTest(tab: tab)
+        addRealmDataStub()
 
-        // prepare data
+        // call get script
+        let getScript = """
+        browser.storageLocalGet({
+            keys: [ 'kitten', 'monster' ]
+        });
+        """
+        let scriptExpectation = expectEvaluateJavaScript(in: tab.webView, script: getScript) { any, error in
+            // do nothing
+        }
+        wait(for: [scriptExpectation], timeout: 3.0)
+
+        consolePrint(try! Realm().configuration.fileURL)
+        // file:///Users/MainasuK/Library/Developer/CoreSimulator/Devices/52666318-D601-4CFF-B697-4DCAF255E8CD/data/Documents/default.realm
+
+        waitCallback(5)
+        // document.dispatchEvent(new CustomEvent('0.1ls5p0e630o', {"detail":{"monster":"{ name: \"Kraken\", tentacles: true, eyeCount: 10 }","kitten":"{ name:\"Moggy\", tentacles: false, eyeCount: 2 }"}}))
+    }
+
+    func testStorageLocalRemove() {
+        let tab = browser.tabs.create(createProperties: nil)
+        prepareTest(tab: tab)
+        addRealmDataStub()
+
+        XCTAssertEqual(getRealmDataStub().count, 2)
+
+        // call remove script
+        let removeScript = """
+        browser.storageLocalRemove({
+            keys: 'kitten'
+        });
+        """
+        let scriptExpectation = expectEvaluateJavaScript(in: tab.webView, script: removeScript) { any, error in
+            // do nothing
+        }
+        wait(for: [scriptExpectation], timeout: 3.0)
+
+        consolePrint(try! Realm().configuration.fileURL)
+        // file:///Users/MainasuK/Library/Developer/CoreSimulator/Devices/52666318-D601-4CFF-B697-4DCAF255E8CD/data/Documents/default.realm
+
+        waitCallback(5)
+
+        XCTAssertEqual(getRealmDataStub().count, 1)
+    }
+
+    func testStorageLocalClear() {
+        let tab = browser.tabs.create(createProperties: nil)
+        prepareTest(tab: tab)
+        addRealmDataStub()
+
+        XCTAssertEqual(getRealmDataStub().count, 2)
+
+        // call clear script
+        let clearScript = """
+        browser.storageLocalClear({
+            keys: 'kitten'
+        });
+        """
+        let scriptExpectation = expectEvaluateJavaScript(in: tab.webView, script: clearScript) { any, error in
+            // do nothing
+        }
+        wait(for: [scriptExpectation], timeout: 3.0)
+
+        consolePrint(try! Realm().configuration.fileURL)
+        // file:///Users/MainasuK/Library/Developer/CoreSimulator/Devices/52666318-D601-4CFF-B697-4DCAF255E8CD/data/Documents/default.realm
+
+        waitCallback(5)
+
+        XCTAssertEqual(getRealmDataStub().count, 0)
+    }
+
+    private func removeRealmDataStub() {
+        let realm = try! Realm()
+        // purge database
+        let entriesToRemove = realm.objects(LocalStorage.self).filter { ["kitten", "monster"].contains($0.key) }
+        realm.beginWrite()
+        realm.delete(entriesToRemove)
+        try! realm.commitWrite()
+    }
+
+    private func addRealmDataStub() {
         let realm = try! Realm()
         realm.beginWrite()
         let kitten: LocalStorage = {
@@ -205,24 +279,11 @@ extension TabsTests {
 
         realm.add([kitten, monster], update: .all)
         try! realm.commitWrite()
+    }
 
-        // call get script
-        let getScript = """
-        browser.storageLocalGet({
-            keys: [ 'kitten', 'monster' ]
-        });
-        """
-        let scriptExpectation = expectEvaluateJavaScript(in: tab.webView, script: getScript) { any, error in
-            // do nothing
-        }
-        wait(for: [scriptExpectation], timeout: 3.0)
-        
-
-        consolePrint(try! Realm().configuration.fileURL)
-        // file:///Users/MainasuK/Library/Developer/CoreSimulator/Devices/52666318-D601-4CFF-B697-4DCAF255E8CD/data/Documents/default.realm
-
-        waitCallback(5)
-        // document.dispatchEvent(new CustomEvent('0.1ls5p0e630o', {"detail":{"monster":"{ name: \"Kraken\", tentacles: true, eyeCount: 10 }","kitten":"{ name:\"Moggy\", tentacles: false, eyeCount: 2 }"}}))
+    private func getRealmDataStub() -> [LocalStorage] {
+        let realm = try! Realm()
+        return realm.objects(LocalStorage.self).filter { ["kitten", "monster"].contains($0.key) }
     }
 
 }

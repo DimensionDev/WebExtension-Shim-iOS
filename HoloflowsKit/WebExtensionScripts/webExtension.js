@@ -29,8 +29,9 @@
       tabsRemove: obj => post('browserTabsRemove', obj),
       tabsExecuteScript: obj => post('browserTabsExecuteScript', obj),
       storageLocalGet: obj => post('browserStorageLocalGet', obj),
-      storageLocalSet: obj => post('browserStorageLocalSet', obj)
-
+      storageLocalSet: obj => post('browserStorageLocalSet', obj),
+      storageLocalRemove: obj => post('browserStorageLocalRemove', obj),
+      storageLocalClear: obj => post('browserStorageLocalClear', obj)
    }
 }
 

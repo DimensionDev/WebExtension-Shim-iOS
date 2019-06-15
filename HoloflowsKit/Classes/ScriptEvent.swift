@@ -18,6 +18,8 @@ public enum ScriptEvent: String, CaseIterable {
 
     case browserStorageLocalGet
     case browserStorageLocalSet
+    case browserStorageLocalRemove
+    case browserStorageLocalClear
 }
 
 
