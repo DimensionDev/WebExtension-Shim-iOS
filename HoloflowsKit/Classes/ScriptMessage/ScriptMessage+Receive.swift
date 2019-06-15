@@ -6,12 +6,13 @@
 //
 
 import Foundation
+import SwiftyJSON
 
 extension ScriptMessage {
 
     public struct Receive: Encodable {
         public let messageID: String
-        public let message: String
+        public let message: JSON
         public let sender: Tab
     }
 

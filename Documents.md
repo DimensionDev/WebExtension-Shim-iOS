@@ -4,6 +4,8 @@ Limited implement for [browser extension](https://developer.mozilla.org/en-US/do
 
 All definition is in JSON format
 
+Script implement [here](./HoloflowsKit/WebExtensionScripts/webExtension.js)
+
 # Object Definition
 ## Tab
  key | value | type | note 
@@ -51,14 +53,18 @@ Script should listen event on `reciveve` and response to sender via `send`.
 ---- | ----- | ---- | ---- 
 messageID | "0.9m5am9ed4tq" | String | 
 tabID | 42 | Int | optional
-message | "Message Content" | String |
+message | "Message Content" | JSON | any JSON content
+
+```javascript
+browser.send({ tabID: 1, message: { key:"value" } });
+```
 
 [Listen] `receive`:
 
  key | value | type | note 
 ---- | ----- | ---- | ---- 
 messageID | "0.9m5am9ed4tq" | String |
-message | "Message Content" | String |
+message | "Message Content" | JSON | JSON content from sender
 sender | { id: 42 } | Tab |
 
 ## browserTabsCreate
@@ -71,10 +77,15 @@ Script post message and listen event on `id`.
 messageID | "0.ptdck9eme9" | String | callback message ID
 createProperties | { url: "https://example.com" } | CreateProperties | 
 
-### Callback payload: 
+#### Callback payload: 
  key | value | type | note 
 ---- | ----- | ---- | ---- 
-&nbsp; | { id: 42 } | Tab | Tab as payload  
+&nbsp; | { id: 42 } | Tab | Tab as payload
+
+#### Example
+```javascript
+browser.tabsCreate({ createProperties: { url: "https://www.apple.com" } });
+```
 
 ## browserTabsRemove
 [POST] browserTabsRemove:
@@ -84,11 +95,15 @@ createProperties | { url: "https://example.com" } | CreateProperties |
 messageID | "0.ptdck9eme9" | String | callback message ID
 tabIds | 42 \| [42, 43] | Int \| [Int] |
 
-### Callback payload: 
+#### Callback payload: 
  key | value | type | note 
 ---- | ----- | ---- | ---- 
 &nbsp; | undefined | undefined | undefined as payload 
 
+#### Example
+```javascript
+browser.tabsRemove({ tabIds: 1 });
+```
 
 ## webNavigationOnCommitted
 [Listen] webNavigationOnCommitted:
@@ -106,11 +121,20 @@ messageID | "0.ptdck9eme9" | String | callback message ID
 tabId | 42 | Int | optional. default 0
 details | { code: "console.log('location', window.location.href);" } | ExecuteScriptDetails |
 
-### Callback payload: 
+#### Callback payload: 
  key | value | type | note 
 ---- | ----- | ---- | ---- 
-&nbsp; | 1 | Object or primitive type  | return type depends on code eval result
+&nbsp; | 1 | JSON | return eval result if available in JSON otherwise return `undefine`
 
+#### Example
+```javascript
+browser.tabsExecuteScript({
+    tabId: 0,
+    details: {
+        code: "var result = plus(50 * 8, 2);"
+    }
+});
+```
 
 ## browserStorageLocalSet
 [POST] browserStorageLocalSet
@@ -120,6 +144,12 @@ details | { code: "console.log('location', window.location.href);" } | ExecuteSc
 messageID | "0.ptdck9eme9" | String | callback message ID
 keys  | { kitten: { name:"Moggy", tentacles: false, eyeCount: 2} }<br/> or<br/>{ kitten: { name:"Moggy", tentacles: false, eyeCount: 2}, <br/>monster: { name: "Kraken", tentacles: true, eyeCount: 10 } } | Object | any object composed by primitive type <br/> Object will be parse as [String: JSON] dictionary <br/>And the JSON will be store in native database for latter retrieve
 
+#### Callback payload: 
+ key | value | type | note 
+---- | ----- | ---- | ---- 
+&nbsp; | undefined | undefined  | return undefined when success set
+
+#### Example
 ```javascript
 browser.storageLocalSet({ keys: { 
         kitten: { name:"Moggy", tentacles: false, eyeCount: 2}, 
@@ -127,11 +157,6 @@ browser.storageLocalSet({ keys: {
     }
 });
 ```
-
-### Callback payload: 
- key | value | type | note 
----- | ----- | ---- | ---- 
-&nbsp; | undefined | undefined  | return undefined when success set
 
 ## browserStorageLocalGet
 [POST] browserStorageLocalGet
@@ -141,11 +166,47 @@ browser.storageLocalSet({ keys: {
 messageID | "0.ptdck9eme9" | String | callback message ID
 keys | "kitten" <br/>or<br/>["kitten", "monster"] | String \| [String] | key or array of keys
 
+#### Callback payload: 
+ key | value | type | note 
+---- | ----- | ---- | ---- 
+&nbsp; | { kitten: { name:"Moggy", tentacles: false, eyeCount: 2} }<br/> or<br/>{ kitten: { name:"Moggy", tentacles: false, eyeCount: 2}, <br/>monster: { name: "Kraken", tentacles: true, eyeCount: 10 }  | Object  | return Object hold keys and values
+
+#### Example
 ```javascript
 browser.storageLocalGet({ keys: ['kitten', 'monster'] }); 
 ```
 
-### Callback payload: 
+## browserStorageLocalRemove
+[POST] browserStorageLocalRemove
+
+ key | value | type | note 
+---- | ----- | ---- | ----
+messageID | "0.ptdck9eme9" | String | callback message ID
+keys | "kitten" <br/>or<br/>["kitten", "monster"] | String \| [String] | key or array of keys
+
+#### Callback payload: 
  key | value | type | note 
 ---- | ----- | ---- | ---- 
-&nbsp; | { kitten: { name:"Moggy", tentacles: false, eyeCount: 2} }<br/> or<br/>{ kitten: { name:"Moggy", tentacles: false, eyeCount: 2}, <br/>monster: { name: "Kraken", tentacles: true, eyeCount: 10 }  | Object  | return Object hold keys and values
+&nbsp; | { kitten: { name:"Moggy", tentacles: false, eyeCount: 2} }<br/> or<br/>{ kitten: { name:"Moggy", tentacles: false, eyeCount: 2}, <br/>monster: { name: "Kraken", tentacles: true, eyeCount: 10 }  | Object  | return removed Object dict
+
+#### Example
+```javascript
+browser.storageLocalRemove({ keys: ['kitten', 'monster'] }); 
+```
+
+## browserStorageLocalClear
+[POST] browserStorageLocalClear
+
+ key | value | type | note 
+---- | ----- | ---- | ----
+messageID | "0.ptdck9eme9" | String | callback message ID
+
+#### Callback payload: 
+ key | value | type | note 
+---- | ----- | ---- | ---- 
+&nbsp; | { kitten: { name:"Moggy", tentacles: false, eyeCount: 2}, <br/>monster: { name: "Kraken", tentacles: true, eyeCount: 10 }  | Object  | return removed Object dict
+
+#### Example
+```javascript
+browser.storageLocalRemove(); 
+```

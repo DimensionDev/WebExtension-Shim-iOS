@@ -94,13 +94,15 @@ extension Tab {
                 let realm = try Realm()
                 let entries = realm.objects(LocalStorage.self)
                     .filter { keys.contains($0.key) }
+                // get dict before delete
+                let dict = entries.reduce(into: [String : JSON]()) { dict, localStorgae in
+                    dict[localStorgae.key] = JSON(stringLiteral: localStorgae.value)
+                }
                 realm.beginWrite()
                 realm.delete(entries)
                 try realm.commitWrite()
 
-                let dict = entries.reduce(into: [String : JSON]()) { dict, localStorgae in
-                    dict[localStorgae.key] = JSON(stringLiteral: localStorgae.value)
-                }
+
                 let result: Result<[String:JSON], Error> = .success(dict)
                 ScriptMessage.dispatchEvent(webView: self.webView, eventName: id, result: result, completionHandler: Tab.completionHandler)
 
@@ -125,12 +127,13 @@ extension Tab {
                 let realm = try Realm()
                 let entries = realm.objects(LocalStorage.self)
                 realm.beginWrite()
-                realm.delete(entries)
-                try realm.commitWrite()
-
+                // get dict before delete
                 let dict = entries.reduce(into: [String : JSON]()) { dict, localStorgae in
                     dict[localStorgae.key] = JSON(stringLiteral: localStorgae.value)
                 }
+                realm.delete(entries)
+                try realm.commitWrite()
+
                 let result: Result<[String:JSON], Error> = .success(dict)
                 ScriptMessage.dispatchEvent(webView: self.webView, eventName: id, result: result, completionHandler: Tab.completionHandler)
 

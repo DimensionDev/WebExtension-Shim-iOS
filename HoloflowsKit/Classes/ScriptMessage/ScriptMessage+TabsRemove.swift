@@ -6,45 +6,17 @@
 //
 
 import Foundation
+import SwiftyJSON
 
 extension ScriptMessage {
 
     // MARK: - TabsRemove
     public struct TabsRemove: Decodable {
-        public let tabID: TabID
+        public let tabIds: JSON
 
-        enum CodingKeys: String, CodingKey {
-            case tabID = "tabIds"
+        public var ids: [Int] {
+            return tabIds.array?.compactMap { $0.int } ?? [tabIds.int].compactMap { $0 }
         }
     }
-
-    public enum TabID: Codable {
-        case integer(Int)
-        case integerArray([Int])
-
-        public init(from decoder: Decoder) throws {
-            let container = try decoder.singleValueContainer()
-            if let x = try? container.decode(Int.self) {
-                self = .integer(x)
-                return
-            }
-            if let x = try? container.decode([Int].self) {
-                self = .integerArray(x)
-                return
-            }
-            throw DecodingError.typeMismatch(TabID.self, DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Wrong type for TabID"))
-        }
-
-        public func encode(to encoder: Encoder) throws {
-            var container = encoder.singleValueContainer()
-            switch self {
-            case .integer(let x):
-                try container.encode(x)
-            case .integerArray(let x):
-                try container.encode(x)
-            }
-        }
-    }
-
 
 }

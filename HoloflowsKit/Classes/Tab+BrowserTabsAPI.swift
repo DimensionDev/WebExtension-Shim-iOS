@@ -30,26 +30,13 @@ extension Tab {
         let messageResult: Result<ScriptMessage.TabsRemove, Error> = ScriptMessage.receiveMessage(messageBody: messageBody)
         switch messageResult {
         case let .success(tabsRemove):
-            switch tabsRemove.tabID {
-            case .integer(let tabID):
-                if let _ = tabs?.remove(id: tabID) {
-                    let result: Result<Void, Error> = .success(Void())
-                    ScriptMessage.dispatchEvent(webView: webView, eventName: id, result: result, completionHandler: Tab.completionHandler)
-                } else {
-                    let result: Result<Void, Error> = .failure(ScriptMessage.InternalError.tabsRemoveFail)
-                    ScriptMessage.dispatchEvent(webView: webView, eventName: id, result: result, completionHandler: Tab.completionHandler)
-                }
-
-            case .integerArray(let tabIDs):
-                if let _ = tabs?.remove(ids: tabIDs) {
-                    let result: Result<Void, Error> = .success(Void())
-                    ScriptMessage.dispatchEvent(webView: webView, eventName: id, result: result, completionHandler: Tab.completionHandler)
-                } else {
-                    let result: Result<Void, Error> = .failure(ScriptMessage.InternalError.tabsRemoveFail)
-                    ScriptMessage.dispatchEvent(webView: webView, eventName: id, result: result, completionHandler: Tab.completionHandler)
-                }
+            if let _ = tabs?.remove(ids: tabsRemove.ids) {
+                let result: Result<Void, Error> = .success(Void())
+                ScriptMessage.dispatchEvent(webView: webView, eventName: id, result: result, completionHandler: Tab.completionHandler)
+            } else {
+                let result: Result<Void, Error> = .failure(ScriptMessage.InternalError.tabsRemoveFail)
+                ScriptMessage.dispatchEvent(webView: webView, eventName: id, result: result, completionHandler: Tab.completionHandler)
             }
-
 
         case let .failure(error):
             let result: Result<Void, Error> = .failure(error)

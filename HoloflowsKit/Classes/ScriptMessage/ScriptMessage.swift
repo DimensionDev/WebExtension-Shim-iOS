@@ -7,8 +7,9 @@
 
 import Foundation
 import WebKit
-import enum Swift.Result
+import SwiftyJSON
 import ConsolePrint
+import enum Swift.Result
 
 extension ScriptMessage {
 
@@ -43,24 +44,14 @@ extension ScriptMessage {
     public static func dispatchEvent(webView: WKWebView, eventName: String, result: Result<Any, Error>, completionHandler: ((Any?, Error?) -> Void)?) {
         switch result {
         case .success(let value):
-            if let string = value as? String  {
-                let detail = CustomEventPayload(detail: string)
+            if let json = JSON(rawValue: value) {
+                let detail = CustomEventPayload(detail: json)
                 guard let jsonData = try? JSONEncoder().encode(detail),
-                let jsonString = String(data: jsonData, encoding: .utf8) else {
-                    assertionFailure()
-                    return
+                    let jsonString = String(data: jsonData, encoding: .utf8) else {
+                        assertionFailure()
+                        return
                 }
                 let script = "document.dispatchEvent(new CustomEvent('\(eventName)', \(jsonString)))"
-                webView.evaluateJavaScript(script, completionHandler: completionHandler)
-                consolePrint(script)
-
-            } else if let double = value as? Double {
-                let script = "document.dispatchEvent(new CustomEvent('\(eventName)', {detail: \(double)}))"
-                webView.evaluateJavaScript(script, completionHandler: completionHandler)
-                consolePrint(script)
-
-            } else if let int = value as? Int {
-                let script = "document.dispatchEvent(new CustomEvent('\(eventName)', {detail: \(int)}))"
                 webView.evaluateJavaScript(script, completionHandler: completionHandler)
                 consolePrint(script)
 

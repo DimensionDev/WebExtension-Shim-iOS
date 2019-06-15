@@ -6,11 +6,12 @@
 //
 
 import Foundation
+import SwiftyJSON
 
 public struct ScriptMessage {
 
     public struct Echo: Codable {
-        public let payload: String
+        public let payload: JSON
     }
 
 }
