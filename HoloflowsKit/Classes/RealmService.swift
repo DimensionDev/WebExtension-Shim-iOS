@@ -9,7 +9,7 @@ import Foundation
 import RealmSwift
 import ConsolePrint
 
-public class RealmService {
+open class RealmService {
 
     // MARK: - Singleton
     public static let `default` = RealmService()
