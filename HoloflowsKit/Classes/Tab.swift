@@ -14,6 +14,9 @@ import SwiftyJSON
 public protocol TabDelegate: class {
     func tab(_ tab: Tab, requestManifest: Void) -> String
     func tab(_ tab: Tab, requestBundleResourceManager: Void) -> BundleResourceManager?
+    func tab(_ tab: Tab, requestBlobResourceManager: Void) -> BlobResourceManager?
+    func tab(_ tab: Tab, willDownloadBlobWithOptions options: WebExtensionAPI.DownloadOptions)
+    func tab(_ tab: Tab, didDownloadBlobWithOptions options: WebExtensionAPI.DownloadOptions, result: Result<BlobStorage, Error>)
 }
 
 open class Tab: NSObject {
@@ -152,6 +155,8 @@ extension Tab: WKScriptMessageHandler {
 
         case .browserRuntimeGetManifest: browserRuntimeGetManifest(messageID: id, messageBody: messageBody)
         case .browserRuntimeGetURL:      browserRuntimeGetURL(messageID: id, messageBody: messageBody)
+
+        case .browserDownloadsDownload:  browserDownloadsDownload(messageID: id, messageBody: messageBody)
             
         }   // end switch eventType
     }   // end func userContentController

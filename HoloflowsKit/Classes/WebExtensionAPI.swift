@@ -32,6 +32,27 @@ public struct WebExtensionAPI {
         public let code: String
     }
 
+    public struct DownloadOptions: Codable {
+        // public let body: String?
+        // public let conflictAction: String?
+        public let filename: String?
+        // public let headers: [JSON]
+        // public let incognito: Bool?
+        // public let method: String?
+        // public let saveAs: Bool?
+        public let url: String
+    }
+
+    public struct DownloadItem: Codable {
+        public let state: DownloadsState
+    }
+
+    public enum DownloadsState: String, Codable {
+        case in_progress
+        case interrupted
+        case complete
+    }
+
 }
 
 

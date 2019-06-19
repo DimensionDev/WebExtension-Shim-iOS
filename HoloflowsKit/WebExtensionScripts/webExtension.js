@@ -34,7 +34,8 @@
       storageLocalRemove: obj => post('browserStorageLocalRemove', obj),
       storageLocalClear: obj => post('browserStorageLocalClear', obj),
       getManifest: obj => post('browserRuntimeGetManifest', obj),
-      getURL: obj => post('browserRuntimeGetURL', obj)
+      getURL: obj => post('browserRuntimeGetURL', obj),
+      download: obj => post('browserDownloadsDownload', obj)
    }
 }
 

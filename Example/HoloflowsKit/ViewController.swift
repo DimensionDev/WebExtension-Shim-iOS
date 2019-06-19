@@ -45,7 +45,6 @@ extension ViewController {
 
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
-        consolePrint("")
     }
 
 }

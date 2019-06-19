@@ -28,6 +28,17 @@ url | "https://example.com" | String |
 ---- | ----- | ---- | ---- 
 code | "console.log('location', window.location.href);" | String | **Warning**: Don’t use this property to interpolate untrusted data into JavaScript, as this could lead to a security issue.
 
+## DownloadOptions
+ key | value | type | note 
+---- | ----- | ---- | ---- 
+filename | "lena.png" | String | 
+url | "holoflows-blob://prefix/A5A3C1D1-ABE4-45DF-96D5-5625369F49F7" | String | The URL from `createObjectURL`
+
+## DownloadItem
+ key | value | type | note 
+---- | ----- | ---- | ---- 
+state | "complete" | String | 
+
 # API Definition
 
 Post message to native:
@@ -283,4 +294,27 @@ url | "/index.html" | String |
 #### Example
 ```javascript
 browser.getURL({ url: '/index.html' });
+```
+
+## browserDownloadsDownload
+[POST] browserDownloadsDownload
+
+ key | value | type | note 
+---- | ----- | ---- | ----
+messageID | "0.ptdck9eme9" | String | callback message ID
+options | {"filename":"lena.png","url":"holoflows-blob://download/E25CA729-67A7-4508-AF1E-611F27ADB823"} | DownloadOptions |  
+
+#### Callback payload:
+
+ key | value | type | note 
+---- | ----- | ---- | ---- 
+&nbsp; | {"state":"complete"}  | DownloadItem  | 
+
+#### Example
+```javascript
+browser.createObjectURL({
+    prefix: 'download',
+    blob: base64EncodedPNG,
+    type: 'image/png'
+});
 ```

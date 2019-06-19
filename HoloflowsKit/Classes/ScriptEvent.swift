@@ -24,6 +24,8 @@ public enum ScriptEvent: String, CaseIterable {
 
     case browserRuntimeGetManifest
     case browserRuntimeGetURL
+
+    case browserDownloadsDownload
 }
 
 

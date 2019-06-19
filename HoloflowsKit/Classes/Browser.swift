@@ -68,4 +68,21 @@ extension Browser: TabDelegate {
         return bundleResourceManager
     }
 
+    public func tab(_ tab: Tab, requestBlobResourceManager: Void) -> BlobResourceManager? {
+        return blobResourceManager
+    }
+
+    open func tab(_ tab: Tab, willDownloadBlobWithOptions options: WebExtensionAPI.DownloadOptions) {
+        consolePrint(options)
+    }
+
+    open func tab(_ tab: Tab, didDownloadBlobWithOptions options: WebExtensionAPI.DownloadOptions, result: Result<BlobStorage, Error>) {
+        switch result {
+        case let .success(blobStorage):
+            consolePrint(blobStorage)
+        case let .failure(error):
+            consolePrint(error.localizedDescription)
+        }
+    }
+
 }

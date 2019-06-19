@@ -19,12 +19,22 @@ open class BlobResourceManager: NSObject {
 
     public enum Error: Swift.Error {
         case urlNotFound
+        case notValidURL
         case blobNotFound
     }
 
 }
 
 extension BlobResourceManager {
+
+    open func data(with urlString: String, handler: @escaping (Result<BlobStorage, Swift.Error>) -> Void) {
+        guard let url = URL(string: urlString) else {
+            handler(.failure(Error.notValidURL))
+            return
+        }
+
+        data(with: url, handler: handler)
+    }
 
     open func data(with url: URL, handler: @escaping (Result<BlobStorage, Swift.Error>) -> Void) {
         let _ = url.pathExtension
@@ -72,6 +82,5 @@ extension BlobResourceManager: WKURLSchemeHandler {
     public func webView(_ webView: WKWebView, stop urlSchemeTask: WKURLSchemeTask) {
         // do nothing
     }
-
 
 }

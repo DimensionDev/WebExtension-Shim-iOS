@@ -349,13 +349,24 @@ extension TabsTests {
     }
 
     private class TabDelegateStub: TabDelegate {
-
         func tab(_ tab: Tab, requestManifest: Void) -> String {
             return String(data: TabsTests.manifest, encoding: .utf8)!
         }
 
         func tab(_ tab: Tab, requestBundleResourceManager: Void) -> BundleResourceManager? {
             return CustomURLSchemeHandler()
+        }
+
+        func tab(_ tab: Tab, requestBlobResourceManager: Void) -> BlobResourceManager? {
+            return nil
+        }
+
+        func tab(_ tab: Tab, willDownloadBlobWithOptions options: WebExtensionAPI.DownloadOptions) {
+            // do nothing
+        }
+
+        func tab(_ tab: Tab, didDownloadBlobWithOptions options: WebExtensionAPI.DownloadOptions, result: Result<BlobStorage, Error>) {
+            // do nothing
         }
     }
 
@@ -590,6 +601,41 @@ extension TabsTests {
 
 }
 
+extension TabsTests {
+
+    func testDownloadsDownload() {
+        let bundleResourceManager = BundleResourceManager(bundle: Bundle(for: TabsTests.self))
+        let blobResourceManager = BlobResourceManager()
+        browser.bundleResourceManager = bundleResourceManager
+        browser.blobResourceManager = blobResourceManager
+
+        let tab = browser.tabs.create(createProperties: nil)
+        prepareDownloadTest(tab: tab)
+
+        let image = UIImage(named: "lena_std.tif.tiff", in: Bundle(for: TabsTests.self), compatibleWith: nil)!
+        let base64EncodedString = image.pngData()!.base64EncodedString()
+
+        let downloadScript = """
+        browser.createObjectURL({
+            prefix: 'download',
+            blob: '\(base64EncodedString)',
+            type: 'image/png'
+        }).then(url => {
+            browser.download({
+                options: {
+                    filename: 'lena.png',
+                    url: url
+                }
+            });
+        });
+        """
+        let downloadExpectation = expectEvaluateJavaScript(in: tab.webView, script: downloadScript) { (any, error) in
+            // do nothing
+        }
+        wait(for: [downloadExpectation], timeout: 3.0)
+    }
+}
+
 // MARK: - Helper
 extension TabsTests {
 
@@ -619,6 +665,10 @@ extension TabsTests {
     }
 
     private func prepareBlobTest(tab: Tab) {
+        prepareCustomURLSchemeTest(tab: tab)
+    }
+
+    private func prepareDownloadTest(tab: Tab) {
         prepareCustomURLSchemeTest(tab: tab)
     }
 

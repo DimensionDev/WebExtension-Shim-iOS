@@ -124,6 +124,7 @@ extension ScriptMessage {
         case tabsSendMessageFail
         case tabsExecuteScriptReturnNil
         case runtimeGetURLWithoutResourceManagerSet
+        case downloadsDownloadWithoutBlobManagerSet
 
         var localizedDescription: String {
             switch self {
@@ -133,6 +134,7 @@ extension ScriptMessage {
             case .tabsSendMessageFail:                      return "tabs send message fail"
             case .tabsExecuteScriptReturnNil:               return "tabs execute script return nil"
             case .runtimeGetURLWithoutResourceManagerSet:   return "runtime get URL without resource manager set"
+            case .downloadsDownloadWithoutBlobManagerSet:   return "download without blob resource manager set"
             }
         }
     }
