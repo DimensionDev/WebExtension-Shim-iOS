@@ -8,11 +8,11 @@ PODS:
     - ConsolePrint
     - RealmSwift
     - SwiftyJSON (~> 5.0.0)
-  - Realm (3.16.0):
-    - Realm/Headers (= 3.16.0)
-  - Realm/Headers (3.16.0)
-  - RealmSwift (3.16.0):
-    - Realm (= 3.16.0)
+  - Realm (3.16.2):
+    - Realm/Headers (= 3.16.2)
+  - Realm/Headers (3.16.2)
+  - RealmSwift (3.16.2):
+    - Realm (= 3.16.2)
   - SwiftyJSON (5.0.0)
 
 DEPENDENCIES:
@@ -32,11 +32,11 @@ EXTERNAL SOURCES:
 
 SPEC CHECKSUMS:
   ConsolePrint: 695d494f0a2595d1792ec19483f2aa16e4501c19
-  HoloflowsKit: 74df112e9e9862701585c98a7cbc76d1b361e177
-  Realm: 5ca1b8c472dfc532cd0ba0bfe2ce49f97130158f
-  RealmSwift: 2ee401dbcc188706261921326146f5a539d4d4a7
+  HoloflowsKit: 76f03894471752a9de06d4177cb3056b0e081fb6
+  Realm: 0e73b4edeb5b6a90da3d83206883b2e34e00eb38
+  RealmSwift: a81e650171ef0a5f999df1ed8d39ba8d6fce88a4
   SwiftyJSON: 36413e04c44ee145039d332b4f4e2d3e8d6c4db7
 
 PODFILE CHECKSUM: 0e54ea459ff5abd598b038baa0f43d15ecc113d2
 
-COCOAPODS: 1.7.1
+COCOAPODS: 1.7.2

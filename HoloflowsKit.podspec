@@ -26,14 +26,15 @@ TODO: Add long description of the pod here.
   s.license          = { :type => 'AGPL', :file => 'LICENSE' }
   s.author           = { 'CMK' => 'cirno.mainasuk@gmail.com' }
   s.source           = { :git => 'https://github.com/CMK/HoloflowsKit.git', :tag => s.version.to_s }
-  # s.social_media_url = 'https://twitter.com/<TWITTER_USERNAME>'
+  s.swift_version    = '5.0'
 
   s.ios.deployment_target = '11.0'
 
   s.source_files = 'HoloflowsKit/Classes/**/*'
 
   s.test_spec 'Tests' do |test_spec|
-    test_spec.source_files = 'HoloflowsKit/Tests/**/*'
+    test_spec.source_files = 'HoloflowsKit/Tests/**/*.swift'
+    test_spec.resources = 'HoloflowsKit/Tests/**/*.{html,tiff}'
   end
   
   s.resource_bundles = {

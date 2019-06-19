@@ -13,7 +13,12 @@ import ConsolePrint
 
 class ViewController: UIViewController {
 
-    let browser = Browser.default
+    let bundleResourceManager = BundleResourceManager(bundle: Bundle(for: ViewController.self))
+    lazy var browser: Browser = {
+        let browser = Browser.default
+        browser.bundleResourceManager = bundleResourceManager
+        return browser
+    }()
 
     lazy var webView: WKWebView = {
         let tab = browser.tabs.create(createProperties: WebExtensionAPI.CreateProperties(url: "https://m.facebook.com"))

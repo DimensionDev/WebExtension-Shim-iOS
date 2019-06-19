@@ -11,6 +11,7 @@ public enum ScriptEvent: String, CaseIterable {
     case echo
 
     case send
+    case createObjectURL
 
     case browserTabsCreate
     case browserTabsRemove
@@ -22,6 +23,7 @@ public enum ScriptEvent: String, CaseIterable {
     case browserStorageLocalClear
 
     case browserRuntimeGetManifest
+    case browserRuntimeGetURL
 }
 
 

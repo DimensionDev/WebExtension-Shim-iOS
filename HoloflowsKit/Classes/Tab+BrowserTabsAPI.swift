@@ -10,7 +10,7 @@ import ConsolePrint
 
 extension Tab {
 
-    public func browserTabsCreate(messageID id: String, messageBody: String) {
+    open func browserTabsCreate(messageID id: String, messageBody: String) {
         let messageResult: Result<ScriptMessage.TabsCreate, Error> = ScriptMessage.receiveMessage(messageBody: messageBody)
         switch messageResult {
         case let .success(tabsCreate):
@@ -26,7 +26,7 @@ extension Tab {
         }
     }
 
-    public func browserTabsRemove(messageID id: String, messageBody: String) {
+    open func browserTabsRemove(messageID id: String, messageBody: String) {
         let messageResult: Result<ScriptMessage.TabsRemove, Error> = ScriptMessage.receiveMessage(messageBody: messageBody)
         switch messageResult {
         case let .success(tabsRemove):
@@ -45,7 +45,7 @@ extension Tab {
         consolePrint(tabs?.storage)
     }
 
-    public func browserTabsExecuteScript(messageID id: String, messageBody: String) {
+    open func browserTabsExecuteScript(messageID id: String, messageBody: String) {
         let messageResult: Result<ScriptMessage.TabsExecuteScript, Error> = ScriptMessage.receiveMessage(messageBody: messageBody)
         guard let message = try? messageResult.get(),
             let tabs = tabs,

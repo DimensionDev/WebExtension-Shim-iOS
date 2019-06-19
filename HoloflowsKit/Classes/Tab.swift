@@ -13,22 +13,24 @@ import SwiftyJSON
 
 public protocol TabDelegate: class {
     func tab(_ tab: Tab, requestManifest: Void) -> String
+    func tab(_ tab: Tab, requestBundleResourceManager: Void) -> BundleResourceManager?
 }
 
-public class Tab: NSObject {
+open class Tab: NSObject {
 
     weak var tabs: Tabs?
+    weak var bundleResourceManager: BundleResourceManager?
 
     public let id: Int
     public let userContentController: WKUserContentController
     public let webView: WKWebView
 
-    public weak var delegate: TabDelegate?
+    open weak var delegate: TabDelegate?
 
-    public init(id: Int, createProperties properties: WebExtensionAPI.CreateProperties? = nil, webViewConfiguration configuration: WKWebViewConfiguration = WKWebViewConfiguration()) {
+    public init(id: Int, createProperties properties: WebExtensionAPI.CreateProperties? = nil, webViewConfiguration configuration: WKWebViewConfiguration? = nil) {
         self.id = id
         self.userContentController = WKUserContentController()
-
+        let configuration = configuration ?? WKWebViewConfiguration()
         configuration.userContentController = userContentController
         let bundle = Bundle(for: Tab.self)
         if let bundleURL = bundle.resourceURL?.appendingPathComponent("WebExtensionScripts.bundle"),
@@ -84,13 +86,13 @@ extension Tab: WKScriptMessageHandler {
         consolePrint(error.localizedDescription)
     }
 
-    public func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+    open func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
         guard let eventType = ScriptEvent(rawValue: message.name) else {
             assertionFailure()
             return
         }
         let messageBody = message.body as? String ?? ""
-        consolePrint("[\(eventType.rawValue)]: \(messageBody)")
+        consolePrint("[\(eventType.rawValue)]: \(messageBody.prefix(200))")
 
         guard let id = try? ScriptMessage.parseMessageID(messageBody: messageBody) else {
             assertionFailure()
@@ -110,6 +112,35 @@ extension Tab: WKScriptMessageHandler {
             }
             tabs?.sendMessage(message, from: self)
 
+        case .createObjectURL:
+            let messageResult: Result<ScriptMessage.CreateObjectURL, Error> = ScriptMessage.receiveMessage(messageBody: messageBody)
+            switch messageResult {
+            case let .success(createObjectURL):
+                guard let blobStorage = createObjectURL.blobStorage else {
+                    let result: Result<Void, Error> = .failure(ScriptMessage.InternalError.createObjectURLWithoutValidBlob)
+                    ScriptMessage.dispatchEvent(webView: webView, eventName: id, result: result, completionHandler: Tab.completionHandler)
+                    return
+                }
+                let realm = RealmService.default.realm
+                do {
+                    try realm.write {
+                        realm.add(blobStorage, update: .all)
+                    }
+
+                    let result: Result<String, Error> = .success(blobStorage.url)
+                    ScriptMessage.dispatchEvent(webView: webView, eventName: id, result: result, completionHandler: Tab.completionHandler)
+
+                } catch {
+                    let result: Result<Void, Error> = .failure(error)
+                    ScriptMessage.dispatchEvent(webView: webView, eventName: id, result: result, completionHandler: Tab.completionHandler)
+                }
+
+            case let .failure(error):
+                consolePrint(error.localizedDescription)
+                let result: Result<Void, Error> = .failure(error)
+                ScriptMessage.dispatchEvent(webView: webView, eventName: id, result: result, completionHandler: Tab.completionHandler)
+            }
+
         case .browserTabsCreate:         browserTabsCreate(messageID: id, messageBody: messageBody)
         case .browserTabsRemove:         browserTabsRemove(messageID: id, messageBody: messageBody)
         case .browserTabsExecuteScript:  browserTabsExecuteScript(messageID: id, messageBody: messageBody)
@@ -120,6 +151,7 @@ extension Tab: WKScriptMessageHandler {
         case .browserStorageLocalClear:  browserStorageLocalClear(messageID: id, messageBody: messageBody)
 
         case .browserRuntimeGetManifest: browserRuntimeGetManifest(messageID: id, messageBody: messageBody)
+        case .browserRuntimeGetURL:      browserRuntimeGetURL(messageID: id, messageBody: messageBody)
             
         }   // end switch eventType
     }   // end func userContentController
@@ -134,7 +166,7 @@ extension Tab: WKUIDelegate {
 // MARK: - WKNavigationDelegate
 extension Tab: WKNavigationDelegate {
 
-    public func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
+    open func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
         consolePrint(webView.url)
         let details = WebExtensionAPI.NavigationDetails(tabId: id, url: webView.url?.absoluteString ?? "")
         let result = Result<WebExtensionAPI.NavigationDetails, Error>.success(details)
@@ -150,7 +182,7 @@ extension Tab: Encodable {
         case id
     }
 
-    public func encode(to encoder: Encoder) throws {
+    open func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(id, forKey: .id)
     }

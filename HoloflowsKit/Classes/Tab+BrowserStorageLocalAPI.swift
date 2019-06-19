@@ -12,7 +12,7 @@ import RealmSwift
 
 extension Tab {
 
-    public func browserStorageLocalGet(messageID id: String, messageBody: String) {
+    open func browserStorageLocalGet(messageID id: String, messageBody: String) {
         let messageResult: Result<ScriptMessage.StorageLocalGet, Error> = ScriptMessage.receiveMessage(messageBody: messageBody)
         switch messageResult {
         case let .success(storageLocalGet):
@@ -21,7 +21,7 @@ extension Tab {
             // { keys: key1, key2, … }
             let keys = storageLocalGet.keys.array?.compactMap { $0.string } ?? [storageLocalGet.keys.string].compactMap { $0 }
             do {
-                let realm = try Realm()
+                let realm = RealmService.default.realm
                 let entires = realm.objects(LocalStorage.self)
                     .filter { keys.contains($0.key) }
 
@@ -43,7 +43,7 @@ extension Tab {
         }
     }
 
-    public func browserStorageLocalSet(messageID id: String, messageBody: String) {
+    open func browserStorageLocalSet(messageID id: String, messageBody: String) {
         let messageResult: Result<ScriptMessage.StorageLocalSet, Error> = ScriptMessage.receiveMessage(messageBody: messageBody)
         switch messageResult {
         case let .success(storageLocalSet):
@@ -58,7 +58,7 @@ extension Tab {
             }
 
             do {
-                let realm = try Realm()
+                let realm = RealmService.default.realm
                 realm.beginWrite()
                 realm.add(entries, update: Realm.UpdatePolicy.all)
                 try realm.commitWrite()
@@ -82,7 +82,7 @@ extension Tab {
         }
     }
 
-    public func browserStorageLocalRemove(messageID id: String, messageBody: String) {
+    open func browserStorageLocalRemove(messageID id: String, messageBody: String) {
         let messageResult: Result<ScriptMessage.StorageLocalRemove, Error> = ScriptMessage.receiveMessage(messageBody: messageBody)
         switch messageResult {
         case let .success(storageLocalRemove):
@@ -91,7 +91,7 @@ extension Tab {
             // { keys: key1, key2, … }
             let keys = storageLocalRemove.keys.array?.compactMap { $0.string } ?? [storageLocalRemove.keys.string].compactMap { $0 }
             do {
-                let realm = try Realm()
+                let realm = RealmService.default.realm
                 let entries = realm.objects(LocalStorage.self)
                     .filter { keys.contains($0.key) }
                 // get dict before delete
@@ -119,12 +119,12 @@ extension Tab {
         }
     }
 
-    public func browserStorageLocalClear(messageID id: String, messageBody: String) {
+    open func browserStorageLocalClear(messageID id: String, messageBody: String) {
         let messageResult: Result<ScriptMessage.StorageLocalClear, Error> = ScriptMessage.receiveMessage(messageBody: messageBody)
         switch messageResult {
         case .success:
             do {
-                let realm = try Realm()
+                let realm = RealmService.default.realm
                 let entries = realm.objects(LocalStorage.self)
                 realm.beginWrite()
                 // get dict before delete

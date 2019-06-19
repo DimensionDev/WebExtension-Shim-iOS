@@ -1,4 +1,5 @@
 import XCTest
+import UIKit
 import WebKit
 import HoloflowsKit
 import ConsolePrint
@@ -192,7 +193,7 @@ extension TabsTests {
         }
         wait(for: [scriptExpectation], timeout: 3.0)
 
-        consolePrint(try! Realm().configuration.fileURL)
+        consolePrint(RealmService.default.realm.configuration.fileURL)
         // file:///Users/MainasuK/Library/Developer/CoreSimulator/Devices/52666318-D601-4CFF-B697-4DCAF255E8CD/data/Documents/default.realm
 
         waitCallback(5)
@@ -217,7 +218,7 @@ extension TabsTests {
         }
         wait(for: [scriptExpectation], timeout: 3.0)
 
-        consolePrint(try! Realm().configuration.fileURL)
+        consolePrint(RealmService.default.realm.configuration.fileURL)
         // file:///Users/MainasuK/Library/Developer/CoreSimulator/Devices/52666318-D601-4CFF-B697-4DCAF255E8CD/data/Documents/default.realm
 
         waitCallback(5)
@@ -242,7 +243,7 @@ extension TabsTests {
         }
         wait(for: [scriptExpectation], timeout: 3.0)
 
-        consolePrint(try! Realm().configuration.fileURL)
+        consolePrint(RealmService.default.realm.configuration.fileURL)
         // file:///Users/MainasuK/Library/Developer/CoreSimulator/Devices/52666318-D601-4CFF-B697-4DCAF255E8CD/data/Documents/default.realm
 
         waitCallback(5)
@@ -267,7 +268,7 @@ extension TabsTests {
         }
         wait(for: [scriptExpectation], timeout: 3.0)
 
-        consolePrint(try! Realm().configuration.fileURL)
+        consolePrint(RealmService.default.realm.configuration.fileURL)
         // file:///Users/MainasuK/Library/Developer/CoreSimulator/Devices/52666318-D601-4CFF-B697-4DCAF255E8CD/data/Documents/default.realm
 
         waitCallback(5)
@@ -277,7 +278,7 @@ extension TabsTests {
     }
 
     private func removeRealmDataStub() {
-        let realm = try! Realm()
+        let realm = RealmService.default.realm
         // purge database
         let entriesToRemove = realm.objects(LocalStorage.self).filter { ["kitten", "monster"].contains($0.key) }
         realm.beginWrite()
@@ -286,7 +287,7 @@ extension TabsTests {
     }
 
     private func addRealmDataStub() {
-        let realm = try! Realm()
+        let realm = RealmService.default.realm
         realm.beginWrite()
         let kitten: LocalStorage = {
             let entry = LocalStorage()
@@ -310,7 +311,7 @@ extension TabsTests {
     }
 
     private func getRealmDataStub() -> [LocalStorage] {
-        let realm = try! Realm()
+        let realm = RealmService.default.realm
         return realm.objects(LocalStorage.self).filter { ["kitten", "monster"].contains($0.key) }
     }
 
@@ -348,8 +349,13 @@ extension TabsTests {
     }
 
     private class TabDelegateStub: TabDelegate {
+
         func tab(_ tab: Tab, requestManifest: Void) -> String {
             return String(data: TabsTests.manifest, encoding: .utf8)!
+        }
+
+        func tab(_ tab: Tab, requestBundleResourceManager: Void) -> BundleResourceManager? {
+            return CustomURLSchemeHandler()
         }
     }
 
@@ -392,6 +398,201 @@ extension TabsTests {
 
 extension TabsTests {
 
+    func testBundle() {
+        consolePrint(Bundle(for: Tab.self))
+        consolePrint(Bundle.main)
+        consolePrint(Bundle(for: TabsTests.self))
+    }
+
+    func testBundleGetResource() {
+        let bundle = Bundle(for: TabsTests.self)
+        let path = bundle.path(forResource: "lena_std.tif", ofType: "tiff")
+        XCTAssertNotNil(path)
+
+        let dataTaskExpectation = expectation(description: "dataTask")
+        URLSession.shared.dataTask(with: URL(fileURLWithPath: path!)) { (data, response, error) in
+            XCTAssertNotNil(data)
+            XCTAssertEqual(data!.count, 786628)
+
+            XCTAssertNotNil(response)
+            XCTAssertEqual(response?.mimeType!, "image/tiff")
+            XCTAssertEqual(response?.suggestedFilename, "lena_std.tif.tiff")
+
+            dataTaskExpectation.fulfill()
+        }.resume()
+
+        wait(for: [dataTaskExpectation], timeout: 3.0)
+    }
+
+    func testURLSchemeHandlerTask() {
+        let handler = CustomURLSchemeHandler()
+        browser.bundleResourceManager = handler
+        handler.handlerExpectation = expectation(description: "handler")
+
+        let configuration = WKWebViewConfiguration()
+        configuration.setURLSchemeHandler(handler, forURLScheme: "holoflows-extension")
+
+        let tab = browser.tabs.create(createProperties: nil, webViewConfiguration: configuration)
+        prepareCustomURLSchemeTest(tab: tab)
+
+        wait(for: [handler.handlerExpectation!], timeout: 3.0)
+    }
+
+    func testRuntimeGetURL() {
+        let hander = CustomURLSchemeHandler()
+        hander.handlerExpectation = expectation(description: "hander")
+        browser.bundleResourceManager = hander
+
+        let tab = browser.tabs.create(createProperties: nil)
+        prepareCustomURLSchemeTest(tab: tab)
+
+        wait(for: [hander.handlerExpectation!], timeout: 10.0)
+    }
+
+    func testRuntimeGetURL_BundleResourceManager() {
+        let hander = BundleResourceManager(bundle: Bundle(for: TabsTests.self))
+        browser.bundleResourceManager = hander
+
+        let tab = browser.tabs.create(createProperties: nil)
+        prepareCustomURLSchemeTest(tab: tab)
+
+        waitCallback(3)
+
+        let checkSizeScript = """
+            var img = document.getElementById('lena');
+            var width = img.clientWidth;
+            width;
+        """
+        let checkSizeExpectation = expectEvaluateJavaScript(in: tab.webView, script: checkSizeScript) { (any, error) in
+            XCTAssertNotNil(any)
+            XCTAssertEqual(any as? Int, 512)
+        }
+
+        wait(for: [checkSizeExpectation], timeout: 3.0)
+    }
+
+    private class CustomURLSchemeHandler: BundleResourceManager {
+
+        var handlerExpectation: XCTestExpectation?
+
+        init() {
+            super.init(bundle: Bundle())
+        }
+
+        override init(bundle: Bundle) {
+            super.init(bundle: bundle)
+        }
+
+        override func webView(_ webView: WKWebView, start urlSchemeTask: WKURLSchemeTask) {
+            consolePrint(urlSchemeTask.request)
+
+            XCTAssertEqual(URL(string: "holoflows-extension://images/lena_std.tif.tiff"), urlSchemeTask.request.url)
+            let fileExtension = urlSchemeTask.request.url?.pathExtension
+            let filename = urlSchemeTask.request.url?.deletingPathExtension().lastPathComponent
+            XCTAssertEqual(fileExtension, "tiff")
+            XCTAssertEqual(filename, "lena_std.tif")
+
+            handlerExpectation?.fulfill()
+        }
+
+        override func webView(_ webView: WKWebView, stop urlSchemeTask: WKURLSchemeTask) {
+            // do nothing
+        }
+    }
+
+}
+
+extension TabsTests {
+
+    func testCreateObjectURL() {
+        let bundleResourceManager = BundleResourceManager(bundle: Bundle(for: TabsTests.self))
+        let blobResourceManager = BlobResourceManager()
+        browser.bundleResourceManager = bundleResourceManager
+        browser.blobResourceManager = blobResourceManager
+
+        let tab = browser.tabs.create(createProperties: nil)
+        prepareBlobTest(tab: tab)
+
+        let image = UIImage(named: "lena_std.tif.tiff", in: Bundle(for: TabsTests.self), compatibleWith: nil)!
+        let base64EncodedString = image.pngData()!.base64EncodedString()
+
+        let addLenaBase64Script = """
+        var lena = document.createElement('img');
+        lena.id = 'base64Image'
+        lena.src = 'data:image/png;base64,\(base64EncodedString)'
+
+        var width = 0;
+        lena.onload = function() {
+            browser.echo({ echo: this.clientWidth });
+            width = this.clientWidth;
+        };
+        document.body.appendChild(lena);
+        """
+        let addLenaBase64Expectation = expectEvaluateJavaScript(in: tab.webView, script: addLenaBase64Script) { (any, error) in
+            // do nothing
+        }
+        wait(for: [addLenaBase64Expectation], timeout: 3.0)
+        waitCallback(3)
+
+        // check lena
+        let checkSizeScript = """
+            width;
+        """
+        let checkSizeExpectation = expectEvaluateJavaScript(in: tab.webView, script: checkSizeScript) { (any, error) in
+            XCTAssertNotNil(any)
+            XCTAssertEqual(any as? Int, 512)
+        }
+        wait(for: [checkSizeExpectation], timeout: 3.0)
+
+        let createObjectURLScript = """
+        width = 0;
+        browser.createObjectURL({
+            prefix: 'test',
+            blob: '\(base64EncodedString)',
+            type: 'image/png'
+        }).then(url => {
+            var blobImage = document.createElement('img');
+            blobImage.onload = function() {
+                width = this.clientWidth;
+            };
+            blobImage.id = 'blobImage';
+            blobImage.src = url + '.png';
+            document.body.appendChild(blobImage);
+        });
+        """
+        let createObjectURLExpectation = expectEvaluateJavaScript(in: tab.webView, script: createObjectURLScript) { (any, error) in
+            // do nothing
+        }
+        wait(for: [createObjectURLExpectation], timeout: 3.0)
+        waitCallback(3)
+
+        // check blob
+        let checkSizeScript2 = """
+            width;
+        """
+        let checkSizeExpectation2 = expectEvaluateJavaScript(in: tab.webView, script: checkSizeScript2) { (any, error) in
+            XCTAssertNotNil(any)
+            XCTAssertEqual(any as? Int, 512)
+        }
+        wait(for: [checkSizeExpectation2], timeout: 3.0)
+
+        consolePrint(RealmService.default.realm.configuration.fileURL!)
+    }
+
+    private func removeRealmStub(uuid: String) {
+        let realm = RealmService.default.realm
+        if let blobStorage = realm.object(ofType: BlobStorage.self, forPrimaryKey: uuid) {
+            try! realm.write {
+                realm.delete(blobStorage)
+            }
+        }
+    }
+
+}
+
+// MARK: - Helper
+extension TabsTests {
+
     private func prepareTest(tab: Tab) {
         if tab.webView.url == nil {
             tab.webView.loadHTMLString("", baseURL: nil)
@@ -405,11 +606,23 @@ extension TabsTests {
         wait(for: [sleepExpectation], timeout: 6.0)
     }
 
-}
+    private func prepareCustomURLSchemeTest(tab: Tab) {
+        let bundle = Bundle(for: TabsTests.self)
+        let htmlPath = bundle.path(forResource: "Lena", ofType: "html")
+        XCTAssertNotNil(htmlPath)
+        let url = URL(fileURLWithPath: htmlPath!)
+        let html = try? String(contentsOf: url)
+        XCTAssertNotNil(html)
+        tab.webView.loadHTMLString(html!, baseURL: bundle.bundleURL)
 
-extension TabsTests {
+        waitCallback(3)
+    }
 
-    func expectEvaluateJavaScript(in webView: WKWebView, script: String, completionHandler: @escaping ((Any?, Error?) -> Void)) -> XCTestExpectation {
+    private func prepareBlobTest(tab: Tab) {
+        prepareCustomURLSchemeTest(tab: tab)
+    }
+
+    private func expectEvaluateJavaScript(in webView: WKWebView, script: String, verbose: Bool = true, completionHandler: @escaping ((Any?, Error?) -> Void)) -> XCTestExpectation {
         let scriptExpectation = expectation(description: "evaluate java script")
 
         webView.evaluateJavaScript(script) { (any, error) in
@@ -421,7 +634,7 @@ extension TabsTests {
         return scriptExpectation
     }
 
-    func waitCallback(_ timeout: TimeInterval) {
+    private func waitCallback(_ timeout: TimeInterval) {
         let waitCallbackExpectation = expectation(description: "waitCallback")
 
         DispatchQueue.main.asyncAfter(deadline: .now() + timeout) {

@@ -42,7 +42,7 @@ Navtive dispatch callback event with payload:
 document.dispatchEvent(new CustomEvent(eventName, { detail: payload }))
 ```
 
-HoloflowsKit:
+HoloflowsKit script:
 
 ```javascript
 browser.tabsCreate({ createProperties: { url: "https://www.apple.com" } }).then(val => {
@@ -75,6 +75,35 @@ browser.send({ tabID: 1, message: { key:"value" } });
 messageID | "0.9m5am9ed4tq" | String |
 message | "Message Content" | JSON | JSON content from sender
 sender | { id: 42 } | Tab |
+
+## createObjectURL
+[post] createObjectURL
+
+ key | value | type | note 
+---- | ----- | ---- | ---- 
+prefix | "prefix" | String |
+blob | "iVBORw0KGgoAAAANSUhEUgAAAgAAAAIAC…" | String | Base64 encoded data
+type | "image/png" | String | MIME type
+
+#### Callback payload: 
+ key | value | type | note 
+---- | ----- | ---- | ---- 
+&nbsp; | { url: "holoflows-blob://prefix/A5A3C1D1-ABE4-45DF-96D5-5625369F49F7" } | String | URL to retrieve blob data.
+
+#### Example
+```javascript
+browser.createObjectURL({
+    prefix: 'prefix',
+    blob: base64EncodedPNG,
+    type: 'image/png'
+});
+```
+
+#### Note
+```html
+<!-- file extension like .png is acceptable -->
+<img src="holoflows-blob://prefix/A5A3C1D1-ABE4-45DF-96D5-5625369F49F7.png" />
+```
 
 ## browserTabsCreate
 Script post message and listen event on `id`.
@@ -236,4 +265,22 @@ messageID | "0.ptdck9eme9" | String | callback message ID
 #### Example
 ```javascript
 browser.getManifest();
+```
+## browserRuntimeGetURL
+[POST] browserRuntimeGetURL
+
+ key | value | type | note 
+---- | ----- | ---- | ----
+messageID | "0.ptdck9eme9" | String | callback message ID
+url | "/index.html" | String | 
+
+#### Callback payload:
+
+ key | value | type | note 
+---- | ----- | ---- | ---- 
+&nbsp; | "holoflows-extension://*BundleName*/index.html"  | JSON  | BundleName specific by bundle your pass to BundleResourceManager
+
+#### Example
+```javascript
+browser.getURL({ url: '/index.html' });
 ```

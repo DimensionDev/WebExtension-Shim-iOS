@@ -20,7 +20,7 @@ extension ScriptMessage {
     }
 
     public static func receiveMessage<T: Decodable>(messageBody message: String) -> Result<T, Error> {
-        consolePrint(message)
+        consolePrint(message.prefix(200))
         let decoder = JSONDecoder()
         return Result {
             try decoder.decode(T.self, from: Data(message.utf8))
@@ -118,17 +118,21 @@ extension ScriptMessage {
 
     // only used for encode error description
     enum InternalError: Swift.Error {
+        case createObjectURLWithoutValidBlob
         case tabsCreateFail
         case tabsRemoveFail
         case tabsSendMessageFail
         case tabsExecuteScriptReturnNil
+        case runtimeGetURLWithoutResourceManagerSet
 
         var localizedDescription: String {
             switch self {
-            case .tabsCreateFail:               return "tabs create fail"
-            case .tabsRemoveFail:               return "tabs remove fail"
-            case .tabsSendMessageFail:          return "tabs send message fail"
-            case .tabsExecuteScriptReturnNil:   return "tabs execute script return nil"
+            case .createObjectURLWithoutValidBlob:          return "create object URL without valid blob"
+            case .tabsCreateFail:                           return "tabs create fail"
+            case .tabsRemoveFail:                           return "tabs remove fail"
+            case .tabsSendMessageFail:                      return "tabs send message fail"
+            case .tabsExecuteScriptReturnNil:               return "tabs execute script return nil"
+            case .runtimeGetURLWithoutResourceManagerSet:   return "runtime get URL without resource manager set"
             }
         }
     }

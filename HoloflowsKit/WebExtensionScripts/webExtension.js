@@ -25,6 +25,7 @@
    window.browser = {
       echo: obj => post('echo', obj),
       send: obj => post('send', obj),
+      createObjectURL: obj => post('createObjectURL', obj),
       tabsCreate: obj => post('browserTabsCreate', obj),
       tabsRemove: obj => post('browserTabsRemove', obj),
       tabsExecuteScript: obj => post('browserTabsExecuteScript', obj),
@@ -32,7 +33,8 @@
       storageLocalSet: obj => post('browserStorageLocalSet', obj),
       storageLocalRemove: obj => post('browserStorageLocalRemove', obj),
       storageLocalClear: obj => post('browserStorageLocalClear', obj),
-      getManifest: obj => post('browserRuntimeGetManifest', obj)
+      getManifest: obj => post('browserRuntimeGetManifest', obj),
+      getURL: obj => post('browserRuntimeGetURL', obj)
    }
 }
 
