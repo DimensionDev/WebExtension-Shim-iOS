@@ -10,7 +10,7 @@ import WebKit
 import ConsolePrint
 
 public protocol TabsDelegate: class {
-    func tabs(_ tabs: Tabs, createTabWithCreateProperties properties: WebExtensionAPI.CreateProperties?) -> WKWebViewConfiguration
+    func tabs(_ tabs: Tabs, createTabWithOptions options: WebExtension.Browser.Tabs.Create.Options?) -> WKWebViewConfiguration
 }
 
 open class Tabs {
@@ -30,9 +30,9 @@ extension Tabs {
     /// - Parameter properties: Properties to give the new tab.
     /// - Note: https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/tabs/create
     @discardableResult
-    open func create(createProperties properties: WebExtensionAPI.CreateProperties?, webViewConfiguration: WKWebViewConfiguration? = nil) -> Tab {
-        let webViewConfiguration = delegate?.tabs(self, createTabWithCreateProperties: properties)
-        let tab = Tab(id: nextID, createProperties: properties, webViewConfiguration: webViewConfiguration)
+    open func create(options: WebExtension.Browser.Tabs.Create.Options?, webViewConfiguration: WKWebViewConfiguration? = nil) -> Tab {
+        let webViewConfiguration = delegate?.tabs(self, createTabWithOptions: options)
+        let tab = Tab(id: nextID, createOptions: options, webViewConfiguration: webViewConfiguration)
         tab.tabs = self
         tab.delegate = browser
         nextID += 1

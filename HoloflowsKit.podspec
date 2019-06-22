@@ -22,7 +22,6 @@ TODO: Add long description of the pod here.
                        DESC
 
   s.homepage         = 'https://github.com/DimensionDev/HoloflowsKit-iOS'
-  # s.screenshots     = 'www.example.com/screenshots_1', 'www.example.com/screenshots_2'
   s.license          = { :type => 'AGPL', :file => 'LICENSE' }
   s.author           = { 'CMK' => 'cirno.mainasuk@gmail.com' }
   s.source           = { :git => 'https://github.com/CMK/HoloflowsKit.git', :tag => s.version.to_s }
@@ -30,21 +29,31 @@ TODO: Add long description of the pod here.
 
   s.ios.deployment_target = '11.0'
 
-  s.source_files = 'HoloflowsKit/Classes/**/*'
+  s.default_subspec = 'HoloflowsKit'
+
+  s.source_files = 'Source/**/*'
+
+  s.subspec 'HoloflowsKit' do |default_spec|
+    default_spec.source_files = 'Source/HoloflowsKit/Classes/**/*'
+
+    default_spec.resource_bundles = {
+      'WebExtensionScripts' => ['Source/HoloflowsKit/WebExtensionScripts/*.js']
+    }
+
+    default_spec.dependency 'RealmSwift'
+    default_spec.dependency 'HoloflowsKit/JSONRPC'
+  end
+
+  s.subspec 'JSONRPC' do |jsonRPC|
+    jsonRPC.source_files = 'Source/JSONRPC/Classes/**/*'
+  end
 
   s.test_spec 'Tests' do |test_spec|
-    test_spec.source_files = 'HoloflowsKit/Tests/**/*.swift'
-    test_spec.resources = 'HoloflowsKit/Tests/**/*.{html,tiff}'
+    test_spec.source_files = 'Tests/**/*.swift'
+    test_spec.resources = 'Tests/**/*.{html,tiff}'
   end
-  
-  s.resource_bundles = {
-    'WebExtensionScripts' => ['HoloflowsKit/WebExtensionScripts/*.js']
-  }
 
-  # s.public_header_files = 'Pod/Classes/**/*.h'
-  # s.frameworks = 'UIKit', 'MapKit'
-  # s.dependency 'AFNetworking', '~> 2.3'
-  s.dependency 'ConsolePrint'
   s.dependency 'SwiftyJSON', '~> 5.0.0'
-  s.dependency 'RealmSwift'
+  s.dependency 'ConsolePrint'
+  
 end

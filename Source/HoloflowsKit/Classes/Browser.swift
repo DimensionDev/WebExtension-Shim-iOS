@@ -46,8 +46,8 @@ open class Browser: NSObject {
 
 // MARK: - TabsDelegate
 extension Browser: TabsDelegate {
-
-    public func tabs(_ tabs: Tabs, createTabWithCreateProperties properties: WebExtensionAPI.CreateProperties?) -> WKWebViewConfiguration {
+    
+    public func tabs(_ tabs: Tabs, createTabWithOptions options: WebExtension.Browser.Tabs.Create.Options?) -> WKWebViewConfiguration {
         let configuration = WKWebViewConfiguration()
         configuration.setURLSchemeHandler(bundleResourceManager, forURLScheme: "holoflows-extension")
         configuration.setURLSchemeHandler(blobResourceManager, forURLScheme: "holoflows-blob")

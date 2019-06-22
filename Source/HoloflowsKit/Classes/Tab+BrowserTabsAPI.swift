@@ -10,14 +10,18 @@ import ConsolePrint
 
 extension Tab {
 
-    open func browserTabsCreate(messageID id: String, messageBody: String) {
-        let messageResult: Result<ScriptMessage.TabsCreate, Error> = ScriptMessage.receiveMessage(messageBody: messageBody)
+    open func browserTabsCreate(id: String, messageBody: String) {
+        let messageResult: Result<WebExtension.Browser.Tabs.Create, RPC.Error> = HoloflowsRPC.parseRPC(messageBody: messageBody)
         switch messageResult {
-        case let .success(tabsCreate):
-            let tab = (tabs.flatMap { tabs -> Result<Tab, Error> in
-                return .success(tabs.create(createProperties: tabsCreate.createProperties))
-            }) ?? .failure(ScriptMessage.InternalError.tabsCreateFail)
-            ScriptMessage.dispatchEvent(webView: webView, eventName: id, result: tab, completionHandler: Tab.completionHandler)
+        case let .success(create):
+            let result = (tabs.flatMap { tabs -> Result<HoloflowsRPC.Response<Tab>, RPC.Error> in
+                let tab = tabs.create(options: create.options)
+                let response = HoloflowsRPC.Response(result: tab, id: id)
+                return .success(response)
+            }) ?? .failure(RPC.Error.serverError)
+
+            HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: Tab.completionHandler)
+
             consolePrint(tabs?.storage)
 
         case let .failure(error):
@@ -26,21 +30,23 @@ extension Tab {
         }
     }
 
-    open func browserTabsRemove(messageID id: String, messageBody: String) {
-        let messageResult: Result<ScriptMessage.TabsRemove, Error> = ScriptMessage.receiveMessage(messageBody: messageBody)
+    open func browserTabsRemove(id: String, messageBody: String) {
+        let messageResult: Result<WebExtension.Browser.Tabs.Remove, RPC.Error> = HoloflowsRPC.parseRPC(messageBody: messageBody)
         switch messageResult {
-        case let .success(tabsRemove):
-            if let _ = tabs?.remove(ids: tabsRemove.ids) {
-                let result: Result<Void, Error> = .success(Void())
-                ScriptMessage.dispatchEvent(webView: webView, eventName: id, result: result, completionHandler: Tab.completionHandler)
+        case let .success(remove):
+            if let _ = tabs?.remove(ids: [remove.tabId]) {
+                let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .success(.init(result: "", id: id))
+                HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: Tab.completionHandler)
+
             } else {
-                let result: Result<Void, Error> = .failure(ScriptMessage.InternalError.tabsRemoveFail)
-                ScriptMessage.dispatchEvent(webView: webView, eventName: id, result: result, completionHandler: Tab.completionHandler)
+                let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .failure(RPC.Error.serverError)
+                HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: Tab.completionHandler)
             }
 
         case let .failure(error):
-            let result: Result<Void, Error> = .failure(error)
-            ScriptMessage.dispatchEvent(webView: webView, eventName: id, result: result, completionHandler: Tab.completionHandler)
+            consolePrint(error.localizedDescription)
+            let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .failure(RPC.Error.serverError)
+            HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: Tab.completionHandler)
         }
         consolePrint(tabs?.storage)
     }

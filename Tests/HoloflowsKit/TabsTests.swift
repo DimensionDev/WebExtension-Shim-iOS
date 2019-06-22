@@ -18,55 +18,9 @@ class TabsTests: XCTestCase {
 }
 
 extension TabsTests {
-    
-    func testCreate() {
-        XCTAssertEqual(browser.tabs.storage.count, 0)
-        let tab = browser.tabs.create(createProperties: nil)
-        XCTAssertEqual(tab.id, 0)
-        XCTAssertEqual(browser.tabs.storage.count, 1)
-    }
-
-    func testRemove() {
-        XCTAssertEqual(browser.tabs.storage.count, 0)
-        let tab = browser.tabs.create(createProperties: nil)
-        XCTAssertEqual(tab.id, 0)
-        XCTAssertEqual(browser.tabs.storage.count, 1)
-        browser.tabs.remove(id: tab.id)
-        XCTAssertEqual(browser.tabs.storage.count, 0)
-    }
-
-    func testCreateAndRemove() {
-        let tab = browser.tabs.create(createProperties: nil)
-        prepareTest(tab: tab)
-        XCTAssertEqual(browser.tabs.storage.count, 1)
-
-        let createScript = """
-        browser.tabsCreate({ createProperties: { url: "https://www.apple.com" } });
-        """
-        let createScriptExpectation = expectEvaluateJavaScript(in: tab.webView, script: createScript) { (any, error) in
-            // do nothing
-        }
-        wait(for: [createScriptExpectation], timeout: 5.0)
-        waitCallback(3)
-        XCTAssertEqual(browser.tabs.storage.count, 2)
-
-        let removeScript = """
-        browser.tabsRemove({ tabIds: 1 });
-        """
-        let removeScriptExpectation = expectEvaluateJavaScript(in: tab.webView, script: removeScript) { (any, error) in
-            // do nothing
-        }
-        wait(for: [removeScriptExpectation], timeout: 5.0)
-        waitCallback(3)
-        XCTAssertEqual(browser.tabs.storage.count, 1)
-    }
-
-}
-
-extension TabsTests {
 
     func testEcho() {
-        let tab = browser.tabs.create(createProperties: nil)
+        let tab = browser.tabs.create(options: nil)
         prepareTest(tab: tab)
 
         let echoExpectation = expectation(description: "echo")
@@ -94,7 +48,7 @@ extension TabsTests {
 extension TabsTests {
 
     func testScriptExecute() {
-        let tab = browser.tabs.create(createProperties: nil)
+        let tab = browser.tabs.create(options: nil)
         prepareTest(tab: tab)
 
         let addFunctionExpectation = expectation(description: "addFunction")
@@ -133,7 +87,7 @@ extension TabsTests {
     }
 
     func testSendReceive() {
-        let tab = browser.tabs.create(createProperties: nil)
+        let tab = browser.tabs.create(options: nil)
         prepareTest(tab: tab)
 
         let addReceiveListenerScript = """
@@ -176,7 +130,7 @@ extension TabsTests {
 extension TabsTests {
 
     func testStorageLocalSet() {
-        let tab = browser.tabs.create(createProperties: nil)
+        let tab = browser.tabs.create(options: nil)
         prepareTest(tab: tab)
         removeRealmDataStub()
 
@@ -203,7 +157,7 @@ extension TabsTests {
     }
 
     func testStorageLocalGet() {
-        let tab = browser.tabs.create(createProperties: nil)
+        let tab = browser.tabs.create(options: nil)
         prepareTest(tab: tab)
         addRealmDataStub()
 
@@ -226,7 +180,7 @@ extension TabsTests {
     }
 
     func testStorageLocalRemove() {
-        let tab = browser.tabs.create(createProperties: nil)
+        let tab = browser.tabs.create(options: nil)
         prepareTest(tab: tab)
         addRealmDataStub()
 
@@ -253,7 +207,7 @@ extension TabsTests {
     }
 
     func testStorageLocalClear() {
-        let tab = browser.tabs.create(createProperties: nil)
+        let tab = browser.tabs.create(options: nil)
         prepareTest(tab: tab)
         addRealmDataStub()
 
@@ -320,7 +274,7 @@ extension TabsTests {
 extension TabsTests {
 
     public func testRuntimeGetManifest() {
-        let tab = browser.tabs.create(createProperties: nil)
+        let tab = browser.tabs.create(options: nil)
         let tabDelegate = TabDelegateStub()
         tab.delegate = tabDelegate
         prepareTest(tab: tab)
@@ -443,7 +397,7 @@ extension TabsTests {
         let configuration = WKWebViewConfiguration()
         configuration.setURLSchemeHandler(handler, forURLScheme: "holoflows-extension")
 
-        let tab = browser.tabs.create(createProperties: nil, webViewConfiguration: configuration)
+        let tab = browser.tabs.create(options: nil, webViewConfiguration: configuration)
         prepareCustomURLSchemeTest(tab: tab)
 
         wait(for: [handler.handlerExpectation!], timeout: 3.0)
@@ -454,7 +408,7 @@ extension TabsTests {
         hander.handlerExpectation = expectation(description: "hander")
         browser.bundleResourceManager = hander
 
-        let tab = browser.tabs.create(createProperties: nil)
+        let tab = browser.tabs.create(options: nil)
         prepareCustomURLSchemeTest(tab: tab)
 
         wait(for: [hander.handlerExpectation!], timeout: 10.0)
@@ -464,7 +418,7 @@ extension TabsTests {
         let hander = BundleResourceManager(bundle: Bundle(for: TabsTests.self))
         browser.bundleResourceManager = hander
 
-        let tab = browser.tabs.create(createProperties: nil)
+        let tab = browser.tabs.create(options: nil)
         prepareCustomURLSchemeTest(tab: tab)
 
         waitCallback(3)
@@ -521,7 +475,7 @@ extension TabsTests {
         browser.bundleResourceManager = bundleResourceManager
         browser.blobResourceManager = blobResourceManager
 
-        let tab = browser.tabs.create(createProperties: nil)
+        let tab = browser.tabs.create(options: nil)
         prepareBlobTest(tab: tab)
 
         let image = UIImage(named: "lena_std.tif.tiff", in: Bundle(for: TabsTests.self), compatibleWith: nil)!
@@ -609,7 +563,7 @@ extension TabsTests {
         browser.bundleResourceManager = bundleResourceManager
         browser.blobResourceManager = blobResourceManager
 
-        let tab = browser.tabs.create(createProperties: nil)
+        let tab = browser.tabs.create(options: nil)
         prepareDownloadTest(tab: tab)
 
         let image = UIImage(named: "lena_std.tif.tiff", in: Bundle(for: TabsTests.self), compatibleWith: nil)!
