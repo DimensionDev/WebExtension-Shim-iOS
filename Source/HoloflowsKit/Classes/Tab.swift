@@ -122,8 +122,8 @@ extension Tab: WKScriptMessageHandler {
         case .browserStorageLocalGet:               browserStorageLocalGet(id: id, messageBody: messageBody)
         case .browserStorageLocalSet:               browserStorageLocalSet(id: id, messageBody: messageBody)
         case .browserStorageLocalRemove:            browserStorageLocalRemove(id: id, messageBody: messageBody)
-        case .browserStorageLocalClear:break
-        case .browserStorageLocalGetBytesInUse:break
+        case .browserStorageLocalClear:             browserStorageLocalClear(id: id, messageBody: messageBody)
+        case .browserStorageLocalGetBytesInUse:     browserStorageLocalGetBytesInUse(id: id, messageBody: messageBody)
         }
 
 //        switch eventType {

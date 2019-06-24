@@ -92,60 +92,6 @@ extension TabsTests {
 
 extension TabsTests {
 
-    func testStorageLocalSet() {
-        let tab = browser.tabs.create(options: nil)
-        prepareTest(tab: tab)
-        removeRealmDataStub()
-
-        let setScript = """
-        browser.storageLocalSet({
-            keys: {
-                kitten: { name:"Moggy", tentacles: false, eyeCount: 2 },
-                monster: { name: "Kraken", tentacles: true, eyeCount: 10 }
-            }
-        });
-        """
-        let scriptExpectation = expectEvaluateJavaScript(in: tab.webView, script: setScript) { any, error in
-            // do nothing
-        }
-        wait(for: [scriptExpectation], timeout: 3.0)
-
-        consolePrint(RealmService.default.realm.configuration.fileURL)
-        // file:///Users/MainasuK/Library/Developer/CoreSimulator/Devices/52666318-D601-4CFF-B697-4DCAF255E8CD/data/Documents/default.realm
-
-        waitCallback(5)
-
-        let entriesRetrieved = getRealmDataStub()
-        XCTAssertEqual(entriesRetrieved.count, 2)
-    }
-
-    func testStorageLocalRemove() {
-        let tab = browser.tabs.create(options: nil)
-        prepareTest(tab: tab)
-        addRealmDataStub()
-
-        XCTAssertEqual(getRealmDataStub().count, 2)
-
-        // call remove script
-        let removeScript = """
-        browser.storageLocalRemove({
-            keys: 'kitten'
-        });
-        """
-        let scriptExpectation = expectEvaluateJavaScript(in: tab.webView, script: removeScript) { any, error in
-            // do nothing
-        }
-        wait(for: [scriptExpectation], timeout: 3.0)
-
-        consolePrint(RealmService.default.realm.configuration.fileURL)
-        // file:///Users/MainasuK/Library/Developer/CoreSimulator/Devices/52666318-D601-4CFF-B697-4DCAF255E8CD/data/Documents/default.realm
-
-        waitCallback(5)
-        // dispatchEvent(webView:eventName:result:completionHandler:): document.dispatchEvent(new CustomEvent('0.byfgbqnopbq', {"detail":{"kitten":"{ name:\"Moggy\", tentacles: false, eyeCount: 2 }"}}))
-
-        XCTAssertEqual(getRealmDataStub().count, 1)
-    }
-
     func testStorageLocalClear() {
         let tab = browser.tabs.create(options: nil)
         prepareTest(tab: tab)

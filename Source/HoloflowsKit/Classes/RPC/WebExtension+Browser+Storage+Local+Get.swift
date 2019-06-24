@@ -19,7 +19,7 @@ extension WebExtension.Browser.Storage.Local {
 
         public init(extensionID: String, keys: [String]?) {
             self.extensionID = extensionID
-            self.key = (keys.flatMap { JSON(arrayLiteral: $0) }) ?? JSON.null
+            self.key = (keys.flatMap { JSON($0) }) ?? JSON.null
         }
     }
 

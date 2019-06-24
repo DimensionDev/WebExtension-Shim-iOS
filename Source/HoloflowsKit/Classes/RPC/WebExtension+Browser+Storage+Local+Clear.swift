@@ -13,6 +13,10 @@ extension WebExtension.Browser.Storage.Local {
         public static let method: String = "browser.storage.local.clear"
 
         public let extensionID: String
+
+        public init(extensionID: String) {
+            self.extensionID = extensionID
+        }
     }
     
 }
