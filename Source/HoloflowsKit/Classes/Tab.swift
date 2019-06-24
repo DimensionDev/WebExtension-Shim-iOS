@@ -116,7 +116,7 @@ extension Tab: WKScriptMessageHandler {
         case .downloadsDownload:break
         case .browserRuntimeGetURL:break
         case .browserRuntimeGetManifest:break
-        case .browserTabsExecuteScript:break
+        case .browserTabsExecuteScript:             browserTabsExecuteScript(id: id, messageBody: messageBody)
         case .browserTabsCreate:                    browserTabsCreate(id: id, messageBody: messageBody)
         case .browserTabsRemove:                    browserTabsRemove(id: id, messageBody: messageBody)
         case .browserStorageLocalGet:break

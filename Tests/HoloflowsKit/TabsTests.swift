@@ -47,44 +47,7 @@ extension TabsTests {
 
 extension TabsTests {
 
-    func testScriptExecute() {
-        let tab = browser.tabs.create(options: nil)
-        prepareTest(tab: tab)
 
-        let addFunctionExpectation = expectation(description: "addFunction")
-        let addFunctionScript = """
-        function plus(lhs, rhs) {
-            return lhs + rhs;
-        };
-        """
-        tab.webView.evaluateJavaScript(addFunctionScript) { (any, error) in
-            XCTAssertNil(error, error?.localizedDescription ?? "")
-            addFunctionExpectation.fulfill()
-        }
-        wait(for: [addFunctionExpectation], timeout: 3.0, enforceOrder: true)
-
-        let calculateExpectation = expectation(description: "calculate")
-        let calculateScript = """
-        browser.tabsExecuteScript({
-            tabId: 0,
-            details: {
-                code: "var result = plus(50 * 8, 2);"
-            }
-        });
-        """
-        tab.webView.evaluateJavaScript(calculateScript) { (any, error) in
-            consolePrint("\(String(describing: any)), \(error?.localizedDescription ?? "")")
-            calculateExpectation.fulfill()
-        }
-        wait(for: [calculateExpectation], timeout: 3.0, enforceOrder: true)
-
-        let resultCheckExpectation = expectation(description: "resultCheck")
-        tab.webView.evaluateJavaScript("result;") { (any, error) in
-            XCTAssertEqual(any as? Int, 402);
-            resultCheckExpectation.fulfill()
-        }
-        wait(for: [resultCheckExpectation], timeout: 3.0, enforceOrder: true)
-    }
 
     func testSendReceive() {
         let tab = browser.tabs.create(options: nil)

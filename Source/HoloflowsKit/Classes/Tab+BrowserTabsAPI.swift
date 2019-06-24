@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import SwiftyJSON
 import ConsolePrint
 
 extension Tab {
@@ -51,32 +52,38 @@ extension Tab {
         consolePrint(tabs?.storage)
     }
 
-    open func browserTabsExecuteScript(messageID id: String, messageBody: String) {
-        let messageResult: Result<ScriptMessage.TabsExecuteScript, Error> = ScriptMessage.receiveMessage(messageBody: messageBody)
-        guard let message = try? messageResult.get(),
-            let tabs = tabs,
-            let targetTab = tabs.storage.first(where: { $0.id == (message.tabId ?? 0) }) else {
-                assertionFailure()
-                return
+    open func browserTabsExecuteScript(id: String, messageBody: String) {
+        let messageResult: Result<WebExtension.Browser.Tabs.ExecuteScript, RPC.Error> = HoloflowsRPC.parseRPC(messageBody: messageBody)
+        guard let executeScript = try? messageResult.get(),
+        let tabs = tabs,
+        let targetTab = tabs.storage.first(where: { $0.id == (executeScript.tabID ?? self.id) }) else {
+            assertionFailure()
+            return
         }
 
-        let script = message.details.code
+        let script = executeScript.details.code ?? ""
+        consolePrint("targetTab[\(targetTab.id)] eval: \(script)")
         targetTab.webView.evaluateJavaScript(script) { [weak self] any, error in
             guard let `self` = self else { return }
             if let error = error {
-                let result: Result<Void, Error> = .failure(error)
-                ScriptMessage.dispatchEvent(webView: self.webView, eventName: id, result: result, completionHandler: Tab.completionHandler)
+                let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .failure(RPCError.serverError)
+                HoloflowsRPC.dispatchResponse(webView: self.webView, id: id, result: result, completionHandler: Tab.completionHandler)
+                consolePrint(error.localizedDescription)
+
             } else {
-                let payload: Result<Any, Error> = {
-                    guard let value = any else {
-                        return .failure(ScriptMessage.InternalError.tabsExecuteScriptReturnNil)
+                let result: Result<HoloflowsRPC.Response<JSON>, RPC.Error> = {
+                    guard let any = any else {
+                        return .success(HoloflowsRPC.Response(result: JSON.null, id: id))
                     }
-                    return .success(value)
+                    guard let value = JSON(rawValue: any) else {
+                        return .failure(RPCError.serverError)
+                    }
+                    return .success(HoloflowsRPC.Response(result: value, id: id))
                 }()
-                consolePrint("\(payload), \(String(describing: any))")
-                ScriptMessage.dispatchEvent(webView: self.webView, eventName: id, result: payload, completionHandler: Tab.completionHandler)
+                consolePrint("\(result), \(String(describing: any))")
+                HoloflowsRPC.dispatchResponse(webView: self.webView, id: id, result: result, completionHandler: Tab.completionHandler)
             }
-        }
+        }   // end targetTab.seb.evaluateJavaScript(…)
     }
 
 }
