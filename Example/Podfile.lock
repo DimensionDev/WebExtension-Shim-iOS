@@ -2,11 +2,18 @@ PODS:
   - ConsolePrint (0.1.0)
   - HoloflowsKit (0.1.0):
     - ConsolePrint
+    - HoloflowsKit/HoloflowsKit (= 0.1.0)
+    - SwiftyJSON (~> 5.0.0)
+  - HoloflowsKit/HoloflowsKit (0.1.0):
+    - ConsolePrint
+    - HoloflowsKit/JSONRPC
     - RealmSwift
+    - SwiftyJSON (~> 5.0.0)
+  - HoloflowsKit/JSONRPC (0.1.0):
+    - ConsolePrint
     - SwiftyJSON (~> 5.0.0)
   - HoloflowsKit/Tests (0.1.0):
     - ConsolePrint
-    - RealmSwift
     - SwiftyJSON (~> 5.0.0)
   - Realm (3.16.2):
     - Realm/Headers (= 3.16.2)
@@ -32,7 +39,7 @@ EXTERNAL SOURCES:
 
 SPEC CHECKSUMS:
   ConsolePrint: 695d494f0a2595d1792ec19483f2aa16e4501c19
-  HoloflowsKit: 76f03894471752a9de06d4177cb3056b0e081fb6
+  HoloflowsKit: dfef8e60f4f62356f923e31e63eef056d626047c
   Realm: 0e73b4edeb5b6a90da3d83206883b2e34e00eb38
   RealmSwift: a81e650171ef0a5f999df1ed8d39ba8d6fce88a4
   SwiftyJSON: 36413e04c44ee145039d332b4f4e2d3e8d6c4db7

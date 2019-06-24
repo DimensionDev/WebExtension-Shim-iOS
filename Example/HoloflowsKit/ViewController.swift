@@ -21,7 +21,7 @@ class ViewController: UIViewController {
     }()
 
     lazy var webView: WKWebView = {
-        let tab = browser.tabs.create(createProperties: WebExtensionAPI.CreateProperties(url: "https://m.facebook.com"))
+        let tab = browser.tabs.create(options: WebExtension.Browser.Tabs.Create.Options(active: true, url: "https://m.facebook.com"))
         return tab.webView
     }()
 
