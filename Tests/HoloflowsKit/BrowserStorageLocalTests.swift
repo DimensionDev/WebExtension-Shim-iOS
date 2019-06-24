@@ -7,6 +7,7 @@
 
 import XCTest
 import HoloflowsKit
+import SwiftyJSON
 import ConsolePrint
 
 class BrowserStorageLocalTests: XCTestCase {
@@ -36,6 +37,51 @@ extension BrowserStorageLocalTests {
         wait(for: [getExpectation], timeout: 3.0)
 
         consolePrint(RealmService.default.realm.configuration.fileURL)
+    }
+
+    func testSet() {
+        let tab = browser.tabs.create(options: nil)
+        TestHelper.prepareTest(tab: tab, forTestCase: self)
+        removeRealmDataStub()
+        XCTAssertEqual(getRealmDataStub().count, 0)
+
+        let object = """
+        {
+            "kitten": { "name":"Moggy", "tentacles": false, "eyeCount": 2 },
+            "monster": { "name": "Kraken", "tentacles": true, "eyeCount": 10 }
+        }
+        """
+        let objectJSON = JSON(parseJSON: object)
+        let set = WebExtension.Browser.Storage.Local.Set(extensionID: "HoloflowsKit-UnitTests", object: objectJSON)
+        let setScript = TestHelper.webKit(messageBody: HoloflowsRPC.Request(params: set, id: UUID().uuidString))
+        let setExpectation = TestHelper.expectEvaluateJavaScript(in: tab.webView, script: setScript, forTestCase: self) { (any, error) in
+            // do nothing
+        }
+        wait(for: [setExpectation], timeout: 3.0)
+
+        consolePrint(RealmService.default.realm.configuration.fileURL)
+        TestHelper.waitCallback(3.0, forTestCase: self)
+
+        XCTAssertEqual(getRealmDataStub().count, 2)
+    }
+
+    func testRemove() {
+        let tab = browser.tabs.create(options: nil)
+        TestHelper.prepareTest(tab: tab, forTestCase: self)
+        addRealmDataStub()
+        XCTAssertEqual(getRealmDataStub().count, 2)
+
+        let remove = WebExtension.Browser.Storage.Local.Remove(extensionID: "HoloflowsKit-UnitTests", keys: ["kitten", "monster"])
+        let removeScript = TestHelper.webKit(messageBody: HoloflowsRPC.Request(params: remove, id: UUID().uuidString))
+        let removeExpectation = TestHelper.expectEvaluateJavaScript(in: tab.webView, script: removeScript, forTestCase: self) { (any, error) in
+            // do nothing
+        }
+        wait(for: [removeExpectation], timeout: 3.0)
+
+        consolePrint(RealmService.default.realm.configuration.fileURL)
+        TestHelper.waitCallback(3.0, forTestCase: self)
+
+        XCTAssertEqual(getRealmDataStub().count, 0)
     }
 
 }

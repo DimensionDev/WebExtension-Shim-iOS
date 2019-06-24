@@ -119,29 +119,6 @@ extension TabsTests {
         XCTAssertEqual(entriesRetrieved.count, 2)
     }
 
-    func testStorageLocalGet() {
-        let tab = browser.tabs.create(options: nil)
-        prepareTest(tab: tab)
-        addRealmDataStub()
-
-        // call get script
-        let getScript = """
-        browser.storageLocalGet({
-            keys: [ 'kitten', 'monster' ]
-        });
-        """
-        let scriptExpectation = expectEvaluateJavaScript(in: tab.webView, script: getScript) { any, error in
-            // do nothing
-        }
-        wait(for: [scriptExpectation], timeout: 3.0)
-
-        consolePrint(RealmService.default.realm.configuration.fileURL)
-        // file:///Users/MainasuK/Library/Developer/CoreSimulator/Devices/52666318-D601-4CFF-B697-4DCAF255E8CD/data/Documents/default.realm
-
-        waitCallback(5)
-        // document.dispatchEvent(new CustomEvent('0.1ls5p0e630o', {"detail":{"monster":"{ name: \"Kraken\", tentacles: true, eyeCount: 10 }","kitten":"{ name:\"Moggy\", tentacles: false, eyeCount: 2 }"}}))
-    }
-
     func testStorageLocalRemove() {
         let tab = browser.tabs.create(options: nil)
         prepareTest(tab: tab)

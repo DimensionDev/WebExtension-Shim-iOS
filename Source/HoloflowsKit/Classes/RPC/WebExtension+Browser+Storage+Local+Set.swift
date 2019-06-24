@@ -18,6 +18,11 @@ extension WebExtension.Browser.Storage.Local {
         // or
         // { object: { key: value, key2: value2, … }
         public let object: JSON
+
+        public init(extensionID: String, object: JSON) {
+            self.extensionID = extensionID
+            self.object = object
+        }
     }
 
 }

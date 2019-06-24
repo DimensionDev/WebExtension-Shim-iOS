@@ -37,14 +37,11 @@ extension Tab {
         }
     }
 
-    open func browserStorageLocalSet(messageID id: String, messageBody: String) {
-        let messageResult: Result<ScriptMessage.StorageLocalSet, Error> = ScriptMessage.receiveMessage(messageBody: messageBody)
+    open func browserStorageLocalSet(id: String, messageBody: String) {
+        let messageResult: Result<WebExtension.Browser.Storage.Local.Set, RPC.Error> = HoloflowsRPC.parseRPC(messageBody: messageBody)
         switch messageResult {
-        case let .success(storageLocalSet):
-            // { keys: { key: value } }
-            // or
-            // { keys: { key: value, key2: value2, … }
-            let entries = storageLocalSet.keys.dictionaryValue.map { (key, value) -> LocalStorage in
+        case let .success(set):
+            let entries = set.entriesDict.map { (key, value) -> LocalStorage in
                 let entry = LocalStorage()
                 entry.key = key
                 entry.value = value.rawString() ?? ""
@@ -57,16 +54,13 @@ extension Tab {
                 realm.add(entries, update: Realm.UpdatePolicy.all)
                 try realm.commitWrite()
 
-                let dict = entries.reduce(into: [String : JSON]()) { dict, localStorgae in
-                    dict[localStorgae.key] = JSON(stringLiteral: localStorgae.value)
-                }
-                let result: Result<[String:JSON], Error> = .success(dict)
-                ScriptMessage.dispatchEvent(webView: self.webView, eventName: id, result: result, completionHandler: Tab.completionHandler)
+                let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .success(HoloflowsRPC.Response(result: "", id: id))
+                HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: Tab.completionHandler)
 
             } catch {
                 consolePrint(error.localizedDescription)
-                let result: Result<Void, Error> = .failure(error)
-                ScriptMessage.dispatchEvent(webView: webView, eventName: id, result: result, completionHandler: Tab.completionHandler)
+                let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .failure(RPC.Error.serverError)
+                HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: Tab.completionHandler)
             }
 
         case let .failure(error):
@@ -76,14 +70,11 @@ extension Tab {
         }
     }
 
-    open func browserStorageLocalRemove(messageID id: String, messageBody: String) {
-        let messageResult: Result<ScriptMessage.StorageLocalRemove, Error> = ScriptMessage.receiveMessage(messageBody: messageBody)
+    open func browserStorageLocalRemove(id: String, messageBody: String) {
+        let messageResult: Result<WebExtension.Browser.Storage.Local.Remove, RPC.Error> = HoloflowsRPC.parseRPC(messageBody: messageBody)
         switch messageResult {
-        case let .success(storageLocalRemove):
-            // { keys: key }
-            // or
-            // { keys: key1, key2, … }
-            let keys = storageLocalRemove.keys.array?.compactMap { $0.string } ?? [storageLocalRemove.keys.string].compactMap { $0 }
+        case let .success(remove):
+            let keys = remove.keyValues
             do {
                 let realm = RealmService.default.realm
                 let entries = realm.objects(LocalStorage.self)
@@ -96,20 +87,19 @@ extension Tab {
                 realm.delete(entries)
                 try realm.commitWrite()
 
-
-                let result: Result<[String:JSON], Error> = .success(dict)
-                ScriptMessage.dispatchEvent(webView: self.webView, eventName: id, result: result, completionHandler: Tab.completionHandler)
+                let result: Result<HoloflowsRPC.Response<[String:JSON]>, RPC.Error> = .success(HoloflowsRPC.Response(result: dict, id: id))
+                HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: Tab.completionHandler)
 
             } catch {
                 consolePrint(error.localizedDescription)
-                let result: Result<Void, Error> = .failure(error)
-                ScriptMessage.dispatchEvent(webView: webView, eventName: id, result: result, completionHandler: Tab.completionHandler)
+                let result: Result<HoloflowsRPC.Response<[String:JSON]>, RPC.Error> = .failure(RPC.Error.serverError)
+                HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: Tab.completionHandler)
             }
 
         case let .failure(error):
             consolePrint(error.localizedDescription)
-            let result: Result<Void, Error> = .failure(error)
-            ScriptMessage.dispatchEvent(webView: webView, eventName: id, result: result, completionHandler: Tab.completionHandler)
+            let result: Result<HoloflowsRPC.Response<[String:JSON]>, RPC.Error> = .failure(error)
+            HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: Tab.completionHandler)
         }
     }
 
