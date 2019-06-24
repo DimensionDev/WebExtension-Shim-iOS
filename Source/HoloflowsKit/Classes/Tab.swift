@@ -112,7 +112,7 @@ extension Tab: WKScriptMessageHandler {
         switch api {
         case ._echo:                                echo(id: id, messageBody: messageBody)
         case .sendMessage:                          sendMessage(id: id, messageBody: messageBody)
-        case .urlCreateObjectURL:break
+        case .urlCreateObjectURL:                   URLCreateObjectURL(id: id, messageBody: messageBody)
         case .downloadsDownload:break
         case .browserRuntimeGetURL:break
         case .browserRuntimeGetManifest:break

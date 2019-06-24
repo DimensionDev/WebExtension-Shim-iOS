@@ -49,9 +49,13 @@ enum TestHelper {
     static func expectEvaluateJavaScript(in webView: WKWebView, script: String, verbose: Bool = true, forTestCase testCase: XCTestCase, completionHandler: @escaping ((Any?, Error?) -> Void)) -> XCTestExpectation {
         let scriptExpectation = testCase.expectation(description: "evaluate java script")
 
-        consolePrint("eval: \(script)")
+        if verbose {
+            consolePrint("eval: \(script.prefix(200))")
+        }
         webView.evaluateJavaScript(script) { (any, error) in
-            consolePrint("\(String(describing: any)) \(error?.localizedDescription ?? "")")
+            if verbose {
+                consolePrint("\(String(describing: any).prefix(200)) \(error?.localizedDescription ?? "")")
+            }
             completionHandler(any, error)
             scriptExpectation.fulfill()
         }
@@ -69,11 +73,23 @@ enum TestHelper {
         testCase.wait(for: [waitCallbackExpectation], timeout: timeout * 2)
     }
 
-    static func webKit<T>(messageHandler scriptEvent: ScriptEvent = ScriptEvent.holoflowsjsonrpc, messageBody: HoloflowsRPC.Request<T>) -> String {
+    static func webKit<T>(messageHandler scriptEvent: ScriptEvent = ScriptEvent.holoflowsjsonrpc, messageBody: HoloflowsRPC.Request<T>, callback: String = "") -> String {
         let jsonData = try! JSONEncoder().encode(messageBody)
         let jsonString = String(data: jsonData, encoding: .utf8)!
+
         return """
         window.webkit.messageHandlers['\(scriptEvent.rawValue)'].postMessage(JSON.stringify(\(jsonString)));
+        """
+    }
+
+    static func echoScript(messageHandler scriptEvent: ScriptEvent = ScriptEvent.holoflowsjsonrpc, val: String) -> String {
+        return """
+        window.webkit.messageHandlers['\(scriptEvent.rawValue)'].postMessage(JSON.stringify({
+            jsonrpc: "2.0",
+            method: "_echo",
+            id: "\(UUID().uuidString)",
+            params: \(val)
+        }));
         """
     }
 

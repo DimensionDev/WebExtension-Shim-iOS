@@ -17,6 +17,12 @@ extension WebExtension.URL {
         public let blob: String
         /// MIME type "image/png"
         public let type: String
+
+        public init(extensionID: String, blob: String, type: String) {
+            self.extensionID = extensionID
+            self.blob = blob
+            self.type = type
+        }
     }
     
 }
@@ -35,7 +41,7 @@ extension WebExtension.URL.CreateObjectURL {
         let blobStorage = BlobStorage()
         blobStorage.blob = blobData
         blobStorage.type = type
-        blobStorage.url = "holoflows-kit://" + extensionID + "/" + blobStorage.uuid
+        blobStorage.url = "holoflows-blob://" + extensionID + "/" + blobStorage.uuid
 
         return blobStorage
     }
