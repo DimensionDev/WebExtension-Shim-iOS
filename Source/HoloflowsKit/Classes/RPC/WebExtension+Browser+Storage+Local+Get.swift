@@ -16,6 +16,11 @@ extension WebExtension.Browser.Storage.Local {
         public let extensionID: String
         // "key" or ["key1", "key2"] or null
         public let key: JSON
+
+        public init(extensionID: String, keys: [String]?) {
+            self.extensionID = extensionID
+            self.key = (keys.flatMap { JSON(arrayLiteral: $0) }) ?? JSON.null
+        }
     }
 
 }

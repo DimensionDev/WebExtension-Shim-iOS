@@ -119,7 +119,7 @@ extension Tab: WKScriptMessageHandler {
         case .browserTabsExecuteScript:             browserTabsExecuteScript(id: id, messageBody: messageBody)
         case .browserTabsCreate:                    browserTabsCreate(id: id, messageBody: messageBody)
         case .browserTabsRemove:                    browserTabsRemove(id: id, messageBody: messageBody)
-        case .browserStorageLocalGet:break
+        case .browserStorageLocalGet:               browserStorageLocalGet(id: id, messageBody: messageBody)
         case .browserStorageLocalSet:break
         case .browserStorageLocalRemove:break
         case .browserStorageLocalClear:break

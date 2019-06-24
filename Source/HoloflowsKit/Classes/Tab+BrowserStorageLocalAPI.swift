@@ -12,34 +12,28 @@ import RealmSwift
 
 extension Tab {
 
-    open func browserStorageLocalGet(messageID id: String, messageBody: String) {
-        let messageResult: Result<ScriptMessage.StorageLocalGet, Error> = ScriptMessage.receiveMessage(messageBody: messageBody)
+    open func browserStorageLocalGet(id: String, messageBody: String) {
+        let messageResult: Result<WebExtension.Browser.Storage.Local.Get, RPC.Error> = HoloflowsRPC.parseRPC(messageBody: messageBody)
         switch messageResult {
-        case let .success(storageLocalGet):
-            // { keys: key }
-            // or
-            // { keys: key1, key2, … }
-            let keys = storageLocalGet.keys.array?.compactMap { $0.string } ?? [storageLocalGet.keys.string].compactMap { $0 }
-            do {
-                let realm = RealmService.default.realm
-                let entires = realm.objects(LocalStorage.self)
-                    .filter { keys.contains($0.key) }
+        case let .success(get):
+            let keys = get.keyValues
+            let realm = RealmService.default.realm
+            let entires: [LocalStorage] = {
+                let objects = realm.objects(LocalStorage.self)
+                return keys.flatMap { keys in objects.filter { keys.contains($0.key) } } ?? objects.compactMap { $0 }
+            }()
 
-                let dict = entires.reduce(into: [String : JSON]()) { dict, localStorgae in
-                    dict[localStorgae.key] = JSON(stringLiteral: localStorgae.value)
-                }
-                let result: Result<[String:JSON], Error> = .success(dict)
-                ScriptMessage.dispatchEvent(webView: self.webView, eventName: id, result: result, completionHandler: Tab.completionHandler)
-
-            } catch {
-                consolePrint(error.localizedDescription)
-                let result: Result<Void, Error> = .failure(error)
-                ScriptMessage.dispatchEvent(webView: webView, eventName: id, result: result, completionHandler: Tab.completionHandler)
+            let dict = entires.reduce(into: [String : JSON]()) { dict, localStorgae in
+                dict[localStorgae.key] = JSON(stringLiteral: localStorgae.value)
             }
+
+            let result: Result<HoloflowsRPC.Response<[String:JSON]>, RPC.Error> = .success(HoloflowsRPC.Response(result: dict, id: id))
+            HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: Tab.completionHandler)
+
         case let .failure(error):
             consolePrint(error.localizedDescription)
-            let result: Result<Void, Error> = .failure(error)
-            ScriptMessage.dispatchEvent(webView: webView, eventName: id, result: result, completionHandler: Tab.completionHandler)
+            let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .failure(error)
+            HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: Tab.completionHandler)
         }
     }
 
