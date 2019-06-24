@@ -103,23 +103,24 @@ extension BrowserRuntimeTests {
     }
 
     private class TabDelegateStub: TabDelegate {
+
         func tab(_ tab: Tab, requestManifestForExtension extensionID: String) -> String {
             return String(data: BrowserRuntimeTests.manifest, encoding: .utf8)!
         }
 
-        func tab(_ tab: Tab, requestBundleResourceManager: Void) -> BundleResourceManager? {
+        func tab(_ tab: Tab, requestBundleResourceManagerForExtension extensionID: String) -> BundleResourceManager? {
             return CustomURLSchemeHandler()
         }
 
-        func tab(_ tab: Tab, requestBlobResourceManager: Void) -> BlobResourceManager? {
+        func tab(_ tab: Tab, requestBlobResourceManagerForExtension extensionID: String) -> BlobResourceManager? {
             return nil
         }
 
-        func tab(_ tab: Tab, willDownloadBlobWithOptions options: WebExtensionAPI.DownloadOptions) {
+        func tab(_ tab: Tab, willDownloadBlobWithOptions options: WebExtension.Browser.Downloads.Download.Options) {
             // do nothing
         }
 
-        func tab(_ tab: Tab, didDownloadBlobWithOptions options: WebExtensionAPI.DownloadOptions, result: Result<BlobStorage, Error>) {
+        func tab(_ tab: Tab, didDownloadBlobWithOptions options: WebExtension.Browser.Downloads.Download.Options, result: Result<BlobStorage, Error>) {
             // do nothing
         }
     }

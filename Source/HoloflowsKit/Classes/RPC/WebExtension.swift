@@ -23,7 +23,6 @@ public enum WebExtension {
 extension WebExtension {
 
     public enum URL { }
-    public enum Downloads { }
 
     public enum Browser {
         public enum Runtime { }
@@ -32,6 +31,7 @@ extension WebExtension {
         public enum Storage {
             public enum Local { }
         }
+        public enum Downloads { }
     }
 
     public enum ExtensionTypes {
@@ -42,7 +42,7 @@ extension WebExtension {
         case _echo
         case sendMessage
         case urlCreateObjectURL
-        case downloadsDownload
+        case browserDownloadsDownload
         case browserRuntimeGetURL
         case browserRuntimeGetManifest
         case browserTabsExecuteScript
@@ -67,7 +67,7 @@ extension WebExtension {
             case ._echo:                            return WebExtension._Echo.method
             case .sendMessage:                      return WebExtension.SendMessage.method
             case .urlCreateObjectURL:               return WebExtension.URL.CreateObjectURL.method
-            case .downloadsDownload:                return WebExtension.Downloads.Download.method
+            case .browserDownloadsDownload:         return WebExtension.Browser.Downloads.Download.method
             case .browserRuntimeGetURL:             return WebExtension.Browser.Runtime.GetURL.method
             case .browserRuntimeGetManifest:        return WebExtension.Browser.Runtime.GetManifest.method
             case .browserTabsExecuteScript:         return WebExtension.Browser.Tabs.ExecuteScript.method

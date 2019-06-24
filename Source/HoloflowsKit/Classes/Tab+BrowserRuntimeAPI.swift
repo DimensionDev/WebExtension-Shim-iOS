@@ -33,7 +33,7 @@ extension Tab {
         let messageResult: Result<WebExtension.Browser.Runtime.GetURL, RPC.Error> = HoloflowsRPC.parseRPC(messageBody: messageBody)
         switch messageResult {
         case let .success(getURL):
-            guard let bundleResourceManager = delegate?.tab(self, requestBundleResourceManager: ()),
+            guard let bundleResourceManager = delegate?.tab(self, requestBundleResourceManagerForExtension: getURL.extensionID),
             let bundle = bundleResourceManager.bundle(for: getURL.extensionID) else {
                 let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .failure(.serverError)
                 HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: Tab.completionHandler)

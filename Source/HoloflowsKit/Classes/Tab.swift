@@ -13,16 +13,15 @@ import SwiftyJSON
 
 public protocol TabDelegate: class {
     func tab(_ tab: Tab, requestManifestForExtension extensionID: String) -> String
-    func tab(_ tab: Tab, requestBundleResourceManager: Void) -> BundleResourceManager?
-    func tab(_ tab: Tab, requestBlobResourceManager: Void) -> BlobResourceManager?
-    func tab(_ tab: Tab, willDownloadBlobWithOptions options: WebExtensionAPI.DownloadOptions)
-    func tab(_ tab: Tab, didDownloadBlobWithOptions options: WebExtensionAPI.DownloadOptions, result: Result<BlobStorage, Error>)
+    func tab(_ tab: Tab, requestBundleResourceManagerForExtension extensionID: String) -> BundleResourceManager?
+    func tab(_ tab: Tab, requestBlobResourceManagerForExtension extensionID: String) -> BlobResourceManager?
+    func tab(_ tab: Tab, willDownloadBlobWithOptions options: WebExtension.Browser.Downloads.Download.Options)
+    func tab(_ tab: Tab, didDownloadBlobWithOptions options: WebExtension.Browser.Downloads.Download.Options, result: Result<BlobStorage, Error>)
 }
 
 open class Tab: NSObject {
 
     weak var tabs: Tabs?
-    weak var bundleResourceManager: BundleResourceManager?
 
     public let id: Int
     public let userContentController: WKUserContentController
@@ -113,7 +112,7 @@ extension Tab: WKScriptMessageHandler {
         case ._echo:                                echo(id: id, messageBody: messageBody)
         case .sendMessage:                          sendMessage(id: id, messageBody: messageBody)
         case .urlCreateObjectURL:                   URLCreateObjectURL(id: id, messageBody: messageBody)
-        case .downloadsDownload:break
+        case .browserDownloadsDownload:             browserDownloadsDownload(id: id, messageBody: messageBody)
         case .browserRuntimeGetURL:                 browserRuntimeGetURL(id: id, messageBody: messageBody)
         case .browserRuntimeGetManifest:            browserRuntimeGetManifest(id: id, messageBody: messageBody)
         case .browserTabsExecuteScript:             browserTabsExecuteScript(id: id, messageBody: messageBody)

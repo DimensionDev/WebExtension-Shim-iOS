@@ -53,7 +53,7 @@ extension BrowserURLTests {
         }
         wait(for: [addListenerExpectation], timeout: 3.0)
 
-        // Add blob img node
+        // creat blob url
         let image = UIImage(named: "lena_std.tif.tiff", in: Bundle(for: TabsTests.self), compatibleWith: nil)!
         let base64EncodedString = image.pngData()!.base64EncodedString()
         let createObjectURL = WebExtension.URL.CreateObjectURL(extensionID: "HoloflowsKit-UnitTests", blob: base64EncodedString, type: "image/png")

@@ -23,7 +23,9 @@ open class Browser: NSObject {
     open var manifest: String = ""
     open weak var delegate: BrowserDelegate?
 
-
+    // TODO: add multiple extension support
+    // *ResourceManager -> [extensionID: Manager]
+    
     // URL scheme handler for custom scheme content loading
     open weak var bundleResourceManager: BundleResourceManager?
     open weak var blobResourceManager: BlobResourceManager?
@@ -64,19 +66,19 @@ extension Browser: TabDelegate {
         return manifest
     }
 
-    open func tab(_ tab: Tab, requestBundleResourceManager: Void) -> BundleResourceManager? {
+    public func tab(_ tab: Tab, requestBundleResourceManagerForExtension extensionID: String) -> BundleResourceManager? {
         return bundleResourceManager
     }
 
-    public func tab(_ tab: Tab, requestBlobResourceManager: Void) -> BlobResourceManager? {
+    public func tab(_ tab: Tab, requestBlobResourceManagerForExtension extensionID: String) -> BlobResourceManager? {
         return blobResourceManager
     }
 
-    open func tab(_ tab: Tab, willDownloadBlobWithOptions options: WebExtensionAPI.DownloadOptions) {
+    public func tab(_ tab: Tab, willDownloadBlobWithOptions options: WebExtension.Browser.Downloads.Download.Options) {
         consolePrint(options)
     }
 
-    open func tab(_ tab: Tab, didDownloadBlobWithOptions options: WebExtensionAPI.DownloadOptions, result: Result<BlobStorage, Error>) {
+    public func tab(_ tab: Tab, didDownloadBlobWithOptions options: WebExtension.Browser.Downloads.Download.Options, result: Result<BlobStorage, Error>) {
         switch result {
         case let .success(blobStorage):
             consolePrint(blobStorage)
