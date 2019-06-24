@@ -222,17 +222,6 @@ extension TabsTests {
         wait(for: [handler.handlerExpectation!], timeout: 3.0)
     }
 
-    func testRuntimeGetURL() {
-        let hander = CustomURLSchemeHandler()
-        hander.handlerExpectation = expectation(description: "hander")
-        browser.bundleResourceManager = hander
-
-        let tab = browser.tabs.create(options: nil)
-        prepareCustomURLSchemeTest(tab: tab)
-
-        wait(for: [hander.handlerExpectation!], timeout: 10.0)
-    }
-
     func testRuntimeGetURL_BundleResourceManager() {
         let hander = BundleResourceManager(bundle: Bundle(for: TabsTests.self))
         browser.bundleResourceManager = hander
@@ -281,94 +270,6 @@ extension TabsTests {
 
         override func webView(_ webView: WKWebView, stop urlSchemeTask: WKURLSchemeTask) {
             // do nothing
-        }
-    }
-
-}
-
-extension TabsTests {
-
-    func testCreateObjectURL() {
-        let bundleResourceManager = BundleResourceManager(bundle: Bundle(for: TabsTests.self))
-        let blobResourceManager = BlobResourceManager()
-        browser.bundleResourceManager = bundleResourceManager
-        browser.blobResourceManager = blobResourceManager
-
-        let tab = browser.tabs.create(options: nil)
-        prepareBlobTest(tab: tab)
-
-        let image = UIImage(named: "lena_std.tif.tiff", in: Bundle(for: TabsTests.self), compatibleWith: nil)!
-        let base64EncodedString = image.pngData()!.base64EncodedString()
-
-        let addLenaBase64Script = """
-        var lena = document.createElement('img');
-        lena.id = 'base64Image'
-        lena.src = 'data:image/png;base64,\(base64EncodedString)'
-
-        var width = 0;
-        lena.onload = function() {
-            browser.echo({ echo: this.clientWidth });
-            width = this.clientWidth;
-        };
-        document.body.appendChild(lena);
-        """
-        let addLenaBase64Expectation = expectEvaluateJavaScript(in: tab.webView, script: addLenaBase64Script) { (any, error) in
-            // do nothing
-        }
-        wait(for: [addLenaBase64Expectation], timeout: 3.0)
-        waitCallback(3)
-
-        // check lena
-        let checkSizeScript = """
-            width;
-        """
-        let checkSizeExpectation = expectEvaluateJavaScript(in: tab.webView, script: checkSizeScript) { (any, error) in
-            XCTAssertNotNil(any)
-            XCTAssertEqual(any as? Int, 512)
-        }
-        wait(for: [checkSizeExpectation], timeout: 3.0)
-
-        let createObjectURLScript = """
-        width = 0;
-        browser.createObjectURL({
-            prefix: 'test',
-            blob: '\(base64EncodedString)',
-            type: 'image/png'
-        }).then(url => {
-            var blobImage = document.createElement('img');
-            blobImage.onload = function() {
-                width = this.clientWidth;
-            };
-            blobImage.id = 'blobImage';
-            blobImage.src = url + '.png';
-            document.body.appendChild(blobImage);
-        });
-        """
-        let createObjectURLExpectation = expectEvaluateJavaScript(in: tab.webView, script: createObjectURLScript) { (any, error) in
-            // do nothing
-        }
-        wait(for: [createObjectURLExpectation], timeout: 3.0)
-        waitCallback(3)
-
-        // check blob
-        let checkSizeScript2 = """
-            width;
-        """
-        let checkSizeExpectation2 = expectEvaluateJavaScript(in: tab.webView, script: checkSizeScript2) { (any, error) in
-            XCTAssertNotNil(any)
-            XCTAssertEqual(any as? Int, 512)
-        }
-        wait(for: [checkSizeExpectation2], timeout: 3.0)
-
-        consolePrint(RealmService.default.realm.configuration.fileURL!)
-    }
-
-    private func removeRealmStub(uuid: String) {
-        let realm = RealmService.default.realm
-        if let blobStorage = realm.object(ofType: BlobStorage.self, forPrimaryKey: uuid) {
-            try! realm.write {
-                realm.delete(blobStorage)
-            }
         }
     }
 

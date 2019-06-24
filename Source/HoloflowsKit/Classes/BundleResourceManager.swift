@@ -9,7 +9,7 @@ import Foundation
 import WebKit
 import ConsolePrint
 
-
+// TODO: add support for multiple extension with different extensionID
 /// Resolve bundle resource when app request custom scheme
 /// - warning: be careful to set bundle which may leak the app secret
 open class BundleResourceManager: NSObject {
@@ -52,6 +52,11 @@ extension BundleResourceManager {
 
             handler(.success((data, response)))
         }.resume()
+    }
+
+    open func bundle(for extensionID: String) -> Bundle? {
+        // TODO: get bundle for specific extension
+        return bundle
     }
 
 }

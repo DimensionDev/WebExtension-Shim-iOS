@@ -29,20 +29,22 @@ extension Tab {
         }
     }
 
-    open func browserRuntimeGetURL(messageID id: String, messageBody: String) {
-        let messageResult: Result<ScriptMessage.RuntimeGetURL, Error> = ScriptMessage.receiveMessage(messageBody: messageBody)
+    open func browserRuntimeGetURL(id: String, messageBody: String) {
+        let messageResult: Result<WebExtension.Browser.Runtime.GetURL, RPC.Error> = HoloflowsRPC.parseRPC(messageBody: messageBody)
         switch messageResult {
-        case let .success(runtimeGetURL):
-            guard let bundleResourceManager = delegate?.tab(self, requestBundleResourceManager: ()) else {
-                let result: Result<Void, Error> = .failure(ScriptMessage.InternalError.runtimeGetURLWithoutResourceManagerSet)
-                ScriptMessage.dispatchEvent(webView: webView, eventName: id, result: result, completionHandler: Tab.completionHandler)
+        case let .success(getURL):
+            guard let bundleResourceManager = delegate?.tab(self, requestBundleResourceManager: ()),
+            let bundle = bundleResourceManager.bundle(for: getURL.extensionID) else {
+                let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .failure(.serverError)
+                HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: Tab.completionHandler)
                 return
             }
 
-            let bundleName = bundleResourceManager.bundle.bundleURL.deletingPathExtension().lastPathComponent
+            // let bundleName = bundle.bundleURL.deletingPathExtension().lastPathComponent
+            // TODO: resolve not exists resource path for bundle
             let path: String = {
                 let prefix = "/"
-                let path = runtimeGetURL.url
+                let path = getURL.path
                 if path.hasPrefix(prefix) {
                     return String(path.dropFirst(prefix.count))
                 } else {
@@ -50,16 +52,16 @@ extension Tab {
                 }
 
             }()
-            let url = "holoflows-extension://" + [bundleName, path].joined(separator: "/")
+            let url = "holoflows-kit://" + [getURL.extensionID, path].joined(separator: "/")
             consolePrint(url)
 
-            let result: Result<String, Error> = .success(url)
-            ScriptMessage.dispatchEvent(webView: webView, eventName: id, result: result, completionHandler: Tab.completionHandler)
+            let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .success(HoloflowsRPC.Response(result: url, id: id))
+            HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: Tab.completionHandler)
 
         case let .failure(error):
             consolePrint(error.localizedDescription)
-            let result: Result<Void, Error> = .failure(error)
-            ScriptMessage.dispatchEvent(webView: webView, eventName: id, result: result, completionHandler: Tab.completionHandler)
+            let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .failure(error)
+            HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: Tab.completionHandler)
         }
     }
 

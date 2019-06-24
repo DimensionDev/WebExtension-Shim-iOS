@@ -14,6 +14,11 @@ extension WebExtension.Browser.Runtime {
 
         public let extensionID: String
         public let path: String
+
+        public init(extensionID: String, path: String) {
+            self.extensionID = extensionID
+            self.path = path
+        }
     }
     
 }

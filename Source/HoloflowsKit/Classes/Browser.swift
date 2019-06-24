@@ -49,7 +49,7 @@ extension Browser: TabsDelegate {
     
     public func tabs(_ tabs: Tabs, createTabWithOptions options: WebExtension.Browser.Tabs.Create.Options?) -> WKWebViewConfiguration {
         let configuration = WKWebViewConfiguration()
-        configuration.setURLSchemeHandler(bundleResourceManager, forURLScheme: "holoflows-extension")
+        configuration.setURLSchemeHandler(bundleResourceManager, forURLScheme: "holoflows-kit")
         configuration.setURLSchemeHandler(blobResourceManager, forURLScheme: "holoflows-blob")
         delegate?.browser(self, configureWebViewConfiguration: configuration)
         return configuration
