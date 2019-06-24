@@ -1,5 +1,5 @@
 //
-//  Tab+WKScriptMessageHandlerTests.swift
+//  WKScriptMessageHandlerTests.swift
 //  HoloflowsKit-Unit-Tests
 //
 //  Created by Cirno MainasuK on 2019-6-22.
@@ -8,7 +8,7 @@
 import XCTest
 import HoloflowsKit
 
-class Tab_WKScriptMessageHandlerTests: XCTestCase {
+class WKScriptMessageHandlerTests: XCTestCase {
 
     var browser = Browser()
 
@@ -19,7 +19,7 @@ class Tab_WKScriptMessageHandlerTests: XCTestCase {
 
 }
 
-extension Tab_WKScriptMessageHandlerTests {
+extension WKScriptMessageHandlerTests {
 
     func testRPCEcho() {
         let tab = browser.tabs.create(options: nil)

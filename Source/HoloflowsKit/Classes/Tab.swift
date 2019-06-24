@@ -196,9 +196,14 @@ extension Tab: WKNavigationDelegate {
 
     open func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
         consolePrint(webView.url)
-        let details = WebExtensionAPI.NavigationDetails(tabId: id, url: webView.url?.absoluteString ?? "")
-        let result = Result<WebExtensionAPI.NavigationDetails, Error>.success(details)
-        ScriptMessage.dispatchEvent(webView: self.webView, eventName: "webNavigationOnCommitted", result: result, completionHandler: Tab.completionHandler)
+
+        typealias Navigation = WebExtension.Browser.WebNavigation.OnCommitted.Navigation
+
+        let rpcID = UUID().uuidString
+        let details = Navigation(tabId: id, url: webView.url?.absoluteString ?? "")
+        let result = Result<HoloflowsRPC.Response<Navigation>, RPC.Error>.success(HoloflowsRPC.Response(result: details, id: rpcID))
+
+        HoloflowsRPC.dispatchResponse(webView: webView, id: rpcID, result: result, completionHandler: Tab.completionHandler)
     }
 
 }

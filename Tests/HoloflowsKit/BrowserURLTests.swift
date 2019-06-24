@@ -23,7 +23,7 @@ class BrowserURLTests: XCTestCase {
 extension BrowserURLTests {
 
     func testCreateObjectURL() {
-        let bundleResourceManager = BundleResourceManager(bundle: Bundle(for: TabsTests.self))
+        let bundleResourceManager = BundleResourceManager(bundle: Bundle(for: BrowserURLTests.self))
         let blobResourceManager = BlobResourceManager()
         browser.bundleResourceManager = bundleResourceManager
         browser.blobResourceManager = blobResourceManager
@@ -54,7 +54,7 @@ extension BrowserURLTests {
         wait(for: [addListenerExpectation], timeout: 3.0)
 
         // creat blob url
-        let image = UIImage(named: "lena_std.tif.tiff", in: Bundle(for: TabsTests.self), compatibleWith: nil)!
+        let image = UIImage(named: "lena_std.tif.tiff", in: Bundle(for: BrowserURLTests.self), compatibleWith: nil)!
         let base64EncodedString = image.pngData()!.base64EncodedString()
         let createObjectURL = WebExtension.URL.CreateObjectURL(extensionID: "HoloflowsKit-UnitTests", blob: base64EncodedString, type: "image/png")
         let createObjectURLScript = TestHelper.webKit(messageBody: HoloflowsRPC.Request(params: createObjectURL, id: createObjectURLID))

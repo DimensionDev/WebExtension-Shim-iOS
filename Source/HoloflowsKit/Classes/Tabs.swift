@@ -60,24 +60,4 @@ extension Tabs {
         return removed
     }
 
-    open func sendMessage(_ message: ScriptMessage.Send, from sender: Tab) {
-        consolePrint("Send message: \(message) from sender: \(sender)")
-        let receive = ScriptMessage.Receive(messageID: message.messageID, message: message.message, sender: sender)
-        let result = Result<ScriptMessage.Receive, Error>.success(receive)
-
-        if let tabID = message.tabID {
-            guard let tab = storage.first(where: { $0.id == tabID }) else {
-                consolePrint("Not found tab to send message: \(message)")
-                return
-            }
-
-            ScriptMessage.dispatchEvent(webView: tab.webView, eventName: "receive", result: result, completionHandler: Tab.completionHandler)
-
-        } else {
-            for tab in storage where tab != sender {
-                ScriptMessage.dispatchEvent(webView: tab.webView, eventName: "receive", result: result, completionHandler: Tab.completionHandler)
-            }
-        }
-    }
-
 }

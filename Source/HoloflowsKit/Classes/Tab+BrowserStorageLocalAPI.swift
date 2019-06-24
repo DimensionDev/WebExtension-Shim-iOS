@@ -65,8 +65,8 @@ extension Tab {
 
         case let .failure(error):
             consolePrint(error.localizedDescription)
-            let result: Result<Void, Error> = .failure(error)
-            ScriptMessage.dispatchEvent(webView: webView, eventName: id, result: result, completionHandler: Tab.completionHandler)
+            let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .failure(error)
+            HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: Tab.completionHandler)
         }
     }
 

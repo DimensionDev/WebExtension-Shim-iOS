@@ -26,7 +26,7 @@ extension BrowserDownloadsTests {
         let stubTabDelegate = StubTabDelegate()
         stubTabDelegate.downloadExpectation = expectation(description: "download check")
 
-        let bundleResourceManager = BundleResourceManager(bundle: Bundle(for: TabsTests.self))
+        let bundleResourceManager = BundleResourceManager(bundle: Bundle(for: BrowserDownloadsTests.self))
         let blobResourceManager = BlobResourceManager()
         stubTabDelegate.bundleResourceManager = bundleResourceManager
         stubTabDelegate.blobResourceManager = blobResourceManager
@@ -52,7 +52,7 @@ extension BrowserDownloadsTests {
         wait(for: [addListenerExpectation], timeout: 3.0)
 
         // creat blob url
-        let image = UIImage(named: "lena_std.tif.tiff", in: Bundle(for: TabsTests.self), compatibleWith: nil)!
+        let image = UIImage(named: "lena_std.tif.tiff", in: Bundle(for: BrowserDownloadsTests.self), compatibleWith: nil)!
         let base64EncodedString = image.pngData()!.base64EncodedString()
         let createObjectURL = WebExtension.URL.CreateObjectURL(extensionID: "HoloflowsKit-UnitTests", blob: base64EncodedString, type: "image/png")
         let createObjectURLScript = TestHelper.webKit(messageBody: HoloflowsRPC.Request(params: createObjectURL, id: createObjectURLID))
