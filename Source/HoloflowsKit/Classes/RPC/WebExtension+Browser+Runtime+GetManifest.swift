@@ -13,6 +13,10 @@ extension WebExtension.Browser.Runtime {
         public static let method: String = "browser.runtime.getManifest"
 
         public let extensionID: String
+
+        public init(extensionID: String) {
+            self.extensionID = extensionID
+        }
     }
 
 }

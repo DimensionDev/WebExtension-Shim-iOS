@@ -12,7 +12,7 @@ import ConsolePrint
 import SwiftyJSON
 
 public protocol TabDelegate: class {
-    func tab(_ tab: Tab, requestManifest: Void) -> String
+    func tab(_ tab: Tab, requestManifestForExtension extensionID: String) -> String
     func tab(_ tab: Tab, requestBundleResourceManager: Void) -> BundleResourceManager?
     func tab(_ tab: Tab, requestBlobResourceManager: Void) -> BlobResourceManager?
     func tab(_ tab: Tab, willDownloadBlobWithOptions options: WebExtensionAPI.DownloadOptions)
@@ -115,7 +115,7 @@ extension Tab: WKScriptMessageHandler {
         case .urlCreateObjectURL:                   URLCreateObjectURL(id: id, messageBody: messageBody)
         case .downloadsDownload:break
         case .browserRuntimeGetURL:                 browserRuntimeGetURL(id: id, messageBody: messageBody)
-        case .browserRuntimeGetManifest:break
+        case .browserRuntimeGetManifest:            browserRuntimeGetManifest(id: id, messageBody: messageBody)
         case .browserTabsExecuteScript:             browserTabsExecuteScript(id: id, messageBody: messageBody)
         case .browserTabsCreate:                    browserTabsCreate(id: id, messageBody: messageBody)
         case .browserTabsRemove:                    browserTabsRemove(id: id, messageBody: messageBody)

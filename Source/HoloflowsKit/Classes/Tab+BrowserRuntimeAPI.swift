@@ -11,21 +11,21 @@ import SwiftyJSON
 
 extension Tab {
 
-    open func browserRuntimeGetManifest(messageID id: String, messageBody: String) {
-        let messageResult: Result<ScriptMessage.RuntimeGetManifest, Error> = ScriptMessage.receiveMessage(messageBody: messageBody)
+    open func browserRuntimeGetManifest(id: String, messageBody: String) {
+        let messageResult: Result<WebExtension.Browser.Runtime.GetManifest, RPC.Error> = HoloflowsRPC.parseRPC(messageBody: messageBody)
         switch messageResult {
-        case .success:
+        case let .success(getManifest):
             let json = delegate
-                .flatMap { Data($0.tab(self, requestManifest: ()).utf8) }
+                .flatMap { Data($0.tab(self, requestManifestForExtension: getManifest.extensionID).utf8) }
                 .flatMap { JSON(rawValue: $0) } ?? JSON.null
 
-            let result: Result<JSON, Error> = .success(json)
-            ScriptMessage.dispatchEvent(webView: webView, eventName: id, result: result, completionHandler: Tab.completionHandler)
-            
+            let result: Result<HoloflowsRPC.Response<JSON>, RPC.Error> = .success(HoloflowsRPC.Response(result: json, id: id))
+            HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: Tab.completionHandler)
+
         case let .failure(error):
             consolePrint(error.localizedDescription)
-            let result: Result<Void, Error> = .failure(error)
-            ScriptMessage.dispatchEvent(webView: webView, eventName: id, result: result, completionHandler: Tab.completionHandler)
+            let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .failure(error)
+            HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: Tab.completionHandler)
         }
     }
 

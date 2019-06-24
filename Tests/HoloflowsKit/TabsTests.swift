@@ -122,7 +122,7 @@ extension TabsTests {
     }
 
     private class TabDelegateStub: TabDelegate {
-        func tab(_ tab: Tab, requestManifest: Void) -> String {
+        func tab(_ tab: Tab, requestManifestForExtension extensionID: String) -> String {
             return String(data: TabsTests.manifest, encoding: .utf8)!
         }
 

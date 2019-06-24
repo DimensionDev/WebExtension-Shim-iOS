@@ -60,7 +60,7 @@ extension Browser: TabsDelegate {
 // MARK: - TabDelegate
 extension Browser: TabDelegate {
 
-    open func tab(_ tab: Tab, requestManifest: Void) -> String {
+    open func tab(_ tab: Tab, requestManifestForExtension extensionID: String) -> String {
         return manifest
     }
 
