@@ -26,7 +26,7 @@ extension Tab {
                     realm.add(blobStorage, update: .all)
                 }
 
-                let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .success(HoloflowsRPC.Response(result: blobStorage.url, id: id))
+                let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .success(HoloflowsRPC.Response(result: "", id: id))
                 HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: Tab.completionHandler)
 
             } catch {

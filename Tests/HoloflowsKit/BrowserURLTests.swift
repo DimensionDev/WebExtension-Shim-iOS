@@ -32,12 +32,13 @@ extension BrowserURLTests {
         TestHelper.prepareTest(tab: tab, forTestCase: self)
 
         let createObjectURLID = UUID().uuidString
+        let blobID = UUID().uuidString
         let addListenerScript = """
         var width = 0;
         document.addEventListener('\(ScriptEvent.holoflowsjsonrpc.rawValue)', event => {
             if (event.detail.id != '\(createObjectURLID)') { return; }
 
-            const url = event.detail.result;
+            const url = 'holoflows-blob://HoloflowsKit-UnitTests/\(blobID)'
             \(TestHelper.echoScript(val: "url"))
             var blobImage = document.createElement('img');
             blobImage.onload = function() {
@@ -56,7 +57,7 @@ extension BrowserURLTests {
         // creat blob url
         let image = UIImage(named: "lena_std.tif.tiff", in: Bundle(for: BrowserURLTests.self), compatibleWith: nil)!
         let base64EncodedString = image.pngData()!.base64EncodedString()
-        let createObjectURL = WebExtension.URL.CreateObjectURL(extensionID: "HoloflowsKit-UnitTests", blob: base64EncodedString, type: "image/png")
+        let createObjectURL = WebExtension.URL.CreateObjectURL(extensionID: "HoloflowsKit-UnitTests", uuid: blobID, blob: base64EncodedString, type: "image/png")
         let createObjectURLScript = TestHelper.webKit(messageBody: HoloflowsRPC.Request(params: createObjectURL, id: createObjectURLID))
         let createObjectURLExpectation = TestHelper.expectEvaluateJavaScript(in: tab.webView, script: createObjectURLScript, forTestCase: self) { (any, error) in
             // do nothing
