@@ -13,13 +13,15 @@ extension WebExtension.URL {
         public static let method: String = "URL.createObjectURL"
 
         public let extensionID: String
+        public let uuid: String
         /// Base64 encoded data
         public let blob: String
         /// MIME type "image/png"
         public let type: String
 
-        public init(extensionID: String, blob: String, type: String) {
+        public init(extensionID: String, uuid: String, blob: String, type: String) {
             self.extensionID = extensionID
+            self.uuid = uuid
             self.blob = blob
             self.type = type
         }
@@ -39,6 +41,7 @@ extension WebExtension.URL.CreateObjectURL {
         }
 
         let blobStorage = BlobStorage()
+        blobStorage.uuid = uuid
         blobStorage.blob = blobData
         blobStorage.type = type
         blobStorage.url = "holoflows-blob://" + extensionID + "/" + blobStorage.uuid
