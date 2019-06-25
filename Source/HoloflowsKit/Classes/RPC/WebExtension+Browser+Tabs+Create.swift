@@ -20,6 +20,13 @@ extension WebExtension.Browser.Tabs {
             self.options = options
         }
 
+        public init(from decoder: Decoder) throws {
+            var container = try decoder.unkeyedContainer()
+
+            extensionID = try container.decode(String.self)
+            options = try container.decode(Options.self)
+        }
+
         public struct Options: Codable {
             public let active: Bool?
             public let url: String?

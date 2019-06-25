@@ -37,7 +37,7 @@ TODO: Add long description of the pod here.
     default_spec.source_files = 'Source/HoloflowsKit/Classes/**/*'
 
     default_spec.resource_bundles = {
-      'WebExtensionScripts' => ['Source/HoloflowsKit/WebExtensionScripts/*.js']
+      'WebExtensionScripts' => ['Source/HoloflowsKit/Resources/*.js']
     }
 
     default_spec.dependency 'RealmSwift'

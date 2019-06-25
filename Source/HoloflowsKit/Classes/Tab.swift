@@ -37,7 +37,7 @@ open class Tab: NSObject {
         let bundle = Bundle(for: Tab.self)
         if let bundleURL = bundle.resourceURL?.appendingPathComponent("WebExtensionScripts.bundle"),
             let scriptsBundle = Bundle(url: bundleURL),
-            let scriptPath = scriptsBundle.path(forResource: "webExtension", ofType: "js"),
+            let scriptPath = scriptsBundle.path(forResource: "out", ofType: "js"),
             let script = try? String(contentsOfFile: scriptPath) {
             let userScript = WKUserScript(source: script, injectionTime: .atDocumentEnd, forMainFrameOnly: false)
             userContentController.addUserScript(userScript)
@@ -93,8 +93,8 @@ extension Tab: WKScriptMessageHandler {
             assertionFailure()
             return
         }
-        let messageBody = message.body as? String ?? ""
-        consolePrint("[\(eventType.rawValue)]: \(messageBody.prefix(200))")
+        let messageBody = JSON(rawValue: message.body)?.rawString() ?? ""
+        consolePrint("[\(eventType.rawValue)]: \(messageBody)")
 
         guard let (method, id) = try? HoloflowsRPC.parseRPCMeta(messageBody: messageBody) else {
             assertionFailure()
