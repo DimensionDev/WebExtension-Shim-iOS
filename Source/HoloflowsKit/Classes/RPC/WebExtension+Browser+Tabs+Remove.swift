@@ -22,3 +22,21 @@ extension WebExtension.Browser.Tabs {
     }
 
 }
+
+extension WebExtension.Browser.Tabs.Remove {
+
+    public init(from decoder: Decoder) throws {
+        var container = try decoder.unkeyedContainer()
+
+        extensionID = try container.decode(String.self)
+        tabId = try container.decode(Int.self)
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.unkeyedContainer()
+
+        try container.encode(extensionID)
+        try container.encode(tabId)
+    }
+
+}

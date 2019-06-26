@@ -20,7 +20,24 @@ extension WebExtension.Browser.Storage.Local {
             self.extensionID = extensionID
             self.key = (keys.flatMap { JSON($0) }) ?? JSON.null
         }
+    }
 
+}
+
+extension WebExtension.Browser.Storage.Local.GetBytesInUse {
+
+    public init(from decoder: Decoder) throws {
+        var container = try decoder.unkeyedContainer()
+
+        extensionID = try container.decode(String.self)
+        key = try container.decode(JSON.self)
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.unkeyedContainer()
+
+        try container.encode(extensionID)
+        try container.encode(key)
     }
 
 }

@@ -1,5 +1,5 @@
 PODS:
-  - ConsolePrint (0.1.0)
+  - ConsolePrint (0.2.0)
   - HoloflowsKit (0.1.0):
     - ConsolePrint
     - HoloflowsKit/HoloflowsKit (= 0.1.0)
@@ -38,12 +38,12 @@ EXTERNAL SOURCES:
     :path: "../"
 
 SPEC CHECKSUMS:
-  ConsolePrint: 695d494f0a2595d1792ec19483f2aa16e4501c19
-  HoloflowsKit: dfef8e60f4f62356f923e31e63eef056d626047c
+  ConsolePrint: 2d5a73bb45f08efa259bef7583707d6dfa007141
+  HoloflowsKit: b194987e7fb42bdbdb5953fc7894ea9cd2275758
   Realm: 0e73b4edeb5b6a90da3d83206883b2e34e00eb38
   RealmSwift: a81e650171ef0a5f999df1ed8d39ba8d6fce88a4
   SwiftyJSON: 36413e04c44ee145039d332b4f4e2d3e8d6c4db7
 
-PODFILE CHECKSUM: 0e54ea459ff5abd598b038baa0f43d15ecc113d2
+PODFILE CHECKSUM: 829906f067aba8ac88cd9d67cec53dc407f83a1f
 
 COCOAPODS: 1.7.2

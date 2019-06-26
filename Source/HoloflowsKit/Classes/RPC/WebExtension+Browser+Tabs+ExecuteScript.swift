@@ -16,6 +16,12 @@ extension WebExtension.Browser.Tabs {
         public let tabID: Int?
         public let details: Details
 
+        public init(extensionID: String, tabID: Int?, details: Details) {
+            self.extensionID = extensionID
+            self.tabID = tabID
+            self.details = details
+        }
+
         public struct Details: Codable {
             public let code: String?
             public let file: String?
@@ -27,12 +33,26 @@ extension WebExtension.Browser.Tabs {
                 self.runAt = runAt
             }
         }
+    }
 
-        public init(extensionID: String, tabID: Int?, details: Details) {
-            self.extensionID = extensionID
-            self.tabID = tabID
-            self.details = details
-        }
+}
+
+extension WebExtension.Browser.Tabs.ExecuteScript {
+
+    public init(from decoder: Decoder) throws {
+        var container = try decoder.unkeyedContainer()
+
+        extensionID = try container.decode(String.self)
+        tabID = try container.decodeIfPresent(Int.self)
+        details = try container.decode(Details.self)
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.unkeyedContainer()
+
+        try container.encode(extensionID)
+        try container.encode(tabID)
+        try container.encode(details)
     }
 
 }

@@ -37,7 +37,7 @@ open class Tab: NSObject {
         let bundle = Bundle(for: Tab.self)
         if let bundleURL = bundle.resourceURL?.appendingPathComponent("WebExtensionScripts.bundle"),
             let scriptsBundle = Bundle(url: bundleURL),
-            let scriptPath = scriptsBundle.path(forResource: "webExtension", ofType: "js"),
+            let scriptPath = scriptsBundle.path(forResource: "out", ofType: "js"),
             let script = try? String(contentsOfFile: scriptPath) {
             let userScript = WKUserScript(source: script, injectionTime: .atDocumentEnd, forMainFrameOnly: false)
             userContentController.addUserScript(userScript)
@@ -93,8 +93,8 @@ extension Tab: WKScriptMessageHandler {
             assertionFailure()
             return
         }
-        let messageBody = message.body as? String ?? ""
-        consolePrint("[\(eventType.rawValue)]: \(messageBody.prefix(200))")
+        let messageBody = JSON(rawValue: message.body)?.rawString() ?? ""
+        consolePrint("[\(eventType.rawValue)]: \(messageBody.prefix(300))")
 
         guard let (method, id) = try? HoloflowsRPC.parseRPCMeta(messageBody: messageBody) else {
             assertionFailure()
@@ -123,64 +123,7 @@ extension Tab: WKScriptMessageHandler {
         case .browserStorageLocalRemove:            browserStorageLocalRemove(id: id, messageBody: messageBody)
         case .browserStorageLocalClear:             browserStorageLocalClear(id: id, messageBody: messageBody)
         case .browserStorageLocalGetBytesInUse:     browserStorageLocalGetBytesInUse(id: id, messageBody: messageBody)
-        }
-
-//        switch eventType {
-//        case .echo:
-//            let messageResult: Result<ScriptMessage.Echo, Error> = ScriptMessage.receiveMessage(messageBody: messageBody)
-//            ScriptMessage.dispatchEvent(webView: webView, eventName: id, result: messageResult, completionHandler: Tab.completionHandler)
-//
-//        case .send:
-//            let messageResult: Result<ScriptMessage.Send, Error> = ScriptMessage.receiveMessage(messageBody: messageBody)
-//            guard let message = try? messageResult.get() else {
-//                assertionFailure()
-//                return
-//            }
-//            tabs?.sendMessage(message, from: self)
-//
-//        case .createObjectURL:
-//            let messageResult: Result<ScriptMessage.CreateObjectURL, Error> = ScriptMessage.receiveMessage(messageBody: messageBody)
-//            switch messageResult {
-//            case let .success(createObjectURL):
-//                guard let blobStorage = createObjectURL.blobStorage else {
-//                    let result: Result<Void, Error> = .failure(ScriptMessage.InternalError.createObjectURLWithoutValidBlob)
-//                    ScriptMessage.dispatchEvent(webView: webView, eventName: id, result: result, completionHandler: Tab.completionHandler)
-//                    return
-//                }
-//                let realm = RealmService.default.realm
-//                do {
-//                    try realm.write {
-//                        realm.add(blobStorage, update: .all)
-//                    }
-//
-//                    let result: Result<String, Error> = .success(blobStorage.url)
-//                    ScriptMessage.dispatchEvent(webView: webView, eventName: id, result: result, completionHandler: Tab.completionHandler)
-//
-//                } catch {
-//                    let result: Result<Void, Error> = .failure(error)
-//                    ScriptMessage.dispatchEvent(webView: webView, eventName: id, result: result, completionHandler: Tab.completionHandler)
-//                }
-//
-//            case let .failure(error):
-//                consolePrint(error.localizedDescription)
-//                let result: Result<Void, Error> = .failure(error)
-//                ScriptMessage.dispatchEvent(webView: webView, eventName: id, result: result, completionHandler: Tab.completionHandler)
-//            }
-//
-//        case .browserTabsCreate:         browserTabsCreate(messageID: id, messageBody: messageBody)
-//        case .browserTabsRemove:         browserTabsRemove(messageID: id, messageBody: messageBody)
-//        case .browserTabsExecuteScript:  browserTabsExecuteScript(messageID: id, messageBody: messageBody)
-//
-//        case .browserStorageLocalGet:    browserStorageLocalGet(messageID: id, messageBody: messageBody)
-//        case .browserStorageLocalSet:    browserStorageLocalSet(messageID: id, messageBody: messageBody)
-//        case .browserStorageLocalRemove: browserStorageLocalRemove(messageID: id, messageBody: messageBody)
-//        case .browserStorageLocalClear:  browserStorageLocalClear(messageID: id, messageBody: messageBody)
-//
-//        case .browserRuntimeGetManifest: browserRuntimeGetManifest(messageID: id, messageBody: messageBody)
-//        case .browserRuntimeGetURL:      browserRuntimeGetURL(messageID: id, messageBody: messageBody)
-//
-//        case .browserDownloadsDownload:  browserDownloadsDownload(messageID: id, messageBody: messageBody)
-//            
+        }          
 //        }   // end switch eventType
     }   // end func userContentController
 

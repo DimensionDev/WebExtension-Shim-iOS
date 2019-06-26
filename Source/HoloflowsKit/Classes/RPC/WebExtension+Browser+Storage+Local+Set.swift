@@ -29,6 +29,24 @@ extension WebExtension.Browser.Storage.Local {
 
 extension WebExtension.Browser.Storage.Local.Set {
 
+    public init(from decoder: Decoder) throws {
+        var container = try decoder.unkeyedContainer()
+
+        extensionID = try container.decode(String.self)
+        object = try container.decode(JSON.self)
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.unkeyedContainer()
+
+        try container.encode(extensionID)
+        try container.encode(object)
+    }
+
+}
+
+extension WebExtension.Browser.Storage.Local.Set {
+
     public var entriesDict: [String : JSON] {
         return object.dictionaryValue
     }
