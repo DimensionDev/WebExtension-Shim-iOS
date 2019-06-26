@@ -20,13 +20,6 @@ extension WebExtension.Browser.Tabs {
             self.options = options
         }
 
-        public init(from decoder: Decoder) throws {
-            var container = try decoder.unkeyedContainer()
-
-            extensionID = try container.decode(String.self)
-            options = try container.decode(Options.self)
-        }
-
         public struct Options: Codable {
             public let active: Bool?
             public let url: String?
@@ -36,6 +29,24 @@ extension WebExtension.Browser.Tabs {
                 self.url = url
             }
         }
+    }
+
+}
+
+extension WebExtension.Browser.Tabs.Create {
+
+    public init(from decoder: Decoder) throws {
+        var container = try decoder.unkeyedContainer()
+
+        extensionID = try container.decode(String.self)
+        options = try container.decode(Options.self)
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.unkeyedContainer()
+
+        try container.encode(extensionID)
+        try container.encode(options)
     }
 
 }

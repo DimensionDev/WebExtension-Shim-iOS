@@ -25,6 +25,24 @@ extension WebExtension.Browser.Storage.Local {
 }
 
 extension WebExtension.Browser.Storage.Local.Remove {
+
+    public init(from decoder: Decoder) throws {
+        var container = try decoder.unkeyedContainer()
+
+        extensionID = try container.decode(String.self)
+        key = try container.decode(JSON.self)
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.unkeyedContainer()
+
+        try container.encode(extensionID)
+        try container.encode(key)
+    }
+    
+}
+
+extension WebExtension.Browser.Storage.Local.Remove {
     public var keyValues: [String] {
         return key.array?.compactMap { $0.string } ?? [key.string].compactMap { $0 }
     }

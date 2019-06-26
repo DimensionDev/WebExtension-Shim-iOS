@@ -1317,7 +1317,7 @@
 	  return Realm;
 
 	}));
-
+	//# sourceMappingURL=realms-shim.umd.js.map
 	});
 
 	/*! *****************************************************************************
@@ -1419,6 +1419,7 @@
 	        }
 	    }
 	}
+	//# sourceMappingURL=MessageCenter.js.map
 
 	/**
 	 * This is a light implementation of JSON RPC 2.0
@@ -1655,6 +1656,7 @@
 	function isJSONRPCObject(data) {
 	    return typeof data === 'object' && data !== null && 'jsonrpc' in data && data.jsonrpc === '2.0';
 	}
+	//# sourceMappingURL=Async-Call.js.map
 
 	/// <reference path="../node_modules/web-ext-types/global/index.d.ts" />
 	const key = 'holoflowsjsonrpc';
@@ -1703,6 +1705,7 @@
 	    writeToConsole: true,
 	    MessageCenter: MessageCenter$1,
 	});
+	//# sourceMappingURL=RPC.js.map
 
 	/**
 	 * Create a new `browser` object.
@@ -1736,7 +1739,7 @@
 	            executeScript(tabID, details) {
 	                return __awaiter(this, void 0, void 0, function* () {
 	                    PartialImplemented(details, 'code', 'file', 'runAt');
-	                    yield Host['browser.tabs.executeScript'](extensionID, tabID || -1, details);
+	                    yield Host['browser.tabs.executeScript'](extensionID, tabID === undefined ? -1 : tabID, details);
 	                    return [];
 	                });
 	            },
@@ -1770,8 +1773,10 @@
 	                        return [null];
 	                    },
 	                    returns(rtn, [key]) {
-	                        if (typeof key === 'object' && key !== null) {
-	                            return Object.assign({}, key, { rtn });
+	                        if (Array.isArray(key))
+	                            return rtn;
+	                        else if (typeof key === 'object' && key !== null) {
+	                            return Object.assign({}, key, rtn);
 	                        }
 	                        return rtn;
 	                    },
@@ -1815,8 +1820,8 @@
 	 *
 	 * If you are writing options, make sure you add your function to `BrowserReference` to get type tips.
 	 *
-	 * @param extensionID The extension ID
-	 * @param key The API name in the type of `Host` AND `BrowserReference`
+	 * @param extensionID - The extension ID
+	 * @param key - The API name in the type of `Host` AND `BrowserReference`
 	 */
 	function binding(extensionID, key) {
 	    /**
