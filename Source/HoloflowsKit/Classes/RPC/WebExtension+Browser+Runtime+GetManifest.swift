@@ -20,3 +20,19 @@ extension WebExtension.Browser.Runtime {
     }
 
 }
+
+extension WebExtension.Browser.Runtime.GetManifest {
+    
+    public init(from decoder: Decoder) throws {
+        var container = try decoder.unkeyedContainer()
+
+        extensionID = try container.decode(String.self)
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.unkeyedContainer()
+
+        try container.encode(extensionID)
+    }
+
+}

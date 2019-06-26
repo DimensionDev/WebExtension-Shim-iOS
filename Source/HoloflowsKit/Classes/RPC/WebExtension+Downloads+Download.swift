@@ -32,3 +32,21 @@ extension WebExtension.Browser.Downloads {
     }
 
 }
+
+extension WebExtension.Browser.Downloads.Download {
+
+    public init(from decoder: Decoder) throws {
+        var container = try decoder.unkeyedContainer()
+
+        extensionID = try container.decode(String.self)
+        options = try container.decode(Options.self)
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.unkeyedContainer()
+
+        try container.encode(extensionID)
+        try container.encode(options)
+    }
+
+}

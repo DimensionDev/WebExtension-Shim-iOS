@@ -39,7 +39,7 @@ extension WebExtension {
 extension WebExtension.Browser.Runtime {
     public struct MessageSender: Encodable {
         public let tab: Tab?
-        public let id: String?  //
+        public let id: String? 
         public let url: String?
 
         public init(tab: Tab?, id: String?, url: String?) {

@@ -20,5 +20,24 @@ extension WebExtension.Browser.Runtime {
             self.path = path
         }
     }
+
+}
+
+extension WebExtension.Browser.Runtime.GetURL {
+
+    public init(from decoder: Decoder) throws {
+        var container = try decoder.unkeyedContainer()
+
+        extensionID = try container.decode(String.self)
+        path = try container.decode(String.self)
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.unkeyedContainer()
+
+        try container.encode(extensionID)
+        try container.encode(path)
+    }
     
 }
+

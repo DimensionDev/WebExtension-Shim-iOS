@@ -31,6 +31,28 @@ extension WebExtension.URL {
 
 extension WebExtension.URL.CreateObjectURL {
 
+    public init(from decoder: Decoder) throws {
+        var container = try decoder.unkeyedContainer()
+
+        extensionID = try container.decode(String.self)
+        uuid = try container.decode(String.self)
+        blob = try container.decode(String.self)
+        type = try container.decode(String.self)
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.unkeyedContainer()
+
+        try container.encode(extensionID)
+        try container.encode(uuid)
+        try container.encode(blob)
+        try container.encode(type)
+    }
+
+}
+
+extension WebExtension.URL.CreateObjectURL {
+
     public var blobData: Data? {
         return Data(base64Encoded: blob)
     }

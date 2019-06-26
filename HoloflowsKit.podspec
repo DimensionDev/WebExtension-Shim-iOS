@@ -9,7 +9,7 @@
 Pod::Spec.new do |s|
   s.name             = 'HoloflowsKit'
   s.version          = '0.1.0'
-  s.summary          = 'A short description of HoloflowsKit.'
+  s.summary          = 'HoloflowsKit on iOS.'
 
 # This description is used to generate tags and improve search results.
 #   * Think: What does it do? Why did you write it? What is the focus?
@@ -18,13 +18,13 @@ Pod::Spec.new do |s|
 #   * Finally, don't worry about the indent, CocoaPods strips it!
 
   s.description      = <<-DESC
-TODO: Add long description of the pod here.
+Implement basic web extension interface and provide strandard way to use HoloflowsKit in WKWebView.
                        DESC
 
-  s.homepage         = 'https://github.com/DimensionDev/HoloflowsKit-iOS'
+  s.homepage         = 'https://github.com/SujiTech/HoloflowsKit-iOS'
   s.license          = { :type => 'AGPL', :file => 'LICENSE' }
   s.author           = { 'CMK' => 'cirno.mainasuk@gmail.com' }
-  s.source           = { :git => 'https://github.com/CMK/HoloflowsKit.git', :tag => s.version.to_s }
+  s.source           = { :git => 'https://github.com/SujiTech/HoloflowsKit-iOS.git', :tag => s.version.to_s }
   s.swift_version    = '5.0'
 
   s.ios.deployment_target = '11.0'
@@ -37,7 +37,7 @@ TODO: Add long description of the pod here.
     default_spec.source_files = 'Source/HoloflowsKit/Classes/**/*'
 
     default_spec.resource_bundles = {
-      'WebExtensionScripts' => ['Source/HoloflowsKit/WebExtensionScripts/*.js']
+      'WebExtensionScripts' => ['Source/HoloflowsKit/Resources/*.js']
     }
 
     default_spec.dependency 'RealmSwift'

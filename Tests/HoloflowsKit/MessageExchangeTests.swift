@@ -100,13 +100,13 @@ extension MessageExchangeTests {
         {
             "jsonrpc": "2.0",
             "method": "sendMessage",
-            "params": {
-                "extensionID": "eofkdgkhfoebecmamljfaepckoecjhib",
-                "toExtensionID": "eofkdgkhfoebecmamljfaepckoecjhib",
-                "tabId": 0,
-                "messageID": "0.c7zclkj3",
-                "message": "Message Body"
-            },
+            "params": [
+                "eofkdgkhfoebecmamljfaepckoecjhib",
+                "eofkdgkhfoebecmamljfaepckoecjhib",
+                0,
+                "0.c7zclkj3",
+                "Message Body"
+            ],
             "id": "0.d832czxv3y"
         }
         """

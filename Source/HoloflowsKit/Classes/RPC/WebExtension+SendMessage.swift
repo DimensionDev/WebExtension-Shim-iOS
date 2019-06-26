@@ -21,3 +21,27 @@ extension WebExtension {
     }
 
 }
+
+extension WebExtension.SendMessage {
+
+    public init(from decoder: Decoder) throws {
+        var container = try decoder.unkeyedContainer()
+
+        extensionID = try container.decode(String.self)
+        toExtensionID = try container.decode(String.self)
+        tabId = try container.decodeIfPresent(Int.self)
+        messageID = try container.decode(String.self)
+        message = try container.decode(JSON.self)
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.unkeyedContainer()
+
+        try container.encode(extensionID)
+        try container.encode(toExtensionID)
+        try container.encode(tabId)
+        try container.encode(messageID)
+        try container.encode(message)
+    }
+
+}

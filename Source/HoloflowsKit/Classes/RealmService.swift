@@ -21,6 +21,7 @@ open class RealmService {
         let realmName = name.flatMap { "holoflowsKit-User-\($0)" } ?? "holoflowsKit"
         config.fileURL = config.fileURL!.deletingLastPathComponent().appendingPathComponent("\(realmName).realm")
 
+        try? FileManager.default.createDirectory(at: config.fileURL!.deletingLastPathComponent(), withIntermediateDirectories: true, attributes: nil)
         realm = try! Realm(configuration: config)
     }
 
