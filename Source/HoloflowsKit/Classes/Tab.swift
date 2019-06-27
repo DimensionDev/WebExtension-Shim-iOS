@@ -27,7 +27,12 @@ open class Tab: NSObject {
     public let userContentController: WKUserContentController
     public let webView: WKWebView
 
+    public var uiDelegateProxy: WebViewProxy<WKUIDelegate>?
+    public var navigationDelegateProxy: WebViewProxy<WKNavigationDelegate>?
+
     open weak var delegate: TabDelegate?
+    open weak var uiDelegate: WKUIDelegate?
+    open weak var navigationDelegate: WKNavigationDelegate?
 
     public init(id: Int, createOptions options: WebExtension.Browser.Tabs.Create.Options? = nil, webViewConfiguration configuration: WKWebViewConfiguration? = nil) {
         self.id = id
@@ -49,9 +54,12 @@ open class Tab: NSObject {
 
         super.init()
 
+        uiDelegateProxy = WebViewProxy(self)
+        navigationDelegateProxy = WebViewProxy(self)
+
         webView.setNeedsLayout()
-        webView.uiDelegate = self
-        webView.navigationDelegate = self
+        webView.uiDelegate = uiDelegateProxy as? WKUIDelegate
+        webView.navigationDelegate = navigationDelegateProxy as? WKNavigationDelegate
 
         for event in ScriptEvent.allCases {
             userContentController.add(self, name: event.rawValue)
