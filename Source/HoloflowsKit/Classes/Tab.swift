@@ -31,8 +31,16 @@ open class Tab: NSObject {
     public var navigationDelegateProxy: WebViewProxy<WKNavigationDelegate>?
 
     open weak var delegate: TabDelegate?
-    open weak var uiDelegate: WKUIDelegate?
-    open weak var navigationDelegate: WKNavigationDelegate?
+    open weak var uiDelegate: WKUIDelegate? {
+        didSet {
+            uiDelegate.flatMap { uiDelegateProxy?.registerSecondary($0) }
+        }
+    }
+    open weak var navigationDelegate: WKNavigationDelegate? {
+        didSet {
+            navigationDelegate.flatMap{ navigationDelegateProxy?.registerSecondary($0) }
+        }
+    }
 
     public init(id: Int, createOptions options: WebExtension.Browser.Tabs.Create.Options? = nil, webViewConfiguration configuration: WKWebViewConfiguration? = nil) {
         self.id = id
