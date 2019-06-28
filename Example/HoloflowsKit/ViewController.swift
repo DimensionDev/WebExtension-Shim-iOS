@@ -20,18 +20,23 @@ class ViewController: UIViewController {
         return browser
     }()
 
+    lazy var tab: Tab = {
+        return browser.tabs.create(options: WebExtension.Browser.Tabs.Create.Options(active: true, url: "https://m.facebook.com"))
+    }()
+
     lazy var webView: WKWebView = {
-        let tab = browser.tabs.create(options: WebExtension.Browser.Tabs.Create.Options(active: true, url: "https://m.facebook.com"))
         return tab.webView
     }()
 
 }
 
-
 extension ViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+
+        tab.uiDelegate = self
+        tab.navigationDelegate = self
 
         webView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(webView)
@@ -45,6 +50,18 @@ extension ViewController {
 
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
+    }
+
+}
+
+extension ViewController: WKUIDelegate {
+
+}
+
+extension ViewController: WKNavigationDelegate {
+
+    func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
+        consolePrint(navigation)
     }
 
 }
