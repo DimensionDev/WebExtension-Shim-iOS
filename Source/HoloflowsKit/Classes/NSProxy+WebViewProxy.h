@@ -12,7 +12,7 @@ NS_ASSUME_NONNULL_BEGIN
 @interface WebViewProxy<T>: NSProxy
 
 @property (nonatomic, weak, readonly) T primary;
-@property (nonatomic, weak, readonly) T secondary;
+@property (nonatomic, weak) T secondary;
 
 - (instancetype)init:(T)primary;
 
