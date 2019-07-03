@@ -49,10 +49,14 @@ open class Tab: NSObject {
         configuration.userContentController = userContentController
         let bundle = Bundle(for: Tab.self)
         if let bundleURL = bundle.resourceURL?.appendingPathComponent("WebExtensionScripts.bundle"),
-            let scriptsBundle = Bundle(url: bundleURL),
-            let scriptPath = scriptsBundle.path(forResource: "out", ofType: "js"),
-            let script = try? String(contentsOfFile: scriptPath) {
-            let userScript = WKUserScript(source: script, injectionTime: .atDocumentEnd, forMainFrameOnly: false)
+        let scriptsBundle = Bundle(url: bundleURL),
+        let scriptPath = scriptsBundle.path(forResource: "out", ofType: "js"),
+        let script = try? String(contentsOfFile: scriptPath) {
+            let dict = ["js/x.js" : "console.log('Hello');"]
+            let jsonData = try! JSONEncoder().encode(dict)
+            let jsonString = String(data: jsonData, encoding: .utf8)
+            let newScript = script.replacingOccurrences(of: "#Inject_JSON_Object#", with: jsonString ?? "")
+            let userScript = WKUserScript(source: newScript, injectionTime: .atDocumentEnd, forMainFrameOnly: false)
             userContentController.addUserScript(userScript)
         } else {
             assertionFailure()
