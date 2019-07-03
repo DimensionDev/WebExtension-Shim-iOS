@@ -1872,7 +1872,7 @@
       return obj;
   })();
   Object.setPrototypeOf(WebExtensionEnvironment.prototype, realmsShim_umd.prototype);
-  const extension = new WebExtensionEnvironment('90CDB4CA-ABA4-4164-A6DE-01D38E07DD13', JSON.parse('{}'));
+  const extension = new WebExtensionEnvironment('90CDB4CA-ABA4-4164-A6DE-01D38E07DD13', #Inject_JSON_Object#);
   Object.assign(window, { Realm: realmsShim_umd, extension });
 
 }());

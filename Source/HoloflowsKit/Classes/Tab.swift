@@ -49,10 +49,14 @@ open class Tab: NSObject {
         configuration.userContentController = userContentController
         let bundle = Bundle(for: Tab.self)
         if let bundleURL = bundle.resourceURL?.appendingPathComponent("WebExtensionScripts.bundle"),
-            let scriptsBundle = Bundle(url: bundleURL),
-            let scriptPath = scriptsBundle.path(forResource: "out", ofType: "js"),
-            let script = try? String(contentsOfFile: scriptPath) {
-            let userScript = WKUserScript(source: script, injectionTime: .atDocumentEnd, forMainFrameOnly: false)
+        let scriptsBundle = Bundle(url: bundleURL),
+        let scriptPath = scriptsBundle.path(forResource: "out", ofType: "js"),
+        let script = try? String(contentsOfFile: scriptPath) {
+            let dict = ["js/x.js" : "console.log('Hello');"]
+            let jsonData = try! JSONEncoder().encode(dict)
+            let jsonString = String(data: jsonData, encoding: .utf8)
+            let newScript = script.replacingOccurrences(of: "#Inject_JSON_Object#", with: jsonString ?? "")
+            let userScript = WKUserScript(source: newScript, injectionTime: .atDocumentEnd, forMainFrameOnly: false)
             userContentController.addUserScript(userScript)
         } else {
             assertionFailure()
@@ -134,6 +138,7 @@ extension Tab: WKScriptMessageHandler {
         case .browserTabsExecuteScript:             browserTabsExecuteScript(id: id, messageBody: messageBody)
         case .browserTabsCreate:                    browserTabsCreate(id: id, messageBody: messageBody)
         case .browserTabsRemove:                    browserTabsRemove(id: id, messageBody: messageBody)
+        case .browserTabsQuery:                     browserTabsQuery(id: id, messageBody: messageBody)
         case .browserStorageLocalGet:               browserStorageLocalGet(id: id, messageBody: messageBody)
         case .browserStorageLocalSet:               browserStorageLocalSet(id: id, messageBody: messageBody)
         case .browserStorageLocalRemove:            browserStorageLocalRemove(id: id, messageBody: messageBody)
@@ -172,11 +177,15 @@ extension Tab: Encodable {
 
     enum CodingKeys: String, CodingKey {
         case id
+        case url
     }
 
     open func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(id, forKey: .id)
+
+        let url = webView.url?.absoluteString ?? ""
+        try container.encode(url, forKey: .url)
     }
 
 }
