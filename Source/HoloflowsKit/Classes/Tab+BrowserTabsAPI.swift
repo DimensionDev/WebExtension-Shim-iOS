@@ -53,6 +53,21 @@ extension Tab {
         consolePrint(tabs?.storage)
     }
 
+    open func browserTabsQuery(id: String, messageBody: String) {
+        let messageResult: Result<WebExtension.Browser.Tabs.Query, RPC.Error> = HoloflowsRPC.parseRPC(messageBody: messageBody)
+        switch messageResult {
+        case .success:
+            let tabs = self.tabs?.storage ?? []
+            let result: Result<HoloflowsRPC.Response<[Tab]> , RPC.Error> = .success(.init(result: tabs, id: id))
+            HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: Tab.completionHandler)
+
+        case let .failure(error):
+            consolePrint(error.localizedDescription)
+            let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .failure(error)
+            HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: Tab.completionHandler)
+        }
+    }
+
     open func browserTabsExecuteScript(id: String, messageBody: String) {
         let messageResult: Result<WebExtension.Browser.Tabs.ExecuteScript, RPC.Error> = HoloflowsRPC.parseRPC(messageBody: messageBody)
 

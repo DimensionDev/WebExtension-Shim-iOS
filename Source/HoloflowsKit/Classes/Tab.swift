@@ -138,6 +138,7 @@ extension Tab: WKScriptMessageHandler {
         case .browserTabsExecuteScript:             browserTabsExecuteScript(id: id, messageBody: messageBody)
         case .browserTabsCreate:                    browserTabsCreate(id: id, messageBody: messageBody)
         case .browserTabsRemove:                    browserTabsRemove(id: id, messageBody: messageBody)
+        case .browserTabsQuery:                     browserTabsQuery(id: id, messageBody: messageBody)
         case .browserStorageLocalGet:               browserStorageLocalGet(id: id, messageBody: messageBody)
         case .browserStorageLocalSet:               browserStorageLocalSet(id: id, messageBody: messageBody)
         case .browserStorageLocalRemove:            browserStorageLocalRemove(id: id, messageBody: messageBody)
@@ -176,11 +177,15 @@ extension Tab: Encodable {
 
     enum CodingKeys: String, CodingKey {
         case id
+        case url
     }
 
     open func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(id, forKey: .id)
+
+        let url = webView.url?.absoluteString ?? ""
+        try container.encode(url, forKey: .url)
     }
 
 }
