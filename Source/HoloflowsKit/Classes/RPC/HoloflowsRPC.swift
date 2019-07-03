@@ -14,6 +14,16 @@ public enum HoloflowsRPC {
     public static let encoder = JSONEncoder()
     public static let decoder = JSONDecoder()
 
+    public static func dispatchScript<T: RPC.Request & Encodable>(id: String, request: T) -> String? {
+        guard let jsonData = try? encoder.encode(request),
+        let jsonString = String(data: jsonData, encoding: .utf8) else {
+            return nil
+        }
+
+        let script = "document.dispatchEvent(new CustomEvent('\(ScriptEvent.holoflowsjsonrpc.rawValue)', { detail: \(jsonString) }))"
+        return script
+    }
+
     public static func dispatchScript<T: RPC.Response>(id: String, result: Result<T, RPC.Error>) -> String {
         switch result {
         case let .success(response):
@@ -68,6 +78,15 @@ extension HoloflowsRPC {
 }
 
 extension HoloflowsRPC {
+
+    public static func dispathRequest<T: RPC.Request & Encodable>(webView: WKWebView, id: String, request: T, completionHandler: ((Any?, Error?) -> Void)?) {
+        guard let script = dispatchScript(id: id, request: request) else {
+            assertionFailure()
+            return
+        }
+        webView.evaluateJavaScript(script, completionHandler: completionHandler)
+        consolePrint("webView: \(webView.url?.absoluteString ?? ""), script: \(script)")
+    }
 
     public static func dispatchResponse<T: RPC.Response>(webView: WKWebView, id: String, result: Result<T, RPC.Error>, completionHandler: ((Any?, Error?) -> Void)?) {
         let script = dispatchScript(id: id, result: result)

@@ -161,31 +161,32 @@ extension Tab: WKNavigationDelegate {
     open func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
         consolePrint(webView.url)
 
-        typealias Navigation = WebExtension.Browser.WebNavigation.OnCommitted.Navigation
+        typealias OnCommitted = WebExtension.Browser.WebNavigation.OnCommitted
 
         let rpcID = UUID().uuidString
-        let details = Navigation(tabId: id, url: webView.url?.absoluteString ?? "")
-        let result = Result<HoloflowsRPC.Response<Navigation>, RPC.Error>.success(HoloflowsRPC.Response(result: details, id: rpcID))
+        let onCommitted =  OnCommitted(tab: .init(tabId: id, url: webView.url?.absoluteString ?? ""))
+        let request = HoloflowsRPC.ServerRequest(params: onCommitted, id: rpcID)
 
-        HoloflowsRPC.dispatchResponse(webView: webView, id: rpcID, result: result, completionHandler: Tab.completionHandler)
+        HoloflowsRPC.dispathRequest(webView: webView, id: rpcID, request: request, completionHandler: Tab.completionHandler)
     }
 
 }
 
 // MARK: - Encodable
-extension Tab: Encodable {
+extension Tab {
 
-    enum CodingKeys: String, CodingKey {
-        case id
-        case url
+    public var meta: Meta {
+        return Meta(id: id, url: webView.url?.absoluteString ?? "")
     }
 
-    open func encode(to encoder: Encoder) throws {
-        var container = encoder.container(keyedBy: CodingKeys.self)
-        try container.encode(id, forKey: .id)
+    public struct Meta: Codable {
+        let id: Int
+        let url: String
 
-        let url = webView.url?.absoluteString ?? ""
-        try container.encode(url, forKey: .url)
+        public init(id: Int, url: String) {
+            self.id = id
+            self.url = url
+        }
     }
 
 }

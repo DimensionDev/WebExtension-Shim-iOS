@@ -10,7 +10,9 @@ import SwiftyJSON
 
 extension WebExtension {
 
-    public struct OnMessage: Encodable {
+    public struct OnMessage: WebExtension.ServerRequest {
+        public static var method: String = "onMessage"
+
         public let extensionID: String
         public let toExtensionID: String
         public let messageID: String
@@ -36,14 +38,38 @@ extension WebExtension {
 
 }
 
+extension WebExtension.OnMessage {
+
+    public init(from decoder: Decoder) throws {
+        var container = try decoder.unkeyedContainer()
+
+        extensionID = try container.decode(String.self)
+        toExtensionID = try container.decode(String.self)
+        messageID = try container.decode(String.self)
+        message = try container.decode(JSON.self)
+        sender = try container.decode(WebExtension.Browser.Runtime.MessageSender.self)
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.unkeyedContainer()
+
+        try container.encode(extensionID)
+        try container.encode(toExtensionID)
+        try container.encode(messageID)
+        try container.encode(message)
+        try container.encode(sender)
+    }
+    
+}
+
 extension WebExtension.Browser.Runtime {
-    public struct MessageSender: Encodable {
-        public let tab: Tab?
+    public struct MessageSender: Codable {
+        public let tab: Tab.Meta?
         public let id: String? 
         public let url: String?
 
-        public init(tab: Tab?, id: String?, url: String?) {
-            self.tab = tab
+        public init(tabMeta: Tab.Meta?, id: String?, url: String?) {
+            self.tab = tabMeta
             self.id = id
             self.url = url
         }

@@ -14,9 +14,15 @@ public protocol WebExtensionClientRequest {
     var extensionID: String { get }
 }
 
+public protocol WebExtensionServerRequest {
+    static var method: String { get }
+    // not require extensionID
+}
+
 public enum WebExtension {
 
     public typealias ClientRequest = WebExtensionClientRequest & Codable
+    public typealias ServerRequest = WebExtensionServerRequest & Codable
 
 }
 
