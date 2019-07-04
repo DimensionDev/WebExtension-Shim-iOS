@@ -52,11 +52,11 @@ open class Tab: NSObject {
         let scriptsBundle = Bundle(url: bundleURL),
         let scriptPath = scriptsBundle.path(forResource: "out", ofType: "js"),
         let script = try? String(contentsOfFile: scriptPath) {
-            let dict = ["js/x.js" : "console.log('Hello');"]
-            let jsonData = try! JSONEncoder().encode(dict)
-            let jsonString = String(data: jsonData, encoding: .utf8)
-            let newScript = script.replacingOccurrences(of: "#Inject_JSON_Object#", with: jsonString ?? "")
-            let userScript = WKUserScript(source: newScript, injectionTime: .atDocumentEnd, forMainFrameOnly: false)
+//            let dict = ["js/x.js" : "console.log('Hello');"]
+//            let jsonData = try! JSONEncoder().encode(dict)
+//            let jsonString = String(data: jsonData, encoding: .utf8)
+//            let newScript = script.replacingOccurrences(of: "#Inject_JSON_Object#", with: jsonString ?? "")
+            let userScript = WKUserScript(source: script, injectionTime: .atDocumentEnd, forMainFrameOnly: false)
             userContentController.addUserScript(userScript)
         } else {
             assertionFailure()
@@ -117,7 +117,8 @@ extension Tab: WKScriptMessageHandler {
         consolePrint("[\(eventType.rawValue)]: \(messageBody.prefix(300))")
 
         guard let (method, id) = try? HoloflowsRPC.parseRPCMeta(messageBody: messageBody) else {
-            assertionFailure()
+            //assertionFailure()
+            consolePrint(messageBody)
             return
         }
 
