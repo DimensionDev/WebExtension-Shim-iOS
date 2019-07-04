@@ -12,8 +12,10 @@ import ConsolePrint
 
 open class BlobResourceManager: NSObject {
 
-    public override init() {
-        super.init()
+    public let realm: Realm
+
+    public init(realm: Realm) {
+        self.realm = realm
     }
 
 
@@ -40,7 +42,6 @@ extension BlobResourceManager {
         let _ = url.pathExtension
         let uuid = url.deletingPathExtension().lastPathComponent
 
-        let realm = RealmService.default.realm
         guard let blobStorage = realm.object(ofType: BlobStorage.self, forPrimaryKey: uuid) else {
             handler(.failure(Error.blobNotFound))
             return

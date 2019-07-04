@@ -9,11 +9,6 @@ import Foundation
 import WebKit
 import ConsolePrint
 
-// TODO: add support for multiple extension with different extensionID
-// bundle -> [extensionID: bundle]
-
-/// Resolve bundle resource when app request custom scheme
-/// - warning: be careful to set bundle which may leak the app secret
 open class BundleResourceManager: NSObject {
 
     public let bundle: Bundle

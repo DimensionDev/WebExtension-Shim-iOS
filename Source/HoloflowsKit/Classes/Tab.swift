@@ -13,8 +13,8 @@ import SwiftyJSON
 
 public protocol TabDelegate: class {
     func tab(_ tab: Tab, requestManifestForExtension extensionID: String) -> String
-    func tab(_ tab: Tab, requestBundleResourceManagerForExtension extensionID: String) -> BundleResourceManager?
-    func tab(_ tab: Tab, requestBlobResourceManagerForExtension extensionID: String) -> BlobResourceManager?
+    func tab(_ tab: Tab, requestBundleResourceManagerForExtension extensionID: String, forPath path: String) -> BundleResourceManager?
+    func tab(_ tab: Tab, requestBlobResourceManagerForExtension extensionID: String, forPath path: String) -> BlobResourceManager?
     func tab(_ tab: Tab, willDownloadBlobWithOptions options: WebExtension.Browser.Downloads.Download.Options)
     func tab(_ tab: Tab, didDownloadBlobWithOptions options: WebExtension.Browser.Downloads.Download.Options, result: Result<BlobStorage, Error>)
 }

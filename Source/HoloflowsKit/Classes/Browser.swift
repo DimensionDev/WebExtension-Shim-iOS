@@ -23,12 +23,7 @@ open class Browser: NSObject {
     open var manifest: String = ""
     open weak var delegate: BrowserDelegate?
 
-    // TODO: add multiple extension support
-    // *ResourceManager -> [extensionID: Manager]
-    
-    // URL scheme handler for custom scheme content loading
-    open weak var bundleResourceManager: BundleResourceManager?
-    open weak var blobResourceManager: BlobResourceManager?
+    open var schemeHanderManager = URLSchemeHandlerManager()
 
     open weak var tabsDelegate: TabsDelegate? {
         didSet {
@@ -51,8 +46,9 @@ extension Browser: TabsDelegate {
     
     public func tabs(_ tabs: Tabs, createTabWithOptions options: WebExtension.Browser.Tabs.Create.Options?) -> WKWebViewConfiguration {
         let configuration = WKWebViewConfiguration()
-        configuration.setURLSchemeHandler(bundleResourceManager, forURLScheme: "holoflows-kit")
-        configuration.setURLSchemeHandler(blobResourceManager, forURLScheme: "holoflows-blob")
+        for (scheme, handler) in schemeHanderManager.handlers {
+            configuration.setURLSchemeHandler(handler, forURLScheme: scheme)
+        }
         delegate?.browser(self, configureWebViewConfiguration: configuration)
         return configuration
     }
@@ -66,12 +62,20 @@ extension Browser: TabDelegate {
         return manifest
     }
 
-    public func tab(_ tab: Tab, requestBundleResourceManagerForExtension extensionID: String) -> BundleResourceManager? {
-        return bundleResourceManager
+    public func tab(_ tab: Tab, requestBundleResourceManagerForExtension extensionID: String, forPath path: String) -> BundleResourceManager? {
+        guard let url = URL(string: path), let scheme = url.scheme else {
+            consolePrint("not found bundle resource manager for pat: \(path)")
+            return nil
+        }
+        return schemeHanderManager.handlers[scheme] as? BundleResourceManager
     }
 
-    public func tab(_ tab: Tab, requestBlobResourceManagerForExtension extensionID: String) -> BlobResourceManager? {
-        return blobResourceManager
+    public func tab(_ tab: Tab, requestBlobResourceManagerForExtension extensionID: String, forPath path: String) -> BlobResourceManager? {
+        guard let url = URL(string: path), let scheme = url.scheme else {
+            consolePrint("not found bundle resource manager for pat: \(path)")
+            return nil
+        }
+        return schemeHanderManager.handlers[scheme] as? BlobResourceManager
     }
 
     public func tab(_ tab: Tab, willDownloadBlobWithOptions options: WebExtension.Browser.Downloads.Download.Options) {

@@ -14,7 +14,7 @@ extension Tab {
         let messageResult: Result<WebExtension.Browser.Downloads.Download, RPC.Error> = HoloflowsRPC.parseRPC(messageBody: messageBody)
         switch messageResult {
         case let .success(download):
-            guard let blobResourceManager = delegate?.tab(self, requestBlobResourceManagerForExtension: download.extensionID) else {
+            guard let blobResourceManager = delegate?.tab(self, requestBlobResourceManagerForExtension: download.extensionID, forPath: download.options.url) else {
                 let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .failure(.invalidParams)
                 HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: Tab.completionHandler)
                 return

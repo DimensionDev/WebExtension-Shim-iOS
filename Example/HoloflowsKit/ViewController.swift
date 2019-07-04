@@ -16,7 +16,6 @@ class ViewController: UIViewController {
     let bundleResourceManager = BundleResourceManager(bundle: Bundle(for: ViewController.self))
     lazy var browser: Browser = {
         let browser = Browser.default
-        browser.bundleResourceManager = bundleResourceManager
         return browser
     }()
 

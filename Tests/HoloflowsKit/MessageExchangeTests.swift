@@ -41,21 +41,21 @@ extension MessageExchangeTests {
 
         let url = "https://www.apple.com"
         let tab = browser.tabs.create(options: WebExtension.Browser.Tabs.Create.Options(url: url))
-        let sender = WebExtension.Browser.Runtime.MessageSender(tab: tab, id: request.params.extensionID, url: url)
+        let sender = WebExtension.Browser.Runtime.MessageSender(tabMeta: tab.meta, id: request.params.extensionID, url: url)
 
         let onMessage = WebExtension.OnMessage(fromMessageSender: sender, sendMessage: request.params)
-        let response = HoloflowsRPC.Response<WebExtension.OnMessage>(result: onMessage, id: UUID().uuidString)
+        let serverRequest = HoloflowsRPC.ServerRequest(params: onMessage, id: UUID().uuidString)
 
-        let data = try! JSONEncoder().encode(response)
+        let data = try! JSONEncoder().encode(serverRequest)
         let json = try! JSON(data: data)
         XCTAssertEqual(json["jsonrpc"], "2.0")
-        XCTAssertEqual(json["result"]["extensionID"].string, onMessage.extensionID)
-        XCTAssertEqual(json["result"]["toExtensionID"].string, onMessage.toExtensionID)
-        XCTAssertEqual(json["result"]["messageID"].string, onMessage.messageID)
-        XCTAssertEqual(json["result"]["message"].string, onMessage.message.string)
-        XCTAssertEqual(json["result"]["sender"]["tab"]["id"].int, 0)
-        XCTAssertEqual(json["result"]["sender"]["id"].string, request.params.extensionID)
-        XCTAssertEqual(json["result"]["sender"]["url"].string, url)
+        XCTAssertEqual(json["params"][0].string, onMessage.extensionID)     // extensionID
+        XCTAssertEqual(json["params"][1].string, onMessage.toExtensionID)   // toExtensionID
+        XCTAssertEqual(json["params"][2].string, onMessage.messageID)       // messageID
+        XCTAssertEqual(json["params"][3].string, onMessage.message.string)  // message
+        XCTAssertEqual(json["params"][4]["tab"]["id"].int, 0)               // sender
+        XCTAssertEqual(json["params"][4]["id"].string, request.params.extensionID)
+        XCTAssertEqual(json["params"][4]["url"].string, url)
     }
 
     func testSendAndReceiveMessage() {
@@ -66,7 +66,7 @@ extension MessageExchangeTests {
         let addListenerScript = """
         var message = '';
         document.addEventListener('\(ScriptEvent.holoflowsjsonrpc.rawValue)', event => {
-            message = event.detail.result.message
+            message = event.detail.params[3]
         });
         """
         let addListenerExpectation = TestHelper.expectEvaluateJavaScript(in: tab.webView, script: addListenerScript, forTestCase: self) { (any, error) in
@@ -92,8 +92,6 @@ extension MessageExchangeTests {
             XCTAssertEqual(any as? String, "Message Body")
         }
         wait(for: [checkMessageExpectation], timeout: 3.0)
-
-
     }
 
     static let requestJSON = """

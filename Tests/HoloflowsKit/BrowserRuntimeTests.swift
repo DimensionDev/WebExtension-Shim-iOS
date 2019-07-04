@@ -26,7 +26,7 @@ extension BrowserRuntimeTests {
 
     func testGetURL() {
         let bundleResourceManager = BundleResourceManager(bundle: Bundle(for: BrowserRuntimeTests.self))
-        browser.bundleResourceManager = bundleResourceManager
+        browser.schemeHanderManager = URLSchemeHandlerManager(handlers: ["holoflows-kit" : bundleResourceManager])
 
         let tab = browser.tabs.create(options: nil)
         TestHelper.prepareTest(tab: tab, forTestCase: self)
@@ -108,11 +108,11 @@ extension BrowserRuntimeTests {
             return String(data: BrowserRuntimeTests.manifest, encoding: .utf8)!
         }
 
-        func tab(_ tab: Tab, requestBundleResourceManagerForExtension extensionID: String) -> BundleResourceManager? {
+        func tab(_ tab: Tab, requestBundleResourceManagerForExtension extensionID: String, forPath path: String) -> BundleResourceManager? {
             return CustomURLSchemeHandler()
         }
 
-        func tab(_ tab: Tab, requestBlobResourceManagerForExtension extensionID: String) -> BlobResourceManager? {
+        func tab(_ tab: Tab, requestBlobResourceManagerForExtension extensionID: String, forPath path: String) -> BlobResourceManager? {
             return nil
         }
 

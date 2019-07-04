@@ -24,9 +24,7 @@ extension BrowserURLTests {
 
     func testCreateObjectURL() {
         let bundleResourceManager = BundleResourceManager(bundle: Bundle(for: BrowserURLTests.self))
-        let blobResourceManager = BlobResourceManager()
-        browser.bundleResourceManager = bundleResourceManager
-        browser.blobResourceManager = blobResourceManager
+        browser.schemeHanderManager = URLSchemeHandlerManager(handlers: ["unit-tests" : bundleResourceManager])
 
         let tab = browser.tabs.create(options: nil)
         TestHelper.prepareTest(tab: tab, forTestCase: self)

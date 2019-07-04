@@ -27,7 +27,7 @@ extension BrowserDownloadsTests {
         stubTabDelegate.downloadExpectation = expectation(description: "download check")
 
         let bundleResourceManager = BundleResourceManager(bundle: Bundle(for: BrowserDownloadsTests.self))
-        let blobResourceManager = BlobResourceManager()
+        let blobResourceManager = BlobResourceManager(realm: RealmService.default.realm)
         stubTabDelegate.bundleResourceManager = bundleResourceManager
         stubTabDelegate.blobResourceManager = blobResourceManager
 
@@ -90,11 +90,11 @@ extension BrowserDownloadsTests {
             return ""
         }
 
-        func tab(_ tab: Tab, requestBundleResourceManagerForExtension extensionID: String) -> BundleResourceManager? {
+        func tab(_ tab: Tab, requestBundleResourceManagerForExtension extensionID: String, forPath path: String) -> BundleResourceManager? {
             return bundleResourceManager
         }
 
-        func tab(_ tab: Tab, requestBlobResourceManagerForExtension extensionID: String) -> BlobResourceManager? {
+        func tab(_ tab: Tab, requestBlobResourceManagerForExtension extensionID: String, forPath path: String) -> BlobResourceManager? {
             return blobResourceManager
         }
 
