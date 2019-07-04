@@ -15,9 +15,9 @@ extension Tab {
         let messageResult: Result<WebExtension.Browser.Tabs.Create, RPC.Error> = HoloflowsRPC.parseRPC(messageBody: messageBody)
         switch messageResult {
         case let .success(create):
-            let result = (tabs.flatMap { tabs -> Result<HoloflowsRPC.Response<Tab>, RPC.Error> in
+            let result = (tabs.flatMap { tabs -> Result<HoloflowsRPC.Response<Tab.Meta>, RPC.Error> in
                 let tab = tabs.create(options: create.options)
-                let response = HoloflowsRPC.Response(result: tab, id: id)
+                let response = HoloflowsRPC.Response(result: tab.meta, id: id)
                 return .success(response)
             }) ?? .failure(RPC.Error.serverError)
 
@@ -57,8 +57,8 @@ extension Tab {
         let messageResult: Result<WebExtension.Browser.Tabs.Query, RPC.Error> = HoloflowsRPC.parseRPC(messageBody: messageBody)
         switch messageResult {
         case .success:
-            let tabs = self.tabs?.storage ?? []
-            let result: Result<HoloflowsRPC.Response<[Tab]> , RPC.Error> = .success(.init(result: tabs, id: id))
+            let tabs = self.tabs?.storage.map { $0.meta } ?? []
+            let result: Result<HoloflowsRPC.Response<[Tab.Meta]> , RPC.Error> = .success(.init(result: tabs, id: id))
             HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: Tab.completionHandler)
 
         case let .failure(error):
