@@ -30,6 +30,7 @@ extension Tab {
                     HoloflowsRPC.dispathRequest(webView: extensionTab.webView, id: id, request: request, completionHandler: Tab.completionHandler)
                 }
                 for targetTab in tabs?.storage ?? [] {
+                    guard targetTab.id != self.id else { return }
                     HoloflowsRPC.dispathRequest(webView: targetTab.webView, id: id, request: request, completionHandler: Tab.completionHandler)
                 }
             }
