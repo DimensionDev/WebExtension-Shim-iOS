@@ -18,7 +18,7 @@ public class URLSchemeHandlerManager {
         let bundle = Bundle(for: Tab.self)
         if let bundleURL = bundle.resourceURL?.appendingPathComponent("WebExtensionScripts.bundle"),
         let scriptsBundle = Bundle(url: bundleURL) {
-            handlers["holoflows-extension"] = BundleResourceManager(bundle: scriptsBundle)
+            handlers["holoflows-extension"] = ExtensionBundleResourceManager(bundle: scriptsBundle)
         }
         handlers["holoflows-blob"] = BlobResourceManager(realm: RealmService.default.realm)
 

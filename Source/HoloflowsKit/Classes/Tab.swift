@@ -80,7 +80,18 @@ open class Tab: NSObject {
         if let url = options?.url, let URL = URL(string: url) {
             webView.load(URLRequest(url: URL))
         } else {
-            // TODO:
+            let html = """
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>URL not invalid</title>
+            </head>
+            <body>
+
+            </body>
+            </html>
+            """
+            webView.loadHTMLString(html, baseURL: nil)
         }
     }
 

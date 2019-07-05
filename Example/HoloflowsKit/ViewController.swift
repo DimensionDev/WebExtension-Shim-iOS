@@ -19,20 +19,20 @@ class ViewController: UIViewController {
         return browser
     }()
 
-    lazy var tab: Tab = {
-        return browser.tabs.create(options: WebExtension.Browser.Tabs.Create.Options(active: true, url: "https://m.facebook.com"))
-    }()
-
-    lazy var webView: WKWebView = {
-        return tab.webView
-    }()
-
 }
 
 extension ViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+
+        let extensionTab = browser.tabs.create(options: WebExtension.Browser.Tabs.Create.Options(active: false, url: ExtensionBundleResourceManager.backgroundPagePath))
+
+//        let extensionTab = browser.tabs.create(options: WebExtension.Browser.Tabs.Create.Options(active: false, url: "https://www.apple.com"))
+
+//        let tab = browser.tabs.create(options: WebExtension.Browser.Tabs.Create.Options(active: false, url: "https://m.facebook.com"))
+        let tab = browser.tabs.create(options: WebExtension.Browser.Tabs.Create.Options(active: false, url: "https://m.facebook.com"))
+        let webView = tab.webView
 
         tab.uiDelegate = self
         tab.navigationDelegate = self
@@ -61,6 +61,13 @@ extension ViewController: WKNavigationDelegate {
 
     func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
         consolePrint(navigation)
+    }
+
+    func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
+        let url = navigationAction.request.url
+        consolePrint(url)
+
+        decisionHandler(.allow)
     }
 
 }

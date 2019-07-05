@@ -37,7 +37,7 @@ Implement basic web extension interface and provide strandard way to use Holoflo
     default_spec.source_files = 'Source/HoloflowsKit/Classes/**/*'
 
     default_spec.resource_bundles = {
-      'WebExtensionScripts' => ['Source/HoloflowsKit/Resources/*.js']
+      'WebExtensionScripts' => ['Source/HoloflowsKit/Resources/*']
     }
 
     default_spec.dependency 'RealmSwift'
