@@ -17,7 +17,11 @@ open class Tabs {
 
     open weak var delegate: TabsDelegate?
     open weak var browser: Browser?
-    open private(set) var storage: [Tab] = []
+
+    private(set) lazy var extensionTab: Tab = {
+        return createExtensionTab(options: WebExtension.Browser.Tabs.Create.Options(active: false, url: ExtensionBundleResourceManager.backgroundPagePath))
+    }()
+    public private(set) var storage: [Tab] = []
 
     private var nextID = 0
     
@@ -39,6 +43,16 @@ extension Tabs {
         storage.append(tab)
         return tab
     }
+
+    @discardableResult
+    func createExtensionTab(options: WebExtension.Browser.Tabs.Create.Options?, webViewConfiguration: WKWebViewConfiguration? = nil) -> Tab {
+        let webViewConfiguration = delegate?.tabs(self, createTabWithOptions: options)
+        let tab = Tab(id: -1, createOptions: options, webViewConfiguration: webViewConfiguration)
+        tab.tabs = self
+        tab.delegate = browser
+        return tab
+    }
+
 
     @discardableResult
     open func remove(id: Int) -> Tab? {

@@ -53,7 +53,7 @@ extension MessageExchangeTests {
         XCTAssertEqual(json["params"][1].string, onMessage.toExtensionID)   // toExtensionID
         XCTAssertEqual(json["params"][2].string, onMessage.messageID)       // messageID
         XCTAssertEqual(json["params"][3].string, onMessage.message.string)  // message
-        XCTAssertEqual(json["params"][4]["tab"]["id"].int, 0)               // sender
+        XCTAssertEqual(json["params"][4]["tab"]["id"].int, tab.id)               // sender
         XCTAssertEqual(json["params"][4]["id"].string, request.params.extensionID)
         XCTAssertEqual(json["params"][4]["url"].string, url)
     }

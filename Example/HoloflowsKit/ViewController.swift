@@ -16,6 +16,7 @@ class ViewController: UIViewController {
     let bundleResourceManager = BundleResourceManager(bundle: Bundle(for: ViewController.self))
     lazy var browser: Browser = {
         let browser = Browser.default
+        
         return browser
     }()
 
@@ -25,12 +26,6 @@ extension ViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-
-        let extensionTab = browser.tabs.create(options: WebExtension.Browser.Tabs.Create.Options(active: false, url: ExtensionBundleResourceManager.backgroundPagePath))
-
-//        let extensionTab = browser.tabs.create(options: WebExtension.Browser.Tabs.Create.Options(active: false, url: "https://www.apple.com"))
-
-//        let tab = browser.tabs.create(options: WebExtension.Browser.Tabs.Create.Options(active: false, url: "https://m.facebook.com"))
         let tab = browser.tabs.create(options: WebExtension.Browser.Tabs.Create.Options(active: false, url: "https://m.facebook.com"))
         let webView = tab.webView
 

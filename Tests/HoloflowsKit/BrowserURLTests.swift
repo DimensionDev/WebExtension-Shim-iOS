@@ -23,8 +23,7 @@ class BrowserURLTests: XCTestCase {
 extension BrowserURLTests {
 
     func testCreateObjectURL() {
-        let bundleResourceManager = BundleResourceManager(bundle: Bundle(for: BrowserURLTests.self))
-        browser.schemeHanderManager = URLSchemeHandlerManager(handlers: ["unit-tests" : bundleResourceManager])
+        browser.schemeHanderManager = URLSchemeHandlerManager()
 
         let tab = browser.tabs.create(options: nil)
         TestHelper.prepareTest(tab: tab, forTestCase: self)

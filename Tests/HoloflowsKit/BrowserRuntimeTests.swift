@@ -26,7 +26,8 @@ extension BrowserRuntimeTests {
 
     func testGetURL() {
         let bundleResourceManager = BundleResourceManager(bundle: Bundle(for: BrowserRuntimeTests.self))
-        browser.schemeHanderManager = URLSchemeHandlerManager(handlers: ["holoflows-kit" : bundleResourceManager])
+        let handers = [URLSchemeHandlerManager.URLSchemeHander(scheme: "holoflows-kit", extensionID: "HoloflowsKit-UnitTests", urlSchemeHander: bundleResourceManager)]
+        browser.schemeHanderManager = URLSchemeHandlerManager(handlers: handers)
 
         let tab = browser.tabs.create(options: nil)
         TestHelper.prepareTest(tab: tab, forTestCase: self)
@@ -46,7 +47,7 @@ extension BrowserRuntimeTests {
         }
         wait(for: [addListenerExpectation], timeout: 3.0)
 
-        let getURL = WebExtension.Browser.Runtime.GetURL(extensionID: "HoloflowsKit-UnitTests", path: "/lena_std.tif.tiff")
+        let getURL = WebExtension.Browser.Runtime.GetURL(extensionID: "HoloflowsKit-UnitTests", path: "lena_std.tif.tiff")
         let getURLScript = TestHelper.webKit(messageBody: HoloflowsRPC.Request(params: getURL, id: getURLID))
         let getURLExpectation = TestHelper.expectEvaluateJavaScript(in: tab.webView, script: getURLScript, forTestCase: self) { (any, error) in
             // do nothing

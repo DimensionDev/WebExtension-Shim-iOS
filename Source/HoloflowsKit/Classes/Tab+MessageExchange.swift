@@ -26,6 +26,9 @@ extension Tab {
                     HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: Tab.completionHandler)
                 }
             } else {
+                if let extensionTab = tabs?.extensionTab {
+                    HoloflowsRPC.dispathRequest(webView: extensionTab.webView, id: id, request: request, completionHandler: Tab.completionHandler)
+                }
                 for targetTab in tabs?.storage ?? [] {
                     HoloflowsRPC.dispathRequest(webView: targetTab.webView, id: id, request: request, completionHandler: Tab.completionHandler)
                 }

@@ -37,6 +37,9 @@ open class Browser: NSObject {
 
         tabsDelegate = self
         tabs.delegate = tabsDelegate
+
+        // make sure extensionTab init
+        let _ = tabs.extensionTab
     }
 
 }
@@ -46,8 +49,8 @@ extension Browser: TabsDelegate {
     
     public func tabs(_ tabs: Tabs, createTabWithOptions options: WebExtension.Browser.Tabs.Create.Options?) -> WKWebViewConfiguration {
         let configuration = WKWebViewConfiguration()
-        for (scheme, handler) in schemeHanderManager.handlers {
-            configuration.setURLSchemeHandler(handler, forURLScheme: scheme)
+        for (scheme, hander) in schemeHanderManager.handlerDict {
+            configuration.setURLSchemeHandler(hander.urlSchemeHander, forURLScheme: scheme)
         }
         delegate?.browser(self, configureWebViewConfiguration: configuration)
         return configuration
@@ -67,7 +70,7 @@ extension Browser: TabDelegate {
             consolePrint("not found bundle resource manager for pat: \(path)")
             return nil
         }
-        return schemeHanderManager.handlers[scheme] as? BundleResourceManager
+        return schemeHanderManager.handlerDict[scheme]?.urlSchemeHander as? BundleResourceManager
     }
 
     public func tab(_ tab: Tab, requestBlobResourceManagerForExtension extensionID: String, forPath path: String) -> BlobResourceManager? {
@@ -75,7 +78,7 @@ extension Browser: TabDelegate {
             consolePrint("not found bundle resource manager for pat: \(path)")
             return nil
         }
-        return schemeHanderManager.handlers[scheme] as? BlobResourceManager
+        return schemeHanderManager.handlerDict[scheme]?.urlSchemeHander as? BlobResourceManager
     }
 
     public func tab(_ tab: Tab, willDownloadBlobWithOptions options: WebExtension.Browser.Downloads.Download.Options) {
