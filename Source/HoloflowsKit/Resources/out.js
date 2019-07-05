@@ -2589,7 +2589,7 @@
     const id = 'eofkdgkhfoebecmamljfaepckoecjhib';
     const manifest = JSON.parse(Manifest);
     const env = location.href.startsWith('holoflows-extension://') && location.href.endsWith('_generated_background_page.html');
-    window.run () =>
+    window.run = () =>
     registerWebExtension(id, manifest, env ? 'background script' : 'content script', resources);
 
 }());
