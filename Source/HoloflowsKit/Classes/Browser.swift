@@ -65,20 +65,33 @@ extension Browser: TabDelegate {
         return manifest
     }
 
-    public func tab(_ tab: Tab, requestBundleResourceManagerForExtension extensionID: String, forPath path: String) -> BundleResourceManager? {
-        guard let url = URL(string: path), let scheme = url.scheme else {
-            consolePrint("not found bundle resource manager for pat: \(path)")
-            return nil
+    public func tab(_ tab: Tab, requestURLSchemeHanderForExtension extensionID: String, forPath path: String) -> [URLSchemeHandlerManager.URLSchemeHander] {
+        guard let url = URL(string: path) else {
+            consolePrint("not found bundle resource manager for path: \(path)")
+            return []
         }
-        return schemeHanderManager.handlerDict[scheme]?.urlSchemeHander as? BundleResourceManager
+
+        if let scheme = url.scheme {
+            return schemeHanderManager.handlerDict[scheme].flatMap { [$0] } ?? []
+
+        } else {
+            return schemeHanderManager.handlerDict.map { $0.1 }.filter { handler in
+                handler.extensionID == extensionID
+            }
+        }
     }
 
-    public func tab(_ tab: Tab, requestBlobResourceManagerForExtension extensionID: String, forPath path: String) -> BlobResourceManager? {
-        guard let url = URL(string: path), let scheme = url.scheme else {
-            consolePrint("not found bundle resource manager for pat: \(path)")
+    public func tab(_ tab: Tab, requestBundleResourceManagerForExtension extensionID: String, forPath path: String) -> BundleResourceManager? {
+        guard let url = URL(string: path) else {
+            consolePrint("not found bundle resource manager for path: \(path)")
             return nil
         }
-        return schemeHanderManager.handlerDict[scheme]?.urlSchemeHander as? BlobResourceManager
+
+        if let scheme = url.scheme {
+            return schemeHanderManager.handlerDict[scheme]?.urlSchemeHander as? BundleResourceManager
+        } else {
+            return schemeHanderManager.handlerDict.first(where: { $0.value.extensionID == extensionID })?.value.urlSchemeHander as? BundleResourceManager
+        }
     }
 
     public func tab(_ tab: Tab, willDownloadBlobWithOptions options: WebExtension.Browser.Downloads.Download.Options) {
