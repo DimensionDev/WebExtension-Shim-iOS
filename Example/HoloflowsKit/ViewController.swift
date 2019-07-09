@@ -66,3 +66,30 @@ extension ViewController: WKNavigationDelegate {
     }
 
 }
+
+extension ViewController {
+
+    override func motionBegan(_ motion: UIEventSubtype, with event: UIEvent?) {
+        guard motion == .motionShake else {
+            return
+        }
+
+        let alertController = UIAlertController(title: "Debug", message: nil, preferredStyle: .actionSheet)
+
+        let printCookieAction = UIAlertAction(title: "Print Cookie", style: .default) { _ in
+
+            self.browser.tabs.storage.forEach { tab in
+                tab.webView.configuration.websiteDataStore.httpCookieStore.getAllCookies { (cookies) in
+                    consolePrint(cookies)
+                }
+            }
+        }
+        alertController.addAction(printCookieAction)
+
+        let cancelAction = UIAlertAction(title: "Cancel", style: .cancel, handler: nil)
+        alertController.addAction(cancelAction)
+
+        present(alertController, animated: true, completion: nil)
+    }
+
+}
