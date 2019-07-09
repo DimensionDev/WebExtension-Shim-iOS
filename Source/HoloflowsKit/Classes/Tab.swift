@@ -41,11 +41,11 @@ open class Tab: NSObject {
         }
     }
 
-    public init(id: Int, createOptions options: WebExtension.Browser.Tabs.Create.Options? = nil, webViewConfiguration configuration: WKWebViewConfiguration? = nil) {
+    public init(id: Int, createOptions options: WebExtension.Browser.Tabs.Create.Options? = nil, webViewConfiguration configuration: WKWebViewConfiguration) {
         self.id = id
         self.userContentController = WKUserContentController()
-        let configuration = configuration ?? WKWebViewConfiguration()
         configuration.userContentController = userContentController
+        
         let bundle = Bundle(for: Tab.self)
         if let bundleURL = bundle.resourceURL?.appendingPathComponent("WebExtensionScripts.bundle"),
         let scriptsBundle = Bundle(url: bundleURL),

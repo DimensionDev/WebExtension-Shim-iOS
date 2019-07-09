@@ -18,10 +18,12 @@ open class Tabs {
     open weak var delegate: TabsDelegate?
     open weak var browser: Browser?
 
+    public private(set) var storage: [Tab] = []
+
+    private let processPool = WKProcessPool()
     private(set) lazy var extensionTab: Tab = {
         return createExtensionTab(options: WebExtension.Browser.Tabs.Create.Options(active: false, url: ExtensionBundleResourceManager.backgroundPagePath))
     }()
-    public private(set) var storage: [Tab] = []
 
     private var nextID = 0
     
@@ -35,7 +37,9 @@ extension Tabs {
     /// - Note: https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/tabs/create
     @discardableResult
     open func create(options: WebExtension.Browser.Tabs.Create.Options?, webViewConfiguration: WKWebViewConfiguration? = nil) -> Tab {
-        let webViewConfiguration = delegate?.tabs(self, createTabWithOptions: options)
+        let webViewConfiguration = delegate?.tabs(self, createTabWithOptions: options) ?? WKWebViewConfiguration()
+        webViewConfiguration.processPool = processPool
+
         let tab = Tab(id: nextID, createOptions: options, webViewConfiguration: webViewConfiguration)
         tab.tabs = self
         tab.delegate = browser
@@ -46,7 +50,9 @@ extension Tabs {
 
     @discardableResult
     func createExtensionTab(options: WebExtension.Browser.Tabs.Create.Options?, webViewConfiguration: WKWebViewConfiguration? = nil) -> Tab {
-        let webViewConfiguration = delegate?.tabs(self, createTabWithOptions: options)
+        let webViewConfiguration = delegate?.tabs(self, createTabWithOptions: options) ?? WKWebViewConfiguration()
+        webViewConfiguration.processPool = processPool
+
         let tab = Tab(id: -1, createOptions: options, webViewConfiguration: webViewConfiguration)
         tab.tabs = self
         tab.delegate = browser
