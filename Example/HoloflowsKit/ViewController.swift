@@ -13,12 +13,7 @@ import ConsolePrint
 
 class ViewController: UIViewController {
 
-    let bundleResourceManager = BundleResourceManager(bundle: Bundle(for: ViewController.self))
-    lazy var browser: Browser = {
-        let browser = Browser.default
-        
-        return browser
-    }()
+    lazy var browser = Browser(core: ExampleBrowserCore())
 
 }
 
@@ -26,11 +21,8 @@ extension ViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        let tab = browser.tabs.create(options: WebExtension.Browser.Tabs.Create.Options(active: false, url: "https://m.facebook.com"))
+        let tab = browser.tabs.create(options: WebExtension.Browser.Tabs.Create.Options(active: false, url: "https://www.apple.com"))
         let webView = tab.webView
-
-        tab.uiDelegate = self
-        tab.navigationDelegate = self
 
         webView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(webView)
@@ -40,29 +32,6 @@ extension ViewController {
             webView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             webView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
-    }
-
-    override func didReceiveMemoryWarning() {
-        super.didReceiveMemoryWarning()
-    }
-
-}
-
-extension ViewController: WKUIDelegate {
-
-}
-
-extension ViewController: WKNavigationDelegate {
-
-    func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
-        consolePrint(navigation)
-    }
-
-    func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
-        let url = navigationAction.request.url
-        consolePrint(url)
-
-        decisionHandler(.allow)
     }
 
 }

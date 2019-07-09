@@ -52,7 +52,6 @@ extension WebExtension {
         case urlCreateObjectURL
         case browserDownloadsDownload
         case browserRuntimeGetURL
-        case browserRuntimeGetManifest
         case browserTabsExecuteScript
         case browserTabsCreate
         case browserTabsRemove
@@ -79,7 +78,6 @@ extension WebExtension {
             case .urlCreateObjectURL:               return WebExtension.URL.CreateObjectURL.method
             case .browserDownloadsDownload:         return WebExtension.Browser.Downloads.Download.method
             case .browserRuntimeGetURL:             return WebExtension.Browser.Runtime.GetURL.method
-            case .browserRuntimeGetManifest:        return WebExtension.Browser.Runtime.GetManifest.method
             case .browserTabsExecuteScript:         return WebExtension.Browser.Tabs.ExecuteScript.method
             case .browserTabsCreate:                return WebExtension.Browser.Tabs.Create.method
             case .browserTabsRemove:                return WebExtension.Browser.Tabs.Remove.method

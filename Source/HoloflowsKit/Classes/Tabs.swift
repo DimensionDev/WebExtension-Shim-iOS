@@ -10,24 +10,19 @@ import WebKit
 import ConsolePrint
 
 public protocol TabsDelegate: class {
-    func tabs(_ tabs: Tabs, createTabWithOptions options: WebExtension.Browser.Tabs.Create.Options?) -> WKWebViewConfiguration
+    func tabs(_ tabs: Tabs,  webViewConfigurationForOptions options: WebExtension.Browser.Tabs.Create.Options?) -> WKWebViewConfiguration
 }
 
-open class Tabs {
+public class Tabs {
 
-    open weak var delegate: TabsDelegate?
-    open weak var browser: Browser?
+    weak var delegate: TabsDelegate?
+    weak var browser: Browser?
 
     public private(set) var storage: [Tab] = []
 
-    private let processPool = WKProcessPool()
-    private(set) lazy var extensionTab: Tab = {
-        return createExtensionTab(options: WebExtension.Browser.Tabs.Create.Options(active: false, url: ExtensionBundleResourceManager.backgroundPagePath))
-    }()
-
-    private var nextID = 0
+    private(set) lazy var extensionTab: Tab = createExtensionTab(options: WebExtension.Browser.Tabs.Create.Options(active: false, url: ExtensionBundleResourceManager.backgroundPagePath))
     private(set) var userAgent = ""
-    
+    private var nextID = 0
 }
 
 extension Tabs {
@@ -37,44 +32,25 @@ extension Tabs {
     /// - Parameter properties: Properties to give the new tab.
     /// - Note: https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/tabs/create
     @discardableResult
-    open func create(options: WebExtension.Browser.Tabs.Create.Options?, webViewConfiguration: WKWebViewConfiguration? = nil) -> Tab {
-        let webViewConfiguration = delegate?.tabs(self, createTabWithOptions: options) ?? WKWebViewConfiguration()
-        webViewConfiguration.processPool = processPool
-
+    public func create(options: WebExtension.Browser.Tabs.Create.Options?, webViewConfiguration: WKWebViewConfiguration? = nil) -> Tab {
+        let webViewConfiguration = delegate?.tabs(self, webViewConfigurationForOptions: options) ?? WKWebViewConfiguration()
         let tab = Tab(id: nextID, createOptions: options, webViewConfiguration: webViewConfiguration)
         tab.tabs = self
-        tab.delegate = browser
+        tab.delegate = browser?.core
         nextID += 1
         storage.append(tab)
         return tab
     }
 
     @discardableResult
-    func createExtensionTab(options: WebExtension.Browser.Tabs.Create.Options?, webViewConfiguration: WKWebViewConfiguration? = nil) -> Tab {
-        let webViewConfiguration = delegate?.tabs(self, createTabWithOptions: options) ?? WKWebViewConfiguration()
-        webViewConfiguration.processPool = processPool
-
-        let tab = Tab(id: -1, createOptions: options, webViewConfiguration: webViewConfiguration)
-        tab.tabs = self
-        tab.delegate = browser
-
-        tab.webView.evaluateJavaScript("navigator.userAgent") { any, error in
-            guard let userAgent = any as? String else { return }
-            self.userAgent = userAgent
-        }
-        return tab
-    }
-
-
-    @discardableResult
-    open func remove(id: Int) -> Tab? {
+    public func remove(id: Int) -> Tab? {
         let removed = remove(ids: [id])
         assert(removed.count < 2)
         return removed.first
     }
 
     @discardableResult
-    open func remove(ids: [Int]) -> [Tab] {
+    public func remove(ids: [Int]) -> [Tab] {
         let removed = storage.filter { ids.contains($0.id) }
 
         storage.removeAll(where: { ids.contains($0.id) })
@@ -84,6 +60,26 @@ extension Tabs {
         }
 
         return removed
+    }
+
+}
+
+extension Tabs {
+
+    @discardableResult
+    private func createExtensionTab(options: WebExtension.Browser.Tabs.Create.Options?, webViewConfiguration: WKWebViewConfiguration? = nil) -> Tab {
+        let webViewConfiguration = delegate?.tabs(self, webViewConfigurationForOptions: options) ?? WKWebViewConfiguration()
+        let tab = Tab(id: -1, createOptions: options, webViewConfiguration: webViewConfiguration)
+        tab.tabs = self
+        tab.delegate = browser?.core
+
+        // Setup User-Agent
+        tab.webView.evaluateJavaScript("navigator.userAgent") { any, error in
+            guard let userAgent = any as? String else { return }
+            self.userAgent = userAgent
+        }
+
+        return tab
     }
 
 }

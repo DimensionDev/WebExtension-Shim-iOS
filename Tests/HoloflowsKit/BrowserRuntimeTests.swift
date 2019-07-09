@@ -25,9 +25,9 @@ class BrowserRuntimeTests: XCTestCase {
 extension BrowserRuntimeTests {
 
     func testGetURL() {
-        let bundleResourceManager = BundleResourceManager(bundle: Bundle(for: BrowserRuntimeTests.self))
-        let handers = [URLSchemeHandlerManager.URLSchemeHander(scheme: "holoflows-kit", extensionID: "HoloflowsKit-UnitTests", urlSchemeHandler: bundleResourceManager)]
-        browser.schemeHanderManager = URLSchemeHandlerManager(handlers: handers)
+//        let bundleResourceManager = BundleResourceManager(bundle: Bundle(for: BrowserRuntimeTests.self))
+//        let handers = [URLSchemeHandlerManager.URLSchemeHander(scheme: "holoflows-kit", extensionID: "HoloflowsKit-UnitTests", urlSchemeHandler: bundleResourceManager)]
+//        browser.schemeHanderManager = URLSchemeHandlerManager(handlers: handers)
 
         let tab = browser.tabs.create(options: nil)
         TestHelper.prepareTest(tab: tab, forTestCase: self)
@@ -68,8 +68,8 @@ extension BrowserRuntimeTests {
 
     public func testRuntimeGetManifest() {
         let tab = browser.tabs.create(options: nil)
-        let tabDelegate = TabDelegateStub()
-        tab.delegate = tabDelegate
+//        let tabDelegate = TabDelegateStub()
+//        tab.delegate = tabDelegate
         TestHelper.prepareTest(tab: tab, forTestCase: self)
 
         let getManifestID = UUID().uuidString
@@ -96,40 +96,40 @@ extension BrowserRuntimeTests {
 
         let checkManifestExpectation = TestHelper.expectEvaluateJavaScript(in: tab.webView, script: "manifest;", forTestCase: self) { (any, error) in
             XCTAssertNotNil(any)
-            let manifest = JSON(rawValue: any!)
+            let manifest = any.flatMap { JSON(rawValue: $0) } ?? JSON.null
             XCTAssertEqual(manifest, JSON(rawValue: BrowserRuntimeTests.manifest))
-            XCTAssertEqual(manifest!["content_scripts"].arrayValue.first?["all_frames"].bool, true)
+            XCTAssertEqual(manifest["content_scripts"].arrayValue.first?["all_frames"].bool, true)
         }
         wait(for: [checkManifestExpectation], timeout: 3.0)
     }
 
-    private class TabDelegateStub: TabDelegate {
-        func tab(_ tab: Tab, requestURLSchemeHanderForExtension extensionID: String, forPath path: String) -> [URLSchemeHandlerManager.URLSchemeHander] {
-            // TODO:
-            return []
-        }
-
-
-        func tab(_ tab: Tab, requestManifestForExtension extensionID: String) -> String {
-            return String(data: BrowserRuntimeTests.manifest, encoding: .utf8)!
-        }
-
-        func tab(_ tab: Tab, requestBundleResourceManagerForExtension extensionID: String, forPath path: String) -> BundleResourceManager? {
-            return CustomURLSchemeHandler()
-        }
-
-        func tab(_ tab: Tab, requestBlobResourceManagerForExtension extensionID: String, forPath path: String) -> BlobResourceManager? {
-            return nil
-        }
-
-        func tab(_ tab: Tab, willDownloadBlobWithOptions options: WebExtension.Browser.Downloads.Download.Options) {
-            // do nothing
-        }
-
-        func tab(_ tab: Tab, didDownloadBlobWithOptions options: WebExtension.Browser.Downloads.Download.Options, result: Result<BlobStorage, Error>) {
-            // do nothing
-        }
-    }
+//    private class TabDelegateStub: TabDelegate {
+//        func tab(_ tab: Tab, requestURLSchemeHanderForExtension extensionID: String, forPath path: String) -> [URLSchemeHandlerManager.URLSchemeHander] {
+//            // TODO:
+//            return []
+//        }
+//
+//
+//        func tab(_ tab: Tab, requestManifestForExtension extensionID: String) -> String {
+//            return String(data: BrowserRuntimeTests.manifest, encoding: .utf8)!
+//        }
+//
+//        func tab(_ tab: Tab, requestBundleResourceManagerForExtension extensionID: String, forPath path: String) -> BundleResourceManager? {
+//            return CustomURLSchemeHandler()
+//        }
+//
+//        func tab(_ tab: Tab, requestBlobResourceManagerForExtension extensionID: String, forPath path: String) -> BlobResourceManager? {
+//            return nil
+//        }
+//
+//        func tab(_ tab: Tab, willDownloadBlobWithOptions options: WebExtension.Browser.Downloads.Download.Options) {
+//            // do nothing
+//        }
+//
+//        func tab(_ tab: Tab, didDownloadBlobWithOptions options: WebExtension.Browser.Downloads.Download.Options, result: Result<BlobStorage, Error>) {
+//            // do nothing
+//        }
+//    }
 
     private static var manifest = """
     {
