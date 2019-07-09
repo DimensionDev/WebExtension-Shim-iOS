@@ -22,11 +22,11 @@ extension Tab {
 
             let blobHandlers = handlers.compactMap { hander -> URLSchemeHandlerManager.URLSchemeHander? in
                 guard hander.extensionID == download.extensionID else { return nil }
-                guard hander.urlSchemeHander is BlobResourceManager else { return nil }
+                guard hander.urlSchemeHandler is BlobResourceManager else { return nil }
                 return hander
             }
 
-            guard let blobResourceManager = blobHandlers.first?.urlSchemeHander as? BlobResourceManager else {
+            guard let blobResourceManager = blobHandlers.first?.urlSchemeHandler as? BlobResourceManager else {
                 let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .failure(.invalidParams)
                 HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: Tab.completionHandler)
                 return

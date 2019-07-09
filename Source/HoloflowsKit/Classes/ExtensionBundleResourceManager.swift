@@ -10,7 +10,7 @@ import WebKit
 
 open class ExtensionBundleResourceManager: BundleResourceManager {
 
-    public static let backgroundPagePath = "holoflows-extension://8848e4a9-0bd6-4036-b292-5e37c91b211f/_generated_background_page.html"
+    public static let backgroundPagePath = "holoflows-extension://eofkdgkhfoebecmamljfaepckoecjhib/_generated_background_page.html"
 
     open override func webView(_ webView: WKWebView, start urlSchemeTask: WKURLSchemeTask) {
         guard let url = urlSchemeTask.request.url else {

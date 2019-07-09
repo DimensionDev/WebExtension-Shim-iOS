@@ -24,11 +24,11 @@ public class URLSchemeHandlerManager {
         if let bundleURL = bundle.resourceURL?.appendingPathComponent("WebExtensionScripts.bundle"),
         let scriptsBundle = Bundle(url: bundleURL) {
             let extensionScheme = "holoflows-extension"
-            let extensionURLSchemeHander = URLSchemeHander(scheme: extensionScheme, extensionID: "8848e4a9-0bd6-4036-b292-5e37c91b211f", urlSchemeHander: ExtensionBundleResourceManager(bundle: scriptsBundle))
+            let extensionURLSchemeHander = URLSchemeHander(scheme: extensionScheme, extensionID: "eofkdgkhfoebecmamljfaepckoecjhib", urlSchemeHandler: ExtensionBundleResourceManager(bundle: scriptsBundle))
             handlerDict[extensionScheme] = extensionURLSchemeHander
         }
         let extensionBlobScheme = "holoflows-blob"
-        handlerDict[extensionBlobScheme] = URLSchemeHander(scheme: extensionBlobScheme, extensionID: "8848e4a9-0bd6-4036-b292-5e37c91b211f", urlSchemeHander: BlobResourceManager(realm: RealmService.default.realm))
+        handlerDict[extensionBlobScheme] = URLSchemeHander(scheme: extensionBlobScheme, extensionID: "eofkdgkhfoebecmamljfaepckoecjhib", urlSchemeHandler: BlobResourceManager(realm: RealmService.default.realm))
 
         self.handlerDict = handlerDict
     }
@@ -40,12 +40,12 @@ extension URLSchemeHandlerManager {
     public struct URLSchemeHander {
         public let scheme: String
         public let extensionID: String
-        public let urlSchemeHander: WKURLSchemeHandler
+        public let urlSchemeHandler: WKURLSchemeHandler
 
-        public init (scheme: String, extensionID: String, urlSchemeHander: WKURLSchemeHandler) {
+        public init (scheme: String, extensionID: String, urlSchemeHandler: WKURLSchemeHandler) {
             self.scheme = scheme
             self.extensionID = extensionID
-            self.urlSchemeHander = urlSchemeHander
+            self.urlSchemeHandler = urlSchemeHandler
         }
     }
 

@@ -50,7 +50,7 @@ extension Browser: TabsDelegate {
     public func tabs(_ tabs: Tabs, createTabWithOptions options: WebExtension.Browser.Tabs.Create.Options?) -> WKWebViewConfiguration {
         let configuration = WKWebViewConfiguration()
         for (scheme, hander) in schemeHanderManager.handlerDict {
-            configuration.setURLSchemeHandler(hander.urlSchemeHander, forURLScheme: scheme)
+            configuration.setURLSchemeHandler(hander.urlSchemeHandler, forURLScheme: scheme)
         }
         delegate?.browser(self, configureWebViewConfiguration: configuration)
         return configuration
@@ -65,6 +65,7 @@ extension Browser: TabDelegate {
         return manifest
     }
 
+    // TODO:
     public func tab(_ tab: Tab, requestURLSchemeHanderForExtension extensionID: String, forPath path: String) -> [URLSchemeHandlerManager.URLSchemeHander] {
         guard let url = URL(string: path) else {
             consolePrint("not found bundle resource manager for path: \(path)")
@@ -78,19 +79,6 @@ extension Browser: TabDelegate {
             return schemeHanderManager.handlerDict.map { $0.1 }.filter { handler in
                 handler.extensionID == extensionID
             }
-        }
-    }
-
-    public func tab(_ tab: Tab, requestBundleResourceManagerForExtension extensionID: String, forPath path: String) -> BundleResourceManager? {
-        guard let url = URL(string: path) else {
-            consolePrint("not found bundle resource manager for path: \(path)")
-            return nil
-        }
-
-        if let scheme = url.scheme {
-            return schemeHanderManager.handlerDict[scheme]?.urlSchemeHander as? BundleResourceManager
-        } else {
-            return schemeHanderManager.handlerDict.first(where: { $0.value.extensionID == extensionID })?.value.urlSchemeHander as? BundleResourceManager
         }
     }
 

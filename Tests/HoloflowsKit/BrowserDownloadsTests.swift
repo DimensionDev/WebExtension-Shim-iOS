@@ -90,12 +90,25 @@ extension BrowserDownloadsTests {
             return ""
         }
 
-        func tab(_ tab: Tab, requestBundleResourceManagerForExtension extensionID: String, forPath path: String) -> BundleResourceManager? {
-            return bundleResourceManager
-        }
+        func tab(_ tab: Tab, requestURLSchemeHanderForExtension extensionID: String, forPath path: String) -> [URLSchemeHandlerManager.URLSchemeHander] {
+            guard let url = URL(string: path) else {
+                consolePrint("not found bundle resource manager for path: \(path)")
+                return []
+            }
 
-        func tab(_ tab: Tab, requestBlobResourceManagerForExtension extensionID: String, forPath path: String) -> BlobResourceManager? {
-            return blobResourceManager
+            if let scheme = url.scheme {
+                if scheme == "holoflows-extension", let manager = bundleResourceManager {
+                    return [URLSchemeHandlerManager.URLSchemeHander(scheme: "holoflows-extension", extensionID: extensionID, urlSchemeHandler: manager)]
+                } else if scheme == "holoflows-blob", let manager = blobResourceManager {
+                    return [URLSchemeHandlerManager.URLSchemeHander(scheme: "holoflows-blob", extensionID: extensionID, urlSchemeHandler: manager)]
+                } else {
+                    return []
+                }
+
+            } else {
+                // FIXME:
+                return []
+            }
         }
 
         func tab(_ tab: Tab, willDownloadBlobWithOptions options: WebExtension.Browser.Downloads.Download.Options) {
