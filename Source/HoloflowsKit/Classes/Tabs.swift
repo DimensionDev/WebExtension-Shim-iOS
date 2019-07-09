@@ -26,6 +26,7 @@ open class Tabs {
     }()
 
     private var nextID = 0
+    private(set) var userAgent = ""
     
 }
 
@@ -56,6 +57,11 @@ extension Tabs {
         let tab = Tab(id: -1, createOptions: options, webViewConfiguration: webViewConfiguration)
         tab.tabs = self
         tab.delegate = browser
+
+        tab.webView.evaluateJavaScript("navigator.userAgent") { any, error in
+            guard let userAgent = any as? String else { return }
+            self.userAgent = userAgent
+        }
         return tab
     }
 

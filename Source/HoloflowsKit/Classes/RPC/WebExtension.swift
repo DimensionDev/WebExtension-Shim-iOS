@@ -21,6 +21,7 @@ public protocol WebExtensionServerRequest {
 
 public enum WebExtension {
 
+    // App as RPC server. Browser as RPC Client
     public typealias ClientRequest = WebExtensionClientRequest & Codable
     public typealias ServerRequest = WebExtensionServerRequest & Codable
 
@@ -47,6 +48,7 @@ extension WebExtension {
     public enum API: CaseIterable {
         case _echo
         case sendMessage
+        case fetch
         case urlCreateObjectURL
         case browserDownloadsDownload
         case browserRuntimeGetURL
@@ -73,6 +75,7 @@ extension WebExtension {
             switch self {
             case ._echo:                            return WebExtension._Echo.method
             case .sendMessage:                      return WebExtension.SendMessage.method
+            case .fetch:                            return WebExtension.Fetch.method
             case .urlCreateObjectURL:               return WebExtension.URL.CreateObjectURL.method
             case .browserDownloadsDownload:         return WebExtension.Browser.Downloads.Download.method
             case .browserRuntimeGetURL:             return WebExtension.Browser.Runtime.GetURL.method
