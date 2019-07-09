@@ -1,0 +1,37 @@
+{
+    "$schema": "http://json.schemastore.org/chrome-manifest",
+    "name": "Maskbook",
+    "version": "1.4.1",
+    "manifest_version": 2,
+    "content_scripts": [
+        {
+            "matches": ["https://www.facebook.com/*", "https://m.facebook.com/*"],
+            "js": ["polyfill/browser-polyfill.min.js", "js/contentscript.js"],
+            "run_at": "document_idle"
+        }
+    ],
+    "web_accessible_resources": ["*.css", "*.js", "*.jpg", "*.png"],
+    "permissions": [
+        "https://www.facebook.com/*",
+        "https://m.facebook.com/*",
+        "storage",
+        "downloads",
+        "background",
+        "webNavigation"
+    ],
+    "background": {
+        "scripts": ["polyfill/webcrypto-liner.shim.js", "polyfill/browser-polyfill.min.js", "js/backgroundservice.js"]
+    },
+    "options_ui": {
+        "page": "index.html",
+        "open_in_tab": true
+    },
+    "icons": {
+        "16": "16x16.png",
+        "48": "48x48.png",
+        "128": "128x128.png",
+        "256": "256x256.png"
+    },
+    "homepage_url": "https://maskbook.io",
+    "description": "Encrypt your posts & chats on You-Know-Where. Allow only your friends to decrypt."
+}
