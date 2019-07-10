@@ -49,6 +49,8 @@ extension Tabs {
         let tab = Tab(id: nextID, plugin: plugin, createOptions: options, webViewConfiguration: webViewConfiguration)
         tab.tabs = self
         tab.delegate = browser?.core
+        tab.delegate?.tab(tab, shouldActive: options?.active ?? false)
+
         nextID += 1
         storage.append(tab)
         return tab
