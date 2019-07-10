@@ -168,6 +168,9 @@ extension Tab: WKScriptMessageHandler {
         case .browserStorageLocalRemove:            browserStorageLocalRemove(id: id, messageBody: messageBody)
         case .browserStorageLocalClear:             browserStorageLocalClear(id: id, messageBody: messageBody)
         case .browserStorageLocalGetBytesInUse:     browserStorageLocalGetBytesInUse(id: id, messageBody: messageBody)
+        case .websocketCreate:                      websocketCreate(id: id, messageBody: messageBody)
+        case .websocketClose:                       websocketClose(id: id, messageBody: messageBody)
+        case .websocketSend:                        websocketSend(id: id, messageBody: messageBody)
         }          
 //        }   // end switch eventType
     }   // end func userContentController

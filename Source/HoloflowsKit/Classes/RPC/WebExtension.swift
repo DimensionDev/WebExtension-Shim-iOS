@@ -30,6 +30,8 @@ public enum WebExtension {
 extension WebExtension {
 
     public enum URL { }
+    public enum WebSocket { }
+    public enum ExtensionTypes { }
 
     public enum Browser {
         public enum Runtime { }
@@ -39,10 +41,6 @@ extension WebExtension {
             public enum Local { }
         }
         public enum Downloads { }
-    }
-
-    public enum ExtensionTypes {
-
     }
 
     public enum API: CaseIterable {
@@ -61,6 +59,9 @@ extension WebExtension {
         case browserStorageLocalRemove
         case browserStorageLocalClear
         case browserStorageLocalGetBytesInUse
+        case websocketCreate
+        case websocketClose
+        case websocketSend
 
         public init?(method: String) {
             guard let api = API.allCases.first(where: { $0.method == method }) else {
@@ -87,6 +88,9 @@ extension WebExtension {
             case .browserStorageLocalRemove:        return WebExtension.Browser.Storage.Local.Remove.method
             case .browserStorageLocalClear:         return WebExtension.Browser.Storage.Local.Clear.method
             case .browserStorageLocalGetBytesInUse: return WebExtension.Browser.Storage.Local.GetBytesInUse.method
+            case .websocketCreate:                  return WebExtension.WebSocket.Create.method
+            case .websocketClose:                   return WebExtension.WebSocket.Close.method
+            case .websocketSend:                    return WebExtension.WebSocket.Send.method
             }
         }
 
