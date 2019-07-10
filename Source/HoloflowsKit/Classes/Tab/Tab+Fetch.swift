@@ -43,18 +43,16 @@ extension Tab {
 
                 let fetchResponse: WebExtension.Fetch.Response
                 if let dataString = String(data: data, encoding: .utf8) {
+                    let data = WebExtension.StringOrBlob(type: .text, content: dataString, mimeType: response.mimeType ?? "")
                     fetchResponse = WebExtension.Fetch.Response(status: response.statusCode,
                                                            statusText: HTTPResponseStatus(statusCode: response.statusCode).reasonPhrase,
-                                                           mimeType: response.mimeType ?? "",
-                                                           type: .text,
-                                                           content: dataString)
+                                                           data: data)
                     consolePrint(dataString)
                 } else {
+                    let data = WebExtension.StringOrBlob(type: .blob, content: data.base64EncodedString(), mimeType: response.mimeType ?? "")
                     fetchResponse = WebExtension.Fetch.Response(status: response.statusCode,
                                                            statusText: HTTPURLResponse.localizedString(forStatusCode: response.statusCode),
-                                                           mimeType: response.mimeType ?? "",
-                                                           type: .binary,
-                                                           content: data.base64EncodedString())
+                                                           data: data)
                     consolePrint(data)
                 }
 

@@ -34,16 +34,12 @@ extension WebExtension {
         public struct Response: Codable {
             public let status: Int
             public let statusText: String
-            public let mimeType: String
-            public let type: Type
-            public let content: String
+            public let data: WebExtension.StringOrBlob
 
-            public init(status: Int, statusText: String, mimeType: String, type: Type, content: String) {
+            public init(status: Int, statusText: String, data: WebExtension.StringOrBlob) {
                 self.status = status
                 self.statusText = statusText
-                self.mimeType = mimeType
-                self.type = type
-                self.content = content
+                self.data = data
             }
 
             public enum `Type`: String, Codable {

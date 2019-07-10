@@ -10,7 +10,7 @@ import SwiftyJSON
 
 public struct Plugin {
     public let id: String
-    public let manifest: String
+    public let manifest: JSON
     public let environment: ScriptType
     public let resources: JSON
 
@@ -19,7 +19,7 @@ public struct Plugin {
         case contentScript = "content script"
     }
 
-    public init(id: String, manifest: String, environment: ScriptType, resources: JSON) {
+    public init(id: String, manifest: JSON, environment: ScriptType, resources: JSON) {
         self.id = id
         self.manifest = manifest
         self.environment = environment

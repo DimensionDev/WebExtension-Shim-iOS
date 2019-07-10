@@ -19,6 +19,10 @@ class ExampleBrowserCore: BrowserCore {
 // MARK: - TabsDelegate
 extension ExampleBrowserCore {
 
+    func plugin(forScriptType type: Plugin.ScriptType) -> Plugin {
+        return Plugin(id: UUID().uuidString, manifest: JSON(stringLiteral: "{}"), environment: type, resources: JSON(stringLiteral: ""))
+    }
+
     func tabs(_ tabs: Tabs, webViewConfigurationForOptions options: WebExtension.Browser.Tabs.Create.Options?) -> WKWebViewConfiguration {
         return WKWebViewConfiguration()
     }
@@ -34,10 +38,6 @@ extension ExampleBrowserCore {
 
     func navigationDelegate(for tab: Tab) -> WKNavigationDelegate? {
         return nil
-    }
-
-    func plugin(forScriptType type: Plugin.ScriptType) -> Plugin {
-        return Plugin(id: UUID().uuidString, manifest: "{}", environment: type, resources: JSON(stringLiteral: ""))
     }
 
     func tab(_ tab: Tab, bundleResourceManagerOfExtensionID extensionID: String, forPath path: String) -> BundleResourceManager? {

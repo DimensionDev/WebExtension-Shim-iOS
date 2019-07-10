@@ -10,6 +10,7 @@ import WebKit
 import ConsolePrint
 
 public protocol TabsDelegate: class {
+    func plugin(forScriptType type: Plugin.ScriptType) -> Plugin
     func tabs(_ tabs: Tabs,  webViewConfigurationForOptions options: WebExtension.Browser.Tabs.Create.Options?) -> WKWebViewConfiguration
 }
 
@@ -34,7 +35,18 @@ extension Tabs {
     @discardableResult
     public func create(options: WebExtension.Browser.Tabs.Create.Options?, webViewConfiguration: WKWebViewConfiguration? = nil) -> Tab {
         let webViewConfiguration = delegate?.tabs(self, webViewConfigurationForOptions: options) ?? WKWebViewConfiguration()
-        let tab = Tab(id: nextID, createOptions: options, webViewConfiguration: webViewConfiguration)
+        let plugin: Plugin? = {
+            guard let plugin = delegate?.plugin(forScriptType: .contentScript) else {
+                return nil
+            }
+            guard plugin.environment == .contentScript else {
+                assertionFailure()
+                return nil
+            }
+            return plugin
+        }()
+
+        let tab = Tab(id: nextID, plugin: plugin, createOptions: options, webViewConfiguration: webViewConfiguration)
         tab.tabs = self
         tab.delegate = browser?.core
         nextID += 1
@@ -69,7 +81,8 @@ extension Tabs {
     @discardableResult
     private func createExtensionTab(options: WebExtension.Browser.Tabs.Create.Options?, webViewConfiguration: WKWebViewConfiguration? = nil) -> Tab {
         let webViewConfiguration = delegate?.tabs(self, webViewConfigurationForOptions: options) ?? WKWebViewConfiguration()
-        let tab = Tab(id: -1, createOptions: options, webViewConfiguration: webViewConfiguration)
+        let plugin = delegate?.plugin(forScriptType: .contentScript)
+        let tab = Tab(id: -1, plugin: plugin, createOptions: options, webViewConfiguration: webViewConfiguration)
         tab.tabs = self
         tab.delegate = browser?.core
 

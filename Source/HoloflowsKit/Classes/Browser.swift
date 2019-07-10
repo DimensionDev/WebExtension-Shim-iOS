@@ -32,7 +32,7 @@ public class Browser: NSObject {
         super.init()
 
         tabs.browser = self
-        //tabs.delegate = self
+        tabs.delegate = core
 
         // make sure extensionTab init
         let _ = tabs.extensionTab

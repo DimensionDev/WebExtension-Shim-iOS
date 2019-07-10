@@ -15,8 +15,6 @@ public protocol TabDelegate: class {
     func uiDelegate(for tab: Tab) -> WKUIDelegate?
     func navigationDelegate(for tab: Tab) -> WKNavigationDelegate?
 
-    func plugin(forScriptType type: Plugin.ScriptType) -> Plugin
-
     func tab(_ tab: Tab, bundleResourceManagerOfExtensionID extensionID: String, forPath path: String) -> BundleResourceManager?
     func tab(_ tab: Tab, blobResourceManagerOfExtensionID extensionID: String, forPath path: String) -> BlobResourceManager?
 }
@@ -40,38 +38,25 @@ public class Tab: NSObject {
     public weak var delegate: TabDelegate?
     public weak var downloadsDelegate: TabDownloadsDelegate?
 
-    open weak var uiDelegate: WKUIDelegate? {
-        didSet {
-            uiDelegate.flatMap { uiDelegateProxy?.registerSecondary($0) }
-        }
-    }
-    open weak var navigationDelegate: WKNavigationDelegate? {
-        didSet {
-            navigationDelegate.flatMap{ navigationDelegateProxy?.registerSecondary($0) }
-        }
-    }
-
-    public init(id: Int, createOptions options: WebExtension.Browser.Tabs.Create.Options? = nil, webViewConfiguration configuration: WKWebViewConfiguration) {
+    public init(id: Int, plugin: Plugin?, createOptions options: WebExtension.Browser.Tabs.Create.Options? = nil, webViewConfiguration configuration: WKWebViewConfiguration) {
         self.id = id
         self.userContentController = WKUserContentController()
         configuration.userContentController = userContentController
         
         let bundle = Bundle(for: Tab.self)
 
-        if let plugin = delegate?.plugin(forScriptType: id == -1 ? .backgroundScript : .contentScript),
-        let bundleURL = bundle.resourceURL?.appendingPathComponent("WebExtensionScripts.bundle"),
+        // FIXME:
+        if let bundleURL = bundle.resourceURL?.appendingPathComponent("WebExtensionScripts.bundle"),
         let scriptsBundle = Bundle(url: bundleURL),
-        let scriptPath = scriptsBundle.path(forResource: "out", ofType: "js"),
+        let scriptPath = scriptsBundle.path(forResource: "webextension-shim", ofType: "js"),
         let script = try? String(contentsOfFile: scriptPath) {
+            let newScript = script
+                .replacingOccurrences(of: "<ID>", with: plugin?.id ?? "")
+                .replacingOccurrences(of: "<Manifest>", with: plugin?.manifest.stringValue ?? "")
+                .replacingOccurrences(of: "<Env>", with: plugin?.environment.rawValue ?? "")
+                .replacingOccurrences(of: "<Resources>", with: plugin?.resources.stringValue ?? "")
 
-            let dict = [
-                "js/x.js" : "console.log('Hello');"
-            ]
-            let jsonData = try! JSONEncoder().encode(dict)
-            let jsonString = String(data: jsonData, encoding: .utf8)
-            let newScript = script.replacingOccurrences(of: "#Inject_JSON_Object#", with: jsonString ?? "")
-
-            let userScript = WKUserScript(source: script, injectionTime: .atDocumentEnd, forMainFrameOnly: false)
+            let userScript = WKUserScript(source: newScript, injectionTime: .atDocumentEnd, forMainFrameOnly: false)
             userContentController.addUserScript(userScript)
         } else {
             assertionFailure()
