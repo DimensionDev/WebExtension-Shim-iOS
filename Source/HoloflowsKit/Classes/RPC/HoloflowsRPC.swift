@@ -91,7 +91,7 @@ extension HoloflowsRPC {
     public static func dispatchResponse<T: RPC.Response>(webView: WKWebView, id: String, result: Result<T, RPC.Error>, completionHandler: ((Any?, Error?) -> Void)?) {
         let script = dispatchScript(id: id, result: result)
         webView.evaluateJavaScript(script, completionHandler: completionHandler)
-        consolePrint("webView: \(webView.url?.absoluteString ?? ""), script: \(script)")
+        consolePrint("webView: \(webView.url?.absoluteString ?? ""), script: \(script.prefix(500))")
     }
     
 }

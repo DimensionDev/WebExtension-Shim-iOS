@@ -10,16 +10,20 @@ import WebKit
 import JavaScriptCore
 import ConsolePrint
 import SwiftyJSON
+import Alamofire
 
 public protocol TabDelegate: class {
     func uiDelegate(for tab: Tab) -> WKUIDelegate?
     func navigationDelegate(for tab: Tab) -> WKNavigationDelegate?
 
+    func tab(_ tab: Tab, shouldActive: Bool)
     func tab(_ tab: Tab, bundleResourceManagerOfExtensionID extensionID: String, forPath path: String) -> BundleResourceManager?
     func tab(_ tab: Tab, blobResourceManagerOfExtensionID extensionID: String, forPath path: String) -> BlobResourceManager?
 }
 
 public protocol TabDownloadsDelegate: class {
+    typealias Result = Swift.Result
+    
     func tab(_ tab: Tab, willDownloadBlobWithOptions options: WebExtension.Browser.Downloads.Download.Options)
     func tab(_ tab: Tab, didDownloadBlobWithOptions options: WebExtension.Browser.Downloads.Download.Options, result: Result<BlobStorage, Error>)
 }
@@ -27,6 +31,14 @@ public protocol TabDownloadsDelegate: class {
 public class Tab: NSObject {
 
     weak var tabs: Tabs?
+
+    let session: SessionManager = {
+        let configuration = URLSessionConfiguration.ephemeral
+//        configuration.httpAdditionalHeaders = ["User-Agent" : self.tabs?.userAgent as Any]
+        configuration.httpAdditionalHeaders = ["User-Agent" : "Mozilla/5.0 (iPhone; CPU iPhone OS 12_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148"]
+        let session = Alamofire.SessionManager(configuration: configuration)
+        return session
+    }()
 
     public let id: Int
     public let userContentController: WKUserContentController

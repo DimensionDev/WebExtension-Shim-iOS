@@ -41,6 +41,8 @@ Implement basic web extension interface and provide strandard way to use Holoflo
     }
 
     default_spec.dependency 'RealmSwift'
+    default_spec.dependency 'Alamofire', '~> 4.7'
+    default_spec.dependency 'AlamofireNetworkActivityLogger', '~> 2.4'
     default_spec.dependency 'HoloflowsKit/JSONRPC'
   end
 
