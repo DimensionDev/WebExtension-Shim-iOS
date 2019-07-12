@@ -79,20 +79,57 @@ extension HoloflowsRPC {
 
 extension HoloflowsRPC {
 
-    public static func dispathRequest<T: RPC.Request & Encodable>(webView: WKWebView, id: String, request: T, completionHandler: ((Any?, Error?) -> Void)?) {
+    public static func dispathRequest<T: RPC.Request & Encodable>(webView: WKWebView, id: String, request: T, completionHandler: CompletionHandler?) {
         guard let script = dispatchScript(id: id, request: request) else {
             assertionFailure()
             return
         }
-        webView.evaluateJavaScript(script, completionHandler: completionHandler)
+        webView.evaluateJavaScript(script, completionHandler: completionHandler?.completionHandler(id: id))
         consolePrint("webView: \(webView.url?.absoluteString ?? ""), script: \(script)")
     }
 
-    public static func dispatchResponse<T: RPC.Response>(webView: WKWebView, id: String, result: Result<T, RPC.Error>, completionHandler: ((Any?, Error?) -> Void)?) {
+    public static func dispatchResponse<T: RPC.Response>(webView: WKWebView, id: String, result: Result<T, RPC.Error>, completionHandler: CompletionHandler?) {
         let script = dispatchScript(id: id, result: result)
-        webView.evaluateJavaScript(script, completionHandler: completionHandler)
+        webView.evaluateJavaScript(script, completionHandler: completionHandler?.completionHandler(id: id))
         consolePrint("webView: \(webView.url?.absoluteString ?? ""), script: \(script.prefix(500))")
     }
     
 }
+
+extension HoloflowsRPC {
+
+    public struct CompletionHandler {
+        let tabMeta: Tab.Meta?
+        let file: String
+        let method: String
+        let line: Int
+
+        func completionHandler(id: String) -> (Any?, Error?) -> Void {
+            let file = self.file
+            let method = self.method
+            let line = self.line
+
+            return { any, error in
+                guard let error = error else {
+                    let anyString = any.flatMap { String(describing: $0) }
+                    let tabMetaString = self.tabMeta.flatMap { "[\($0.id)]\($0.url)" }
+                    let description = [tabMetaString, id, anyString].compactMap { $0 }.joined(separator: " | ")
+                    consolePrint("eval result =: " + description, file: file, method: method, line: line)
+                    return
+                }
+
+                consolePrint(error.localizedDescription, file: file, method: method, line: line)
+            }
+        }
+
+        public init(tabMeta: Tab.Meta? = nil, file: String = #file, method: String = #function, line: Int = #line) {
+            self.tabMeta = tabMeta
+            self.file = file
+            self.method = method
+            self.line = line
+        }
+    }
+
+}
+
 

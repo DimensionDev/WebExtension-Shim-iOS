@@ -15,11 +15,16 @@ extension Tab {
         let messageResult: Result<WebExtension.WebSocket.Create, RPC.Error> = HoloflowsRPC.parseRPC(messageBody: messageBody)
         switch messageResult {
         case let .success(create):
-            fatalError()
+            assertionFailure()
+
+            // TODO:
+            let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .failure(RPC.Error.serverError)
+            HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
+
         case let .failure(error):
             consolePrint(error.localizedDescription)
             let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .failure(error)
-            HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: Tab.completionHandler)
+            HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
         }
     }
 
@@ -27,11 +32,16 @@ extension Tab {
         let messageResult: Result<WebExtension.WebSocket.Close, RPC.Error> = HoloflowsRPC.parseRPC(messageBody: messageBody)
         switch messageResult {
         case let .success(close):
-            fatalError()
+            assertionFailure()
+
+            // TODO:
+            let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .failure(RPC.Error.serverError)
+            HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
+
         case let .failure(error):
             consolePrint(error.localizedDescription)
             let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .failure(error)
-            HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: Tab.completionHandler)
+            HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
         }
     }
 
@@ -39,11 +49,16 @@ extension Tab {
         let messageResult: Result<WebExtension.WebSocket.Send, RPC.Error> = HoloflowsRPC.parseRPC(messageBody: messageBody)
         switch messageResult {
         case let .success(send):
-            fatalError()
+            assertionFailure()
+
+            // TODO:
+            let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .failure(RPC.Error.serverError)
+            HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
+            
         case let .failure(error):
             consolePrint(error.localizedDescription)
             let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .failure(error)
-            HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: Tab.completionHandler)
+            HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
         }
     }
 

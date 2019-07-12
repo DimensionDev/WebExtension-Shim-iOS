@@ -14,32 +14,38 @@ extension Tab {
         let messageResult: Result<WebExtension.Browser.Downloads.Download, RPC.Error> = HoloflowsRPC.parseRPC(messageBody: messageBody)
         switch messageResult {
         case let .success(download):
-            guard let blobResourceManager = delegate?.tab(self, blobResourceManagerOfExtensionID: download.extensionID, forPath: download.options.url) else {
+            guard let url = URL(string: download.options.url) else {
                 let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .failure(.invalidParams)
-                HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: Tab.completionHandler)
+                HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
+                return
+            }
+
+            guard let resourceProvider = delegate?.tab(self, pluginResourceProviderForURL: url) else {
+                let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .failure(.internalError)
+                HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
                 return
             }
 
             downloadsDelegate?.tab(self, willDownloadBlobWithOptions: download.options)
-            blobResourceManager.data(with: download.options.url) { [weak self] result in
+            resourceProvider.data(from: url) { [weak self] result in
                 guard let `self` = self else { return }
                 switch result {
-                case let .success(blobStorage):
+                case let .success(data, response):
                     let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .success(HoloflowsRPC.Response(result: "", id: id))
-                    HoloflowsRPC.dispatchResponse(webView: self.webView, id: id, result: result, completionHandler: Tab.completionHandler)
+                    HoloflowsRPC.dispatchResponse(webView: self.webView, id: id, result: result, completionHandler: self.completionHandler())
 
-                    self.downloadsDelegate?.tab(self, didDownloadBlobWithOptions: download.options, result: .success(blobStorage))
+                    self.downloadsDelegate?.tab(self, didDownloadBlobWithOptions: download.options, result: .success((data, response)))
 
                 case let .failure(error):
                     consolePrint(error.localizedDescription)
                     let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .failure(.serverError)
-                    HoloflowsRPC.dispatchResponse(webView: self.webView, id: id, result: result, completionHandler: Tab.completionHandler)
+                    HoloflowsRPC.dispatchResponse(webView: self.webView, id: id, result: result, completionHandler: self.completionHandler())
                 }
             }
             
         case let .failure(error):
             let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .failure(error)
-            HoloflowsRPC.dispatchResponse(webView: self.webView, id: id, result: result, completionHandler: Tab.completionHandler)
+            HoloflowsRPC.dispatchResponse(webView: self.webView, id: id, result: result, completionHandler: completionHandler())
         }
     }
 

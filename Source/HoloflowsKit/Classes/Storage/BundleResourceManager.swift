@@ -9,7 +9,7 @@ import Foundation
 import WebKit
 import ConsolePrint
 
-open class BundleResourceManager: NSObject, PluginURLSchemeHander {
+open class BundleResourceManager: NSObject, PluginResourceProvider {
 
     public let bundle: Bundle
 
@@ -18,7 +18,6 @@ open class BundleResourceManager: NSObject, PluginURLSchemeHander {
     }
 
     public enum Error: Swift.Error {
-        case urlNotFound
         case fileNotFound
     }
 
@@ -26,7 +25,7 @@ open class BundleResourceManager: NSObject, PluginURLSchemeHander {
 
 extension BundleResourceManager {
 
-    open func data(with url: URL, handler: @escaping (Result<(Data, URLResponse), Swift.Error>) -> Void) {
+    open func data(from url: URL, handler: @escaping (Result<(Data, URLResponse), Swift.Error>) -> Void) {
         let fileExtension = url.pathExtension
         let filename = url.deletingPathExtension().lastPathComponent
 
@@ -47,49 +46,12 @@ extension BundleResourceManager {
                 return
             }
 
-            handler(.success((data, response)))
+            let schemeTaskResponse = URLResponse(url: url,
+                                                 mimeType: response.mimeType ?? "",
+                                                 expectedContentLength: data.count,
+                                                 textEncodingName: nil)
+            handler(.success((data, schemeTaskResponse)))
         }.resume()
-    }
-
-    open func bundle(for extensionID: String) -> Bundle? {
-        // TODO: get bundle for specific extension
-        return bundle
-    }
-
-}
-
-// MARK: - WKURLSchemeHandler
-extension BundleResourceManager: WKURLSchemeHandler {
-
-    open func webView(_ webView: WKWebView, start urlSchemeTask: WKURLSchemeTask) {
-        guard let url = urlSchemeTask.request.url else {
-            urlSchemeTask.didFailWithError(Error.urlNotFound)
-            return
-        }
-
-        data(with: url) { result in
-            switch result {
-            case .success(let (data, response)):
-                let returnResponse = URLResponse(
-                    url: url,
-                    mimeType: response.mimeType ?? "",
-                    expectedContentLength: data.count,
-                    textEncodingName: nil)
-
-                urlSchemeTask.didReceive(returnResponse)
-                urlSchemeTask.didReceive(data)
-                urlSchemeTask.didFinish()
-
-                consolePrint("urlSchemeTask.didFinish()")
-
-            case .failure(let error):
-                urlSchemeTask.didFailWithError(error)
-            }
-        }
-    }
-
-    open func webView(_ webView: WKWebView, stop urlSchemeTask: WKURLSchemeTask) {
-        // do nothing
     }
 
 }

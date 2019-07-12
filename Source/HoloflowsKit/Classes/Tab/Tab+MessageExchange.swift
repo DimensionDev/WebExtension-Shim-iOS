@@ -20,25 +20,25 @@ extension Tab {
             let request = HoloflowsRPC.ServerRequest(params: onMessage, id: id)
             if let tabID = sendMessage.tabId {
                 if let targetTab = tabs?.storage.first(where: { $0.id == tabID }) {
-                    HoloflowsRPC.dispathRequest(webView: targetTab.webView, id: id, request: request, completionHandler: Tab.completionHandler)
+                    HoloflowsRPC.dispathRequest(webView: targetTab.webView, id: id, request: request, completionHandler: completionHandler())
                 } else {
                     let result: Result<HoloflowsRPC.Response<WebExtension.OnMessage>, RPC.Error> = .failure(RPC.Error.invalidParams)
-                    HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: Tab.completionHandler)
+                    HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
                 }
             } else {
                 if let extensionTab = tabs?.extensionTab {
-                    HoloflowsRPC.dispathRequest(webView: extensionTab.webView, id: id, request: request, completionHandler: Tab.completionHandler)
+                    HoloflowsRPC.dispathRequest(webView: extensionTab.webView, id: id, request: request, completionHandler: completionHandler())
                 }
                 for targetTab in tabs?.storage ?? [] {
                     guard targetTab.id != self.id else { return }
-                    HoloflowsRPC.dispathRequest(webView: targetTab.webView, id: id, request: request, completionHandler: Tab.completionHandler)
+                    HoloflowsRPC.dispathRequest(webView: targetTab.webView, id: id, request: request, completionHandler: completionHandler())
                 }
             }
 
 
         case let .failure(error):
             let result: Result<HoloflowsRPC.Response<WebExtension._Echo>, RPC.Error> = .failure(error)
-            HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: Tab.completionHandler)
+            HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
         }
     }
     

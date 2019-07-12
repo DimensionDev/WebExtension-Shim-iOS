@@ -15,12 +15,7 @@ extension Tab {
         let messageResult: Result<WebExtension.Browser.Runtime.GetURL, RPC.Error> = HoloflowsRPC.parseRPC(messageBody: messageBody)
         switch messageResult {
         case let .success(getURL):
-            guard let bundleResourceManager = delegate?.tab(self, bundleResourceManagerOfExtensionID: getURL.extensionID, forPath: getURL.path),
-            let bundle = bundleResourceManager.bundle(for: getURL.extensionID) else {
-                let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .failure(.serverError)
-                HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: Tab.completionHandler)
-                return
-            }
+            // FIXME:
 
             let path: String = {
                 let prefix = "/"
@@ -36,13 +31,14 @@ extension Tab {
             consolePrint(url)
 
             let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .success(HoloflowsRPC.Response(result: url, id: id))
-            HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: Tab.completionHandler)
+            HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
 
         case let .failure(error):
             consolePrint(error.localizedDescription)
             let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .failure(error)
-            HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: Tab.completionHandler)
+            HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
         }
     }
 
 }
+

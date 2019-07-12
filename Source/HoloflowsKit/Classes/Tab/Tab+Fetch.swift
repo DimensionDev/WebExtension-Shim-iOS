@@ -9,7 +9,6 @@ import Foundation
 import Alamofire
 import ConsolePrint
 
-
 extension Tab {
 
     typealias Result = Swift.Result
@@ -21,7 +20,7 @@ extension Tab {
             consolePrint(fetch.request.url)
             guard let url = URL(string: fetch.request.url) else {
                 let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .failure(RPC.Error.invalidParams)
-                HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: Tab.completionHandler)
+                HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
                 return
             }
 
@@ -61,7 +60,7 @@ extension Tab {
                     let response = _response,
                     let data = _data else {
                         let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .failure(RPC.Error.internalError)
-                        HoloflowsRPC.dispatchResponse(webView: self.webView, id: id, result: result, completionHandler: Tab.completionHandler)
+                        HoloflowsRPC.dispatchResponse(webView: self.webView, id: id, result: result, completionHandler: self.completionHandler())
                         consolePrint(_error?.localizedDescription ?? "nil")
                         return
                     }
@@ -84,7 +83,7 @@ extension Tab {
                     let result: Result<HoloflowsRPC.Response<WebExtension.Fetch.Response>, RPC.Error> = .success(HoloflowsRPC.Response(result: fetchResponse, id: id))
                     DispatchQueue.main.async { [weak self] in
                         guard let `self` = self else { return }
-                        HoloflowsRPC.dispatchResponse(webView: self.webView, id: id, result: result, completionHandler: Tab.completionHandler)
+                        HoloflowsRPC.dispatchResponse(webView: self.webView, id: id, result: result, completionHandler: self.completionHandler())
                     }
                 }
 //                }.resume()
@@ -92,7 +91,7 @@ extension Tab {
 
         case let .failure(error):
             let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .failure(error)
-            HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: Tab.completionHandler)
+            HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
         }
     }
 

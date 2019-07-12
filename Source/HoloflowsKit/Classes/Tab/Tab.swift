@@ -12,22 +12,37 @@ import ConsolePrint
 import SwiftyJSON
 import Alamofire
 
+// MARK: - Delegates
+
 public protocol TabDelegate: class {
     func uiDelegate(for tab: Tab) -> WKUIDelegate?
     func navigationDelegate(for tab: Tab) -> WKNavigationDelegate?
 
     func tab(_ tab: Tab, shouldActive: Bool)
-    func tab(_ tab: Tab, bundleResourceManagerOfExtensionID extensionID: String, forPath path: String) -> BundleResourceManager?
-    func tab(_ tab: Tab, blobResourceManagerOfExtensionID extensionID: String, forPath path: String) -> BlobResourceManager?
+    func tab(_ tab: Tab, pluginResourceProviderForURL url: URL) -> PluginResourceProvider?
+}
+
+extension TabDelegate {
+    func uiDelegate(for tab: Tab) -> WKUIDelegate? { return nil }
+    func navigationDelegate(for tab: Tab) -> WKNavigationDelegate? { return nil }
+
+    func tab(_ tab: Tab, shouldActive: Bool) { }
+    func tab(_ tab: Tab, pluginResourceProviderForURL url: URL) -> PluginResourceProvider? { return nil }
 }
 
 public protocol TabDownloadsDelegate: class {
     typealias Result = Swift.Result
     
     func tab(_ tab: Tab, willDownloadBlobWithOptions options: WebExtension.Browser.Downloads.Download.Options)
-    func tab(_ tab: Tab, didDownloadBlobWithOptions options: WebExtension.Browser.Downloads.Download.Options, result: Result<BlobStorage, Error>)
+    func tab(_ tab: Tab, didDownloadBlobWithOptions options: WebExtension.Browser.Downloads.Download.Options, result: Result<(Data, URLResponse), Error>)
 }
 
+extension TabDownloadsDelegate {
+    func tab(_ tab: Tab, willDownloadBlobWithOptions options: WebExtension.Browser.Downloads.Download.Options) { }
+    func tab(_ tab: Tab, didDownloadBlobWithOptions options: WebExtension.Browser.Downloads.Download.Options, result: Result<(Data, URLResponse), Error>) { }
+}
+
+// MARK: - Tab
 public class Tab: NSObject {
 
     weak var tabs: Tabs?
@@ -41,17 +56,20 @@ public class Tab: NSObject {
     }()
 
     public let id: Int
-    public let userContentController: WKUserContentController
     public let webView: WKWebView
 
-    public var uiDelegateProxy: WebViewProxy<WKUIDelegate>?
-    public var navigationDelegateProxy: WebViewProxy<WKNavigationDelegate>?
+    let plugin: Plugin?
+    let userContentController: WKUserContentController
 
-    public weak var delegate: TabDelegate?
-    public weak var downloadsDelegate: TabDownloadsDelegate?
+    var uiDelegateProxy: WebViewProxy<WKUIDelegate>?
+    var navigationDelegateProxy: WebViewProxy<WKNavigationDelegate>?
+
+    weak var delegate: TabDelegate?
+    weak var downloadsDelegate: TabDownloadsDelegate?
 
     public init(id: Int, plugin: Plugin?, createOptions options: WebExtension.Browser.Tabs.Create.Options? = nil, webViewConfiguration configuration: WKWebViewConfiguration) {
         self.id = id
+        self.plugin = plugin
         self.userContentController = WKUserContentController()
         configuration.userContentController = userContentController
         
@@ -68,7 +86,10 @@ public class Tab: NSObject {
                 .replacingOccurrences(of: "<Env>", with: plugin?.environment.rawValue ?? "")
                 .replacingOccurrences(of: "<Resources>", with: plugin?.resources.stringValue ?? "")
 
-            let userScript = WKUserScript(source: newScript, injectionTime: .atDocumentEnd, forMainFrameOnly: false)
+//            let hasSchemePrefix = options?.url?.hasPrefix("holoflows-extension://") ?? false
+//            let injectionTime: WKUserScriptInjectionTime = hasSchemePrefix ? .atDocumentStart : .atDocumentEnd
+            let injectionTime = WKUserScriptInjectionTime.atDocumentEnd
+            let userScript = WKUserScript(source: newScript, injectionTime: injectionTime, forMainFrameOnly: false)
             userContentController.addUserScript(userScript)
         } else {
             assertionFailure()
@@ -120,18 +141,19 @@ public class Tab: NSObject {
 
 }
 
+extension Tab {
+
+    public func completionHandler(file: String = #file, method: String = #function, line: Int = #line) -> HoloflowsRPC.CompletionHandler {
+        return HoloflowsRPC.CompletionHandler(tabMeta: meta, file: file, method: method, line: line)
+    }
+
+}
+
+
 // MARK: - WKScriptMessageHandler
 extension Tab: WKScriptMessageHandler {
 
-    static let completionHandler: ((Any?, Error?) -> Void) = { any, error in
-        guard let error = error else {
-            consolePrint("\(String(describing: any))")
-            return
-        }
-        consolePrint(error.localizedDescription)
-    }
-
-    open func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+    public func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
         guard let eventType = ScriptEvent(rawValue: message.name) else {
             assertionFailure()
             return
@@ -147,7 +169,7 @@ extension Tab: WKScriptMessageHandler {
 
         guard let api = WebExtension.API(method: method) else {
             let result: Result<HoloflowsRPC.Response<WebExtension._Echo>, RPC.Error> = .failure(RPCError.invalidRequest)
-            HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: Tab.completionHandler)
+            HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
             consolePrint("invalid request")
             return
         }
@@ -185,7 +207,7 @@ extension Tab: WKUIDelegate {
 // MARK: - WKNavigationDelegate
 extension Tab: WKNavigationDelegate {
 
-    open func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
+    public func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
         consolePrint(webView.url)
 
         typealias OnCommitted = WebExtension.Browser.WebNavigation.OnCommitted
@@ -194,7 +216,7 @@ extension Tab: WKNavigationDelegate {
         let onCommitted =  OnCommitted(tab: .init(tabId: id, url: webView.url?.absoluteString ?? ""))
         let request = HoloflowsRPC.ServerRequest(params: onCommitted, id: rpcID)
 
-        HoloflowsRPC.dispathRequest(webView: webView, id: rpcID, request: request, completionHandler: Tab.completionHandler)
+        HoloflowsRPC.dispathRequest(webView: webView, id: rpcID, request: request, completionHandler: completionHandler())
     }
 
 }
