@@ -81,10 +81,10 @@ public class Tab: NSObject {
         let scriptPath = scriptsBundle.path(forResource: "webextension-shim", ofType: "js"),
         let script = try? String(contentsOfFile: scriptPath) {
             let newScript = script
-                .replacingOccurrences(of: "<ID>", with: plugin?.id ?? "")
-                .replacingOccurrences(of: "<Manifest>", with: plugin?.manifest.stringValue ?? "")
-                .replacingOccurrences(of: "<Env>", with: plugin?.environment.rawValue ?? "")
-                .replacingOccurrences(of: "<Resources>", with: plugin?.resources.stringValue ?? "")
+                .replacingOccurrences(of: "##ID##", with: plugin?.id ?? "")
+                .replacingOccurrences(of: "##Manifest##", with: plugin?.manifest.rawString() ?? "")
+                .replacingOccurrences(of: "##Env##", with: plugin?.environment.rawValue ?? "")
+                .replacingOccurrences(of: "##Resources##", with: plugin?.resources.rawString() ?? "")
 
 //            let hasSchemePrefix = options?.url?.hasPrefix("holoflows-extension://") ?? false
 //            let injectionTime: WKUserScriptInjectionTime = hasSchemePrefix ? .atDocumentStart : .atDocumentEnd
