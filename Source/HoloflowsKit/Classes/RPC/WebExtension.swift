@@ -54,6 +54,7 @@ extension WebExtension {
         case browserTabsCreate
         case browserTabsRemove
         case browserTabsQuery
+        case browserTabsUpdate
         case browserStorageLocalGet
         case browserStorageLocalSet
         case browserStorageLocalRemove
@@ -83,6 +84,7 @@ extension WebExtension {
             case .browserTabsCreate:                return WebExtension.Browser.Tabs.Create.method
             case .browserTabsRemove:                return WebExtension.Browser.Tabs.Remove.method
             case .browserTabsQuery:                 return WebExtension.Browser.Tabs.Query.method
+            case .browserTabsUpdate:                return WebExtension.Browser.Tabs.Update.method
             case .browserStorageLocalGet:           return WebExtension.Browser.Storage.Local.Get.method
             case .browserStorageLocalSet:           return WebExtension.Browser.Storage.Local.Set.method
             case .browserStorageLocalRemove:        return WebExtension.Browser.Storage.Local.Remove.method

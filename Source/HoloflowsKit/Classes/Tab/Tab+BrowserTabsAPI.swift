@@ -68,6 +68,30 @@ extension Tab {
         }
     }
 
+    open func browserTabsUpdate(id: String, messageBody: String) {
+        let messageResult: Result<WebExtension.Browser.Tabs.Update, RPC.Error> = HoloflowsRPC.parseRPC(messageBody: messageBody)
+        switch messageResult {
+        case let .success(update):
+            let tab = self.tabs?.storage.first(where: { $0.id == update.tabId })
+
+            guard let targetTab = tab,
+            let url = URL(string: update.updateProperties.url) else {
+                let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .failure(RPC.Error.invalidParams)
+                HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
+                return
+            }
+
+            targetTab.webView.load(URLRequest(url: url))
+            let result: Result<HoloflowsRPC.Response<Tab.Meta> , RPC.Error> = .success(.init(result: targetTab.meta, id: id))
+            HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
+
+        case let .failure(error):
+            consolePrint(error.localizedDescription)
+            let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .failure(error)
+            HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
+        }
+    }
+
     open func browserTabsExecuteScript(id: String, messageBody: String) {
         let messageResult: Result<WebExtension.Browser.Tabs.ExecuteScript, RPC.Error> = HoloflowsRPC.parseRPC(messageBody: messageBody)
 
