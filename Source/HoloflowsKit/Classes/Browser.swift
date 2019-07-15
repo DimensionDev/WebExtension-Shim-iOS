@@ -13,7 +13,7 @@ import ConsolePrint
 public class Browser: NSObject {
 
     public let tabs: Tabs
-    var core: BrowserCore?
+    weak var core: BrowserCore?
 
     public init(core: BrowserCore? = nil) {
         let browserCore = core ?? EmptyBrowserCore()

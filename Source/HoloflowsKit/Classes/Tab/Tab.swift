@@ -23,11 +23,11 @@ public protocol TabDelegate: class {
 }
 
 extension TabDelegate {
-    func uiDelegate(for tab: Tab) -> WKUIDelegate? { return nil }
-    func navigationDelegate(for tab: Tab) -> WKNavigationDelegate? { return nil }
+    public func uiDelegate(for tab: Tab) -> WKUIDelegate? { return nil }
+    public func navigationDelegate(for tab: Tab) -> WKNavigationDelegate? { return nil }
 
-    func tab(_ tab: Tab, shouldActive: Bool) { }
-    func tab(_ tab: Tab, pluginResourceProviderForURL url: URL) -> PluginResourceProvider? { return nil }
+    public func tab(_ tab: Tab, shouldActive: Bool) { }
+    public func tab(_ tab: Tab, pluginResourceProviderForURL url: URL) -> PluginResourceProvider? { return nil }
 }
 
 public protocol TabDownloadsDelegate: class {
@@ -38,8 +38,8 @@ public protocol TabDownloadsDelegate: class {
 }
 
 extension TabDownloadsDelegate {
-    func tab(_ tab: Tab, willDownloadBlobWithOptions options: WebExtension.Browser.Downloads.Download.Options) { }
-    func tab(_ tab: Tab, didDownloadBlobWithOptions options: WebExtension.Browser.Downloads.Download.Options, result: Result<(Data, URLResponse), Error>) { }
+    public func tab(_ tab: Tab, willDownloadBlobWithOptions options: WebExtension.Browser.Downloads.Download.Options) { }
+    public func tab(_ tab: Tab, didDownloadBlobWithOptions options: WebExtension.Browser.Downloads.Download.Options, result: Result<(Data, URLResponse), Error>) { }
 }
 
 // MARK: - Tab

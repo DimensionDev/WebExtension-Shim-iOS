@@ -17,8 +17,8 @@ public protocol TabsDelegate: class {
 }
 
 extension TabsDelegate {
-    func pluginResourceURLScheme() -> [String] { return [] }
-    func tabs(_ tabs: Tabs, webViewConfigurationForOptions options: WebExtension.Browser.Tabs.Create.Options?) -> WKWebViewConfiguration {
+    public func pluginResourceURLScheme() -> [String] { return [] }
+    public func tabs(_ tabs: Tabs, webViewConfigurationForOptions options: WebExtension.Browser.Tabs.Create.Options?) -> WKWebViewConfiguration {
         return WKWebViewConfiguration()
     }
 }
