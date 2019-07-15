@@ -16,7 +16,7 @@ extension Tab {
         case let .success(createObjectURL):
             guard let blobStorage = createObjectURL.blobStorage else {
             let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .failure(.invalidParams)
-                HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: Tab.completionHandler)
+                HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
                 return
             }
 
@@ -27,16 +27,16 @@ extension Tab {
                 }
 
                 let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .success(HoloflowsRPC.Response(result: "", id: id))
-                HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: Tab.completionHandler)
+                HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
 
             } catch {
                 let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .failure(.serverError)
-                HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: Tab.completionHandler)
+                HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
             }
 
         case let .failure(error):
             let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .failure(error)
-            HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: Tab.completionHandler)
+            HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
         }
     }
 

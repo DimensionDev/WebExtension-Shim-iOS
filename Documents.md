@@ -1,320 +1,131 @@
 # HoloflowsKit-iOS Documents
 
-Limited implement for [browser extension](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/Browser_support_for_JavaScript_APIs) of WKWebView
+HoloflowsKit-iOS is the bridge between your HoloflowsKit based web extension and iOS WKWebView. This document is describe how to setup the environment to drive your extension. In that scenario we use *Plugin* to describe your web extension. 
 
-All definition is in JSON format
+To learn more informations about how to write plugin with HoloflowsKit. Please refer the [HoloflowsKit](https://github.com/DimensionDev/Holoflows-Kit) documents.
 
-Script implement [here](./HoloflowsKit/WebExtensionScripts/webExtension.js)
+## Setup
 
-# Object Definition
-## Tab
- key | value | type | note 
----- | ----- | ---- | ---- 
-id | 42 | Int | 
+### Create Tab
+```swift
+import HoloflowsKit
 
-## CreateProperties
- key | value | type | note 
----- | ----- | ---- | ---- 
-url | "https://example.com | String | 
+final class ViewController: UIViewController {
 
-## NavigationDetails
- key | value | type | note 
----- | ----- | ---- | ---- 
-tabId | 42 | Int |
-url | "https://example.com" | String |
+    lazy var browser = Browser(core: self)
+    var tab: Tab?
+}
 
-## ExecuteScriptDetails
- key | value | type | note 
----- | ----- | ---- | ---- 
-code | "console.log('location', window.location.href);" | String | **Warning**: Don’t use this property to interpolate untrusted data into JavaScript, as this could lead to a security issue.
+extension ViewController {
 
-## DownloadOptions
- key | value | type | note 
----- | ----- | ---- | ---- 
-filename | "lena.png" | String | 
-url | "holoflows-blob://prefix/A5A3C1D1-ABE4-45DF-96D5-5625369F49F7" | String | The URL from `createObjectURL`
+    override func viewDidLoad() {
+        super.viewDidLoad()
 
-## DownloadItem
- key | value | type | note 
----- | ----- | ---- | ---- 
-state | "complete" | String | 
-
-# API Definition
-
-Post message to native:
-
-```javascript
-window.webkit.messageHandlers[send].postMessage(JSON.stringify({ messageID, tabID, message }));
-```
-
-Navtive dispatch callback event with payload:
-
-```javascript
-document.dispatchEvent(new CustomEvent(eventName, { detail: payload }))
-```
-
-HoloflowsKit script:
-
-```javascript
-browser.tabsCreate({ createProperties: { url: "https://www.apple.com" } }).then(val => {
-    console.log(val.id);
-});
-
-```
-
-## send & receive
-Script use `send` message pass message to specific tab or all other tabs.  
-No callback return after native recieve message.    
-Script should listen event on `reciveve` and response to sender via `send`.
-
-[POST] `send`:
-
- key | value | type | note 
----- | ----- | ---- | ---- 
-messageID | "0.9m5am9ed4tq" | String | 
-tabID | 42 | Int | optional
-message | "Message Content" | JSON | any JSON content
-
-```javascript
-browser.send({ tabID: 1, message: { key:"value" } });
-```
-
-[Listen] `receive`:
-
- key | value | type | note 
----- | ----- | ---- | ---- 
-messageID | "0.9m5am9ed4tq" | String |
-message | "Message Content" | JSON | JSON content from sender
-sender | { id: 42 } | Tab |
-
-## createObjectURL
-[post] createObjectURL
-
- key | value | type | note 
----- | ----- | ---- | ---- 
-prefix | "prefix" | String |
-blob | "iVBORw0KGgoAAAANSUhEUgAAAgAAAAIAC…" | String | Base64 encoded data
-type | "image/png" | String | MIME type
-
-#### Callback payload: 
- key | value | type | note 
----- | ----- | ---- | ---- 
-&nbsp; | { url: "holoflows-blob://prefix/A5A3C1D1-ABE4-45DF-96D5-5625369F49F7" } | String | URL to retrieve blob data.
-
-#### Example
-```javascript
-browser.createObjectURL({
-    prefix: 'prefix',
-    blob: base64EncodedPNG,
-    type: 'image/png'
-});
-```
-
-#### Note
-```html
-<!-- file extension like .png is acceptable -->
-<img src="holoflows-blob://prefix/A5A3C1D1-ABE4-45DF-96D5-5625369F49F7.png" />
-```
-
-## browserTabsCreate
-Script post message and listen event on `id`.
-
-[POST] `browserTabsCreate`:
-
- key | value | type | note 
----- | ----- | ---- | ----
-messageID | "0.ptdck9eme9" | String | callback message ID
-createProperties | { url: "https://example.com" } | CreateProperties | 
-
-#### Callback payload: 
- key | value | type | note 
----- | ----- | ---- | ---- 
-&nbsp; | { id: 42 } | Tab | Tab as payload
-
-#### Example
-```javascript
-browser.tabsCreate({ createProperties: { url: "https://www.apple.com" } });
-```
-
-## browserTabsRemove
-[POST] browserTabsRemove:
-
- key | value | type | note 
----- | ----- | ---- | ----
-messageID | "0.ptdck9eme9" | String | callback message ID
-tabIds | 42 \| [42, 43] | Int \| [Int] |
-
-#### Callback payload: 
- key | value | type | note 
----- | ----- | ---- | ---- 
-&nbsp; | undefined | undefined | undefined as payload 
-
-#### Example
-```javascript
-browser.tabsRemove({ tabIds: 1 });
-```
-
-## webNavigationOnCommitted
-[Listen] webNavigationOnCommitted:
-
- key | value | type | note 
----- | ----- | ---- | ----
-&nbsp; | { tabId: 42, url: "https://example.com" } | NavigationDetails | NavigationDetails as payload 
-
-## browserTabsExecuteScript
-[POST] browserTabsExecuteScript
-
- key | value | type | note 
----- | ----- | ---- | ----
-messageID | "0.ptdck9eme9" | String | callback message ID
-tabId | 42 | Int | optional. default 0
-details | { code: "console.log('location', window.location.href);" } | ExecuteScriptDetails |
-
-#### Callback payload: 
- key | value | type | note 
----- | ----- | ---- | ---- 
-&nbsp; | 1 | JSON | return eval result if available in JSON otherwise return `undefine`
-
-#### Example
-```javascript
-browser.tabsExecuteScript({
-    tabId: 0,
-    details: {
-        code: "var result = plus(50 * 8, 2);"
+        let options = WebExtension.Browser.Tabs.Create.Options(active: true, url: "https://example.org")
+        tab = browser.tabs.create(options: options)
     }
-});
+}
 ```
 
-## browserStorageLocalSet
-[POST] browserStorageLocalSet
+`Browser` hold the **weak** reference to the instance which conforms `BrowserCore` protocol. In commom usage you want to keep one `Browser` instance in entire app lifetime. The one solution is create the singleton manager class to keep the controller reference and make sure the `BrowserCore` and `Browser` instance not deinit before it's should be.
 
- key | value | type | note 
----- | ----- | ---- | ----
-messageID | "0.ptdck9eme9" | String | callback message ID
-keys  | { kitten: { name:"Moggy", tentacles: false, eyeCount: 2} }<br/> or<br/>{ kitten: { name:"Moggy", tentacles: false, eyeCount: 2}, <br/>monster: { name: "Kraken", tentacles: true, eyeCount: 10 } } | Object | any object composed by primitive type <br/> Object will be parse as [String: JSON] dictionary <br/>And the JSON will be store in native database for latter retrieve
 
-#### Callback payload: 
- key | value | type | note 
----- | ----- | ---- | ---- 
-&nbsp; | undefined | undefined  | return undefined when success set
+### Active Tab
+```swift
+extension ViewController: BrowserCore {
+    
+    func tab(_ tab: Tab, shouldActive: Bool) {
+        guard shouldActive else { return }
 
-#### Example
-```javascript
-browser.storageLocalSet({ keys: { 
-        kitten: { name:"Moggy", tentacles: false, eyeCount: 2}, 
-        monster: { name: "Kraken", tentacles: true, eyeCount: 10 } 
+        let webView = tab.webView
+        webView.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(webView)
+        NSLayoutConstraint.activate([
+            webView.topAnchor.constraint(equalTo: view.layoutMarginsGuide.topAnchor),
+            webView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            webView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            webView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+        ])
     }
-});
+
+    // …
+}
 ```
 
-## browserStorageLocalGet
-[POST] browserStorageLocalGet
-
- key | value | type | note 
----- | ----- | ---- | ----
-messageID | "0.ptdck9eme9" | String | callback message ID
-keys | "kitten" <br/>or<br/>["kitten", "monster"] | String \| [String] | key or array of keys
-
-#### Callback payload: 
- key | value | type | note 
----- | ----- | ---- | ---- 
-&nbsp; | { kitten: { name:"Moggy", tentacles: false, eyeCount: 2} }<br/> or<br/>{ kitten: { name:"Moggy", tentacles: false, eyeCount: 2}, <br/>monster: { name: "Kraken", tentacles: true, eyeCount: 10 }  | Object  | return Object hold keys and values
-
-#### Example
-```javascript
-browser.storageLocalGet({ keys: ['kitten', 'monster'] }); 
+### Inject Plugin
+```swift
+import SwiftyJSON
+    // …
+    // in ViewController: BrowserCore
+    func plugin(forScriptType type: Plugin.ScriptType) -> Plugin {
+        return Plugin(id: yourPluginID,                 // String
+                      manifest: yourPluginManifest,     // JSON
+                      environment: type,        
+                      resources: yourPluginResources)   // JSON
+    }
 ```
 
-## browserStorageLocalRemove
-[POST] browserStorageLocalRemove
+The **background script** and **content Script** plugins will be injected to WKWebView when tab created. You should assemble your plugin for the specifc script type. 
 
- key | value | type | note 
----- | ----- | ---- | ----
-messageID | "0.ptdck9eme9" | String | callback message ID
-keys | "kitten" <br/>or<br/>["kitten", "monster"] | String \| [String] | key or array of keys
+The background script is always available when browser alive as your plugin context. The content script is as long as the tab lifetime. The communication between background script and content script is via `sendMessage` interface which provided by HoloflowsKit-iOS.
 
-#### Callback payload: 
- key | value | type | note 
----- | ----- | ---- | ---- 
-&nbsp; | { kitten: { name:"Moggy", tentacles: false, eyeCount: 2} }<br/> or<br/>{ kitten: { name:"Moggy", tentacles: false, eyeCount: 2}, <br/>monster: { name: "Kraken", tentacles: true, eyeCount: 10 }  | Object  | return removed Object dict
-
-#### Example
-```javascript
-browser.storageLocalRemove({ keys: ['kitten', 'monster'] }); 
+### Access Resource
+```swift
+    // …
+    // in ViewController: BrowserCore
+    func tab(_ tab: Tab, pluginResourceProviderForURL url: URL) -> PluginResourceProvider? {
+        switch url.scheme {
+        case "holoflows-extension": return bundleResourceManager
+        case "holoflows-blob":      return blobResourceManager
+        default:                    return nil
+        }
+    }
 ```
 
-## browserStorageLocalClear
-[POST] browserStorageLocalClear
+The HoloflowsKit-iOS register two scheme to handler plugin resource. "holoflows-extension" for plugin bundle resource access. "holoflows-blob" for plugin blob data store. The `BundleResourceManager` and `BlobResourceManager` are two tool classes which comform `PluginResourceProvider` protocol. For more detail info please check `PluginResourceProvider` protocol.
 
- key | value | type | note 
----- | ----- | ---- | ----
-messageID | "0.ptdck9eme9" | String | callback message ID
 
-#### Callback payload: 
- key | value | type | note 
----- | ----- | ---- | ---- 
-&nbsp; | { kitten: { name:"Moggy", tentacles: false, eyeCount: 2}, <br/>monster: { name: "Kraken", tentacles: true, eyeCount: 10 }  | Object  | return removed Object dict
+## Advance
 
-#### Example
-```javascript
-browser.storageLocalRemove(); 
+### Custom URL Scheme
+```swift
+    // …
+    // in ViewController: BrowserCore
+    func pluginResourceURLScheme() -> [String] {
+        return ["my-plugin-scheme"]
+    }
 ```
 
+Register custom scheme for resource and use your resource provider later to consume your plugin request. Only return the custom schemes and the "holoflows-extension" and "holoflows-blob" scheme are registered default.
 
-## browserRuntimeGetManifest
-[POST] browserRuntimeGetManifest
 
- key | value | type | note 
----- | ----- | ---- | ----
-messageID | "0.ptdck9eme9" | String | callback message ID
-
-#### Callback payload: 
- key | value | type | note 
----- | ----- | ---- | ---- 
-&nbsp; | { "$schema": "http://json.schemastore.org/chrome-manifest", … }  | JSON  | manifest JSON
-
-#### Example
-```javascript
-browser.getManifest();
-```
-## browserRuntimeGetURL
-[POST] browserRuntimeGetURL
-
- key | value | type | note 
----- | ----- | ---- | ----
-messageID | "0.ptdck9eme9" | String | callback message ID
-url | "/index.html" | String | 
-
-#### Callback payload:
-
- key | value | type | note 
----- | ----- | ---- | ---- 
-&nbsp; | "holoflows-extension://*BundleName*/index.html"  | JSON  | BundleName specific by bundle your pass to BundleResourceManager
-
-#### Example
-```javascript
-browser.getURL({ url: '/index.html' });
+### Customize WKWebView
+```swift
+    // …
+    // in ViewController: BrowserCore
+    func uiDelegate(for tab: Tab) -> WKUIDelegate? {
+        return uiDelegate
+    }
+    
+    func navigationDelegate(for tab: Tab) -> WKNavigationDelegate? {
+        return navigationDelegate
+    }
+    
+    func tabs(_ tabs: Tabs, webViewConfigurationForOptions options: WebExtension.Browser.Tabs.Create.Options?) -> WKWebViewConfiguration {
+        …
+        return configuration
+    }
 ```
 
-## browserDownloadsDownload
-[POST] browserDownloadsDownload
-
- key | value | type | note 
----- | ----- | ---- | ----
-messageID | "0.ptdck9eme9" | String | callback message ID
-options | {"filename":"lena.png","url":"holoflows-blob://download/E25CA729-67A7-4508-AF1E-611F27ADB823"} | DownloadOptions |  
-
-#### Callback payload:
-
- key | value | type | note 
----- | ----- | ---- | ---- 
-&nbsp; | {"state":"complete"}  | DownloadItem  | 
-
-#### Example
-```javascript
-browser.createObjectURL({
-    prefix: 'download',
-    blob: base64EncodedPNG,
-    type: 'image/png'
-});
+### Downloads handler
+```swift
+    func tab(_ tab: Tab, willDownloadBlobWithOptions options: WebExtension.Browser.Downloads.Download.Options) {
+        // …
+    }
+    
+    func tab(_ tab: Tab, didDownloadBlobWithOptions options: WebExtension.Browser.Downloads.Download.Options, result: Result<(Data, URLResponse), Error>) {
+        // …
+    } 
 ```
+
+Script could set blob and call download API to run specific task likes export files or datas.

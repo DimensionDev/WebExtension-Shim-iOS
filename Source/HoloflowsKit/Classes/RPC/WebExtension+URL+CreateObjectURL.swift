@@ -14,16 +14,13 @@ extension WebExtension.URL {
 
         public let extensionID: String
         public let uuid: String
-        /// Base64 encoded data
-        public let blob: String
-        /// MIME type "image/png"
-        public let type: String
+        // must be type .blob
+        public let data: WebExtension.StringOrBlob
 
-        public init(extensionID: String, uuid: String, blob: String, type: String) {
+        public init(extensionID: String, uuid: String, data: WebExtension.StringOrBlob) {
             self.extensionID = extensionID
             self.uuid = uuid
-            self.blob = blob
-            self.type = type
+            self.data = data
         }
     }
     
@@ -36,8 +33,7 @@ extension WebExtension.URL.CreateObjectURL {
 
         extensionID = try container.decode(String.self)
         uuid = try container.decode(String.self)
-        blob = try container.decode(String.self)
-        type = try container.decode(String.self)
+        data = try container.decode(WebExtension.StringOrBlob.self)
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -45,8 +41,7 @@ extension WebExtension.URL.CreateObjectURL {
 
         try container.encode(extensionID)
         try container.encode(uuid)
-        try container.encode(blob)
-        try container.encode(type)
+        try container.encode(data)
     }
 
 }
@@ -54,18 +49,19 @@ extension WebExtension.URL.CreateObjectURL {
 extension WebExtension.URL.CreateObjectURL {
 
     public var blobData: Data? {
-        return Data(base64Encoded: blob)
+        return Data(base64Encoded: data.content)
     }
 
     public var blobStorage: BlobStorage? {
-        guard let blobData = self.blobData else {
+        guard let blobData = self.blobData,
+        let mimeType = data.mimeType else {
             return nil
         }
 
         let blobStorage = BlobStorage()
         blobStorage.uuid = uuid
         blobStorage.blob = blobData
-        blobStorage.type = type
+        blobStorage.type = mimeType
         blobStorage.url = "holoflows-blob://" + extensionID + "/" + blobStorage.uuid
 
         return blobStorage

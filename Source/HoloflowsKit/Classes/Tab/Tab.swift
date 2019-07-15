@@ -10,53 +10,86 @@ import WebKit
 import JavaScriptCore
 import ConsolePrint
 import SwiftyJSON
+import Alamofire
+
+// MARK: - Delegates
 
 public protocol TabDelegate: class {
-    func tab(_ tab: Tab, requestManifestForExtension extensionID: String) -> String
-    func tab(_ tab: Tab, requestBundleResourceManagerForExtension extensionID: String, forPath path: String) -> BundleResourceManager?
-    func tab(_ tab: Tab, requestBlobResourceManagerForExtension extensionID: String, forPath path: String) -> BlobResourceManager?
-    func tab(_ tab: Tab, willDownloadBlobWithOptions options: WebExtension.Browser.Downloads.Download.Options)
-    func tab(_ tab: Tab, didDownloadBlobWithOptions options: WebExtension.Browser.Downloads.Download.Options, result: Result<BlobStorage, Error>)
+    func uiDelegate(for tab: Tab) -> WKUIDelegate?
+    func navigationDelegate(for tab: Tab) -> WKNavigationDelegate?
+
+    func tab(_ tab: Tab, shouldActive: Bool)
+    func tab(_ tab: Tab, pluginResourceProviderForURL url: URL) -> PluginResourceProvider?
 }
 
-open class Tab: NSObject {
+extension TabDelegate {
+    public func uiDelegate(for tab: Tab) -> WKUIDelegate? { return nil }
+    public func navigationDelegate(for tab: Tab) -> WKNavigationDelegate? { return nil }
+
+    public func tab(_ tab: Tab, shouldActive: Bool) { }
+    public func tab(_ tab: Tab, pluginResourceProviderForURL url: URL) -> PluginResourceProvider? { return nil }
+}
+
+public protocol TabDownloadsDelegate: class {
+    typealias Result = Swift.Result
+    
+    func tab(_ tab: Tab, willDownloadBlobWithOptions options: WebExtension.Browser.Downloads.Download.Options)
+    func tab(_ tab: Tab, didDownloadBlobWithOptions options: WebExtension.Browser.Downloads.Download.Options, result: Result<(Data, URLResponse), Error>)
+}
+
+extension TabDownloadsDelegate {
+    public func tab(_ tab: Tab, willDownloadBlobWithOptions options: WebExtension.Browser.Downloads.Download.Options) { }
+    public func tab(_ tab: Tab, didDownloadBlobWithOptions options: WebExtension.Browser.Downloads.Download.Options, result: Result<(Data, URLResponse), Error>) { }
+}
+
+// MARK: - Tab
+public class Tab: NSObject {
 
     weak var tabs: Tabs?
 
+    let session: SessionManager = {
+        let configuration = URLSessionConfiguration.ephemeral
+//        configuration.httpAdditionalHeaders = ["User-Agent" : self.tabs?.userAgent as Any]
+        configuration.httpAdditionalHeaders = ["User-Agent" : "Mozilla/5.0 (iPhone; CPU iPhone OS 12_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148"]
+        let session = Alamofire.SessionManager(configuration: configuration)
+        return session
+    }()
+
     public let id: Int
-    public let userContentController: WKUserContentController
     public let webView: WKWebView
 
-    public var uiDelegateProxy: WebViewProxy<WKUIDelegate>?
-    public var navigationDelegateProxy: WebViewProxy<WKNavigationDelegate>?
+    let plugin: Plugin?
+    let userContentController: WKUserContentController
 
-    open weak var delegate: TabDelegate?
-    open weak var uiDelegate: WKUIDelegate? {
-        didSet {
-            uiDelegate.flatMap { uiDelegateProxy?.registerSecondary($0) }
-        }
-    }
-    open weak var navigationDelegate: WKNavigationDelegate? {
-        didSet {
-            navigationDelegate.flatMap{ navigationDelegateProxy?.registerSecondary($0) }
-        }
-    }
+    var uiDelegateProxy: WebViewProxy<WKUIDelegate>?
+    var navigationDelegateProxy: WebViewProxy<WKNavigationDelegate>?
 
-    public init(id: Int, createOptions options: WebExtension.Browser.Tabs.Create.Options? = nil, webViewConfiguration configuration: WKWebViewConfiguration? = nil) {
+    weak var delegate: TabDelegate?
+    weak var downloadsDelegate: TabDownloadsDelegate?
+
+    public init(id: Int, plugin: Plugin?, createOptions options: WebExtension.Browser.Tabs.Create.Options? = nil, webViewConfiguration configuration: WKWebViewConfiguration) {
         self.id = id
+        self.plugin = plugin
         self.userContentController = WKUserContentController()
-        let configuration = configuration ?? WKWebViewConfiguration()
         configuration.userContentController = userContentController
+        
         let bundle = Bundle(for: Tab.self)
+
+        // FIXME:
         if let bundleURL = bundle.resourceURL?.appendingPathComponent("WebExtensionScripts.bundle"),
         let scriptsBundle = Bundle(url: bundleURL),
-        let scriptPath = scriptsBundle.path(forResource: "out", ofType: "js"),
+        let scriptPath = scriptsBundle.path(forResource: "webextension-shim", ofType: "js"),
         let script = try? String(contentsOfFile: scriptPath) {
-//            let dict = ["js/x.js" : "console.log('Hello');"]
-//            let jsonData = try! JSONEncoder().encode(dict)
-//            let jsonString = String(data: jsonData, encoding: .utf8)
-//            let newScript = script.replacingOccurrences(of: "#Inject_JSON_Object#", with: jsonString ?? "")
-            let userScript = WKUserScript(source: script, injectionTime: .atDocumentEnd, forMainFrameOnly: false)
+            let newScript = script
+                .replacingOccurrences(of: "##ID##", with: plugin?.id ?? "")
+                .replacingOccurrences(of: "##Manifest##", with: plugin?.manifest.rawString() ?? "")
+                .replacingOccurrences(of: "##Env##", with: plugin?.environment.rawValue ?? "")
+                .replacingOccurrences(of: "##Resources##", with: plugin?.resources.rawString() ?? "")
+
+//            let hasSchemePrefix = options?.url?.hasPrefix("holoflows-extension://") ?? false
+//            let injectionTime: WKUserScriptInjectionTime = hasSchemePrefix ? .atDocumentStart : .atDocumentEnd
+            let injectionTime = WKUserScriptInjectionTime.atDocumentEnd
+            let userScript = WKUserScript(source: newScript, injectionTime: injectionTime, forMainFrameOnly: false)
             userContentController.addUserScript(userScript)
         } else {
             assertionFailure()
@@ -80,7 +113,18 @@ open class Tab: NSObject {
         if let url = options?.url, let URL = URL(string: url) {
             webView.load(URLRequest(url: URL))
         } else {
-            // TODO:
+            let html = """
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>URL not invalid</title>
+            </head>
+            <body>
+
+            </body>
+            </html>
+            """
+            webView.loadHTMLString(html, baseURL: nil)
         }
     }
 
@@ -97,18 +141,19 @@ open class Tab: NSObject {
 
 }
 
+extension Tab {
+
+    public func completionHandler(file: String = #file, method: String = #function, line: Int = #line) -> HoloflowsRPC.CompletionHandler {
+        return HoloflowsRPC.CompletionHandler(tabMeta: meta, file: file, method: method, line: line)
+    }
+
+}
+
+
 // MARK: - WKScriptMessageHandler
 extension Tab: WKScriptMessageHandler {
 
-    static let completionHandler: ((Any?, Error?) -> Void) = { any, error in
-        guard let error = error else {
-            consolePrint("\(String(describing: any))")
-            return
-        }
-        consolePrint(error.localizedDescription)
-    }
-
-    open func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+    public func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
         guard let eventType = ScriptEvent(rawValue: message.name) else {
             assertionFailure()
             return
@@ -124,7 +169,7 @@ extension Tab: WKScriptMessageHandler {
 
         guard let api = WebExtension.API(method: method) else {
             let result: Result<HoloflowsRPC.Response<WebExtension._Echo>, RPC.Error> = .failure(RPCError.invalidRequest)
-            HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: Tab.completionHandler)
+            HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
             consolePrint("invalid request")
             return
         }
@@ -132,19 +177,23 @@ extension Tab: WKScriptMessageHandler {
         switch api {
         case ._echo:                                echo(id: id, messageBody: messageBody)
         case .sendMessage:                          sendMessage(id: id, messageBody: messageBody)
+        case .fetch:                                fetch(id: id, messageBody: messageBody)
         case .urlCreateObjectURL:                   URLCreateObjectURL(id: id, messageBody: messageBody)
         case .browserDownloadsDownload:             browserDownloadsDownload(id: id, messageBody: messageBody)
         case .browserRuntimeGetURL:                 browserRuntimeGetURL(id: id, messageBody: messageBody)
-        case .browserRuntimeGetManifest:            browserRuntimeGetManifest(id: id, messageBody: messageBody)
         case .browserTabsExecuteScript:             browserTabsExecuteScript(id: id, messageBody: messageBody)
         case .browserTabsCreate:                    browserTabsCreate(id: id, messageBody: messageBody)
         case .browserTabsRemove:                    browserTabsRemove(id: id, messageBody: messageBody)
         case .browserTabsQuery:                     browserTabsQuery(id: id, messageBody: messageBody)
+        case .browserTabsUpdate:                    browserTabsUpdate(id: id, messageBody: messageBody)
         case .browserStorageLocalGet:               browserStorageLocalGet(id: id, messageBody: messageBody)
         case .browserStorageLocalSet:               browserStorageLocalSet(id: id, messageBody: messageBody)
         case .browserStorageLocalRemove:            browserStorageLocalRemove(id: id, messageBody: messageBody)
         case .browserStorageLocalClear:             browserStorageLocalClear(id: id, messageBody: messageBody)
         case .browserStorageLocalGetBytesInUse:     browserStorageLocalGetBytesInUse(id: id, messageBody: messageBody)
+        case .websocketCreate:                      websocketCreate(id: id, messageBody: messageBody)
+        case .websocketClose:                       websocketClose(id: id, messageBody: messageBody)
+        case .websocketSend:                        websocketSend(id: id, messageBody: messageBody)
         }          
 //        }   // end switch eventType
     }   // end func userContentController
@@ -159,7 +208,7 @@ extension Tab: WKUIDelegate {
 // MARK: - WKNavigationDelegate
 extension Tab: WKNavigationDelegate {
 
-    open func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
+    public func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
         consolePrint(webView.url)
 
         typealias OnCommitted = WebExtension.Browser.WebNavigation.OnCommitted
@@ -168,7 +217,7 @@ extension Tab: WKNavigationDelegate {
         let onCommitted =  OnCommitted(tab: .init(tabId: id, url: webView.url?.absoluteString ?? ""))
         let request = HoloflowsRPC.ServerRequest(params: onCommitted, id: rpcID)
 
-        HoloflowsRPC.dispathRequest(webView: webView, id: rpcID, request: request, completionHandler: Tab.completionHandler)
+        HoloflowsRPC.dispathRequest(webView: webView, id: rpcID, request: request, completionHandler: completionHandler())
     }
 
 }

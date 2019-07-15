@@ -28,12 +28,12 @@ extension Tab {
             }
 
             let result: Result<HoloflowsRPC.Response<[String:JSON]>, RPC.Error> = .success(HoloflowsRPC.Response(result: dict, id: id))
-            HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: Tab.completionHandler)
+            HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
 
         case let .failure(error):
             consolePrint(error.localizedDescription)
             let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .failure(error)
-            HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: Tab.completionHandler)
+            HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
         }
     }
 
@@ -55,18 +55,18 @@ extension Tab {
                 try realm.commitWrite()
 
                 let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .success(HoloflowsRPC.Response(result: "", id: id))
-                HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: Tab.completionHandler)
+                HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
 
             } catch {
                 consolePrint(error.localizedDescription)
                 let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .failure(RPC.Error.serverError)
-                HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: Tab.completionHandler)
+                HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
             }
 
         case let .failure(error):
             consolePrint(error.localizedDescription)
             let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .failure(error)
-            HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: Tab.completionHandler)
+            HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
         }
     }
 
@@ -88,18 +88,18 @@ extension Tab {
                 try realm.commitWrite()
 
                 let result: Result<HoloflowsRPC.Response<[String:JSON]>, RPC.Error> = .success(HoloflowsRPC.Response(result: dict, id: id))
-                HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: Tab.completionHandler)
+                HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
 
             } catch {
                 consolePrint(error.localizedDescription)
                 let result: Result<HoloflowsRPC.Response<[String:JSON]>, RPC.Error> = .failure(RPC.Error.serverError)
-                HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: Tab.completionHandler)
+                HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
             }
 
         case let .failure(error):
             consolePrint(error.localizedDescription)
             let result: Result<HoloflowsRPC.Response<[String:JSON]>, RPC.Error> = .failure(error)
-            HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: Tab.completionHandler)
+            HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
         }
     }
 
@@ -115,18 +115,18 @@ extension Tab {
                 try realm.commitWrite()
 
                 let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .success(HoloflowsRPC.Response(result: "", id: id))
-                HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: Tab.completionHandler)
+                HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
 
             } catch {
                 consolePrint(error.localizedDescription)
                 let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .failure(RPC.Error.serverError)
-                HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: Tab.completionHandler)
+                HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
             }
 
         case let .failure(error):
             consolePrint(error.localizedDescription)
             let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .failure(error)
-            HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: Tab.completionHandler)
+            HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
         }
     }
 
@@ -134,29 +134,22 @@ extension Tab {
         let messageResult: Result<WebExtension.Browser.Storage.Local.GetBytesInUse, RPC.Error> = HoloflowsRPC.parseRPC(messageBody: messageBody)
         switch messageResult {
         case let .success(getBytesInUse):
-            do {
-                let keys = getBytesInUse.keyValues
-                let realm = RealmService.default.realm
+            let keys = getBytesInUse.keyValues
+            let realm = RealmService.default.realm
 
-                let entires: [LocalStorage] = {
-                    let objects = realm.objects(LocalStorage.self)
-                    return keys.flatMap { keys in objects.filter { keys.contains($0.key) } } ?? objects.compactMap { $0 }
-                }()
+            let entires: [LocalStorage] = {
+                let objects = realm.objects(LocalStorage.self)
+                return keys.flatMap { keys in objects.filter { keys.contains($0.key) } } ?? objects.compactMap { $0 }
+            }()
 
-                let usage = entires.map { Data($0.key.utf8).count + Data($0.value.utf8).count }.reduce(0, +)
-                let result: Result<HoloflowsRPC.Response<Int> , RPC.Error> = .success(HoloflowsRPC.Response(result: usage, id: id))
-                HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: Tab.completionHandler)
-
-            } catch {
-                consolePrint(error.localizedDescription)
-                let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .failure(RPC.Error.serverError)
-                HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: Tab.completionHandler)
-            }
+            let usage = entires.map { Data($0.key.utf8).count + Data($0.value.utf8).count }.reduce(0, +)
+            let result: Result<HoloflowsRPC.Response<Int> , RPC.Error> = .success(HoloflowsRPC.Response(result: usage, id: id))
+            HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
 
         case let .failure(error):
             consolePrint(error.localizedDescription)
             let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .failure(error)
-            HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: Tab.completionHandler)
+            HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
         }
     }
 
