@@ -109,6 +109,26 @@ extension BrowserTabsTests {
         wait(for: [checkExpectation], timeout: 3.0)
     }
 
+    func testUpdate() {
+        let tab = browser.tabs.create(options: .init(active: false, url: "https://www.apple.com/"))
+        TestHelper.prepareTest(tab: tab, forTestCase: self)
+        XCTAssertEqual(browser.tabs.storage.count, 1)
+
+        TestHelper.waitCallback(3.0, forTestCase: self)
+        XCTAssertEqual(tab.webView.url?.absoluteString, "https://www.apple.com/")
+
+        let updateProperties = WebExtension.Browser.Tabs.Update.UpdateProperties(url: "https://example.org/")
+        let update = WebExtension.Browser.Tabs.Update(extensionID: "HoloflowsKit-UnitTests", tabId: tab.id, updateProperties: updateProperties)
+        let updateRequest = HoloflowsRPC.Request(params: update, id: UUID().uuidString)
+        let updateScript = TestHelper.webKit(messageBody: updateRequest)
+        let updateExpectation = TestHelper.expectEvaluateJavaScript(in: tab.webView, script: updateScript, forTestCase: self) { any, error in
+            // do noting
+        }
+        wait(for: [updateExpectation], timeout: 3.0)
+
+        XCTAssertEqual(tab.webView.url?.absoluteString, "https://example.org/")
+    }
+
 }
 
 extension BrowserTabsTests {

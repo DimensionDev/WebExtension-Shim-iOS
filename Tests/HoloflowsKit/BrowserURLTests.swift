@@ -30,36 +30,14 @@ extension BrowserURLTests: BrowserCore {
         return Plugin(id: UUID().uuidString, manifest: JSON.null, environment: type, resources: JSON.null)
     }
 
-    func tabs(_ tabs: Tabs, webViewConfigurationForOptions options: WebExtension.Browser.Tabs.Create.Options?) -> WKWebViewConfiguration {
-        let configuration = WKWebViewConfiguration()
-        configuration.setURLSchemeHandler(blobResourceManager, forURLScheme: "holoflows-blob")
-        return configuration
+    func tab(_ tab: Tab, pluginResourceProviderForURL url: URL) -> PluginResourceProvider? {
+        switch url.scheme {
+        case "holoflows-blob":
+            return blobResourceManager
+        default:
+            return nil
+        }
     }
-
-    func uiDelegate(for tab: Tab) -> WKUIDelegate? {
-        return nil
-    }
-
-    func navigationDelegate(for tab: Tab) -> WKNavigationDelegate? {
-        return nil
-    }
-
-    func tab(_ tab: Tab, bundleResourceManagerOfExtensionID extensionID: String, forPath path: String) -> BundleResourceManager? {
-        return nil
-    }
-
-    func tab(_ tab: Tab, blobResourceManagerOfExtensionID extensionID: String, forPath path: String) -> BlobResourceManager? {
-        return blobResourceManager
-    }
-
-    func tab(_ tab: Tab, willDownloadBlobWithOptions options: WebExtension.Browser.Downloads.Download.Options) {
-        // do nothing
-    }
-
-    func tab(_ tab: Tab, didDownloadBlobWithOptions options: WebExtension.Browser.Downloads.Download.Options, result: Result<BlobStorage, Error>) {
-        // do nothing
-    }
-
 
 }
 
