@@ -7,6 +7,7 @@
 
 import XCTest
 import HoloflowsKit
+import SwiftyJSON
 
 class BrowserTabsTests: XCTestCase {
 
@@ -63,6 +64,69 @@ extension BrowserTabsTests {
         wait(for: [removeScriptExpectation], timeout: 5.0)
         TestHelper.waitCallback(3, forTestCase: self)
         XCTAssertEqual(browser.tabs.storage.count, 1)
+    }
+
+    func testQuery() {
+        let tab = browser.tabs.create(options: nil)
+        TestHelper.prepareTest(tab: tab, forTestCase: self)
+        XCTAssertEqual(browser.tabs.storage.count, 1)
+        let _ = browser.tabs.create(options: .init(active: false, url: "https://www.apple.com"))
+
+        // add listener
+        let queryID = UUID().uuidString
+        let addListenerScript = """
+        var array = [];
+        document.addEventListener('\(ScriptEvent.holoflowsjsonrpc.rawValue)', event => {
+            if (event.detail.id != '\(queryID)') { return; }
+
+            array = event.detail.result;
+        });
+        """
+        let addListenerExpectation = TestHelper.expectEvaluateJavaScript(in: tab.webView, script: addListenerScript, forTestCase: self) { (any, error) in
+            // do nothing
+        }
+        wait(for: [addListenerExpectation], timeout: 3.0)
+
+        // query
+        let query = WebExtension.Browser.Tabs.Query(extensionID: "HoloflowsKit-UnitTests", queryInfo: JSON.null)
+        let queryRequest = HoloflowsRPC.Request(params: query, id: queryID)
+        let queryScript = TestHelper.webKit(messageBody: queryRequest)
+        let queryExpectation = TestHelper.expectEvaluateJavaScript(in: tab.webView, script: queryScript, forTestCase: self) { any, error in
+            // do noting
+        }
+        wait(for: [queryExpectation], timeout: 3.0)
+
+        // check
+        let checkExpectation = TestHelper.expectEvaluateJavaScript(in: tab.webView, script: "array;", forTestCase: self) { any, error in
+            XCTAssertNil(error)
+            let array = JSON(rawValue: any ?? Data())?.arrayValue ?? []
+            XCTAssertEqual(array.count, 2)
+            XCTAssertEqual(array[0]["id"], 0)
+            XCTAssertEqual(array[0]["url"], "about:blank")
+            XCTAssertEqual(array[1]["id"], 1)
+            XCTAssertEqual(array[1]["url"], "https://www.apple.com/")
+        }
+        wait(for: [checkExpectation], timeout: 3.0)
+    }
+
+    func testUpdate() {
+        let tab = browser.tabs.create(options: .init(active: false, url: "https://www.apple.com/"))
+        TestHelper.prepareTest(tab: tab, forTestCase: self)
+        XCTAssertEqual(browser.tabs.storage.count, 1)
+
+        TestHelper.waitCallback(3.0, forTestCase: self)
+        XCTAssertEqual(tab.webView.url?.absoluteString, "https://www.apple.com/")
+
+        let updateProperties = WebExtension.Browser.Tabs.Update.UpdateProperties(url: "https://example.org/")
+        let update = WebExtension.Browser.Tabs.Update(extensionID: "HoloflowsKit-UnitTests", tabId: tab.id, updateProperties: updateProperties)
+        let updateRequest = HoloflowsRPC.Request(params: update, id: UUID().uuidString)
+        let updateScript = TestHelper.webKit(messageBody: updateRequest)
+        let updateExpectation = TestHelper.expectEvaluateJavaScript(in: tab.webView, script: updateScript, forTestCase: self) { any, error in
+            // do noting
+        }
+        wait(for: [updateExpectation], timeout: 3.0)
+
+        XCTAssertEqual(tab.webView.url?.absoluteString, "https://example.org/")
     }
 
 }

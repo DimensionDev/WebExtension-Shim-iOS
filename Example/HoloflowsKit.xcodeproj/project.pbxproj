@@ -15,6 +15,7 @@
 		607FACE01AFB9204008FA782 /* LaunchScreen.xib in Resources */ = {isa = PBXBuildFile; fileRef = 607FACDE1AFB9204008FA782 /* LaunchScreen.xib */; };
 		607FACEC1AFB9204008FA782 /* Tests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 607FACEB1AFB9204008FA782 /* Tests.swift */; };
 		9483A97EA9B35346A2DD9F04 /* Pods_HoloflowsKit_Example.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FECF285B39A6976DC657C0D8 /* Pods_HoloflowsKit_Example.framework */; };
+		DBAADD3722D4A69B00ABE702 /* ExampleBrowserCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBAADD3622D4A69B00ABE702 /* ExampleBrowserCore.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -46,6 +47,7 @@
 		A542D1B36F70BD444538D16A /* Pods-HoloflowsKit_Tests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-HoloflowsKit_Tests.debug.xcconfig"; path = "Target Support Files/Pods-HoloflowsKit_Tests/Pods-HoloflowsKit_Tests.debug.xcconfig"; sourceTree = "<group>"; };
 		A921DD134E6D65EC0D456B6F /* README.md */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = net.daringfireball.markdown; name = README.md; path = ../README.md; sourceTree = "<group>"; };
 		D32C612D0291F9AF66C60D44 /* Pods-HoloflowsKit_Example.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-HoloflowsKit_Example.debug.xcconfig"; path = "Target Support Files/Pods-HoloflowsKit_Example/Pods-HoloflowsKit_Example.debug.xcconfig"; sourceTree = "<group>"; };
+		DBAADD3622D4A69B00ABE702 /* ExampleBrowserCore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExampleBrowserCore.swift; sourceTree = "<group>"; };
 		FECF285B39A6976DC657C0D8 /* Pods_HoloflowsKit_Example.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_HoloflowsKit_Example.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -106,6 +108,7 @@
 			children = (
 				607FACD51AFB9204008FA782 /* AppDelegate.swift */,
 				607FACD71AFB9204008FA782 /* ViewController.swift */,
+				DBAADD3622D4A69B00ABE702 /* ExampleBrowserCore.swift */,
 				607FACD91AFB9204008FA782 /* Main.storyboard */,
 				607FACDC1AFB9204008FA782 /* Images.xcassets */,
 				607FACDE1AFB9204008FA782 /* LaunchScreen.xib */,
@@ -293,6 +296,8 @@
 			);
 			inputPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-HoloflowsKit_Example/Pods-HoloflowsKit_Example-frameworks.sh",
+				"${BUILT_PRODUCTS_DIR}/Alamofire/Alamofire.framework",
+				"${BUILT_PRODUCTS_DIR}/AlamofireNetworkActivityLogger/AlamofireNetworkActivityLogger.framework",
 				"${BUILT_PRODUCTS_DIR}/ConsolePrint/ConsolePrint.framework",
 				"${BUILT_PRODUCTS_DIR}/HoloflowsKit/HoloflowsKit.framework",
 				"${BUILT_PRODUCTS_DIR}/Realm/Realm.framework",
@@ -301,6 +306,8 @@
 			);
 			name = "[CP] Embed Pods Frameworks";
 			outputPaths = (
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/Alamofire.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/AlamofireNetworkActivityLogger.framework",
 				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/ConsolePrint.framework",
 				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/HoloflowsKit.framework",
 				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/Realm.framework",
@@ -341,6 +348,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				DBAADD3722D4A69B00ABE702 /* ExampleBrowserCore.swift in Sources */,
 				607FACD81AFB9204008FA782 /* ViewController.swift in Sources */,
 				607FACD61AFB9204008FA782 /* AppDelegate.swift in Sources */,
 			);

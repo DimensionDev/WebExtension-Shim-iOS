@@ -15,20 +15,20 @@ extension Tab {
         let messageResult: Result<WebExtension.Browser.Tabs.Create, RPC.Error> = HoloflowsRPC.parseRPC(messageBody: messageBody)
         switch messageResult {
         case let .success(create):
-            let result = (tabs.flatMap { tabs -> Result<HoloflowsRPC.Response<Tab>, RPC.Error> in
+            let result = (tabs.flatMap { tabs -> Result<HoloflowsRPC.Response<Tab.Meta>, RPC.Error> in
                 let tab = tabs.create(options: create.options)
-                let response = HoloflowsRPC.Response(result: tab, id: id)
+                let response = HoloflowsRPC.Response(result: tab.meta, id: id)
                 return .success(response)
             }) ?? .failure(RPC.Error.serverError)
 
-            HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: Tab.completionHandler)
+            HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
 
             consolePrint(tabs?.storage)
 
         case let .failure(error):
             consolePrint(error.localizedDescription)
             let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .failure(error)
-            HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: Tab.completionHandler)
+            HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
         }
     }
 
@@ -38,19 +38,58 @@ extension Tab {
         case let .success(remove):
             if let _ = tabs?.remove(ids: [remove.tabId]) {
                 let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .success(.init(result: "", id: id))
-                HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: Tab.completionHandler)
+                HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
 
             } else {
                 let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .failure(RPC.Error.serverError)
-                HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: Tab.completionHandler)
+                HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
             }
 
         case let .failure(error):
             consolePrint(error.localizedDescription)
             let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .failure(error)
-            HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: Tab.completionHandler)
+            HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
         }
         consolePrint(tabs?.storage)
+    }
+
+    open func browserTabsQuery(id: String, messageBody: String) {
+        let messageResult: Result<WebExtension.Browser.Tabs.Query, RPC.Error> = HoloflowsRPC.parseRPC(messageBody: messageBody)
+        switch messageResult {
+        case .success:
+            let tabs = self.tabs?.storage.map { $0.meta } ?? []
+            let result: Result<HoloflowsRPC.Response<[Tab.Meta]> , RPC.Error> = .success(.init(result: tabs, id: id))
+            HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
+
+        case let .failure(error):
+            consolePrint(error.localizedDescription)
+            let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .failure(error)
+            HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
+        }
+    }
+
+    open func browserTabsUpdate(id: String, messageBody: String) {
+        let messageResult: Result<WebExtension.Browser.Tabs.Update, RPC.Error> = HoloflowsRPC.parseRPC(messageBody: messageBody)
+        switch messageResult {
+        case let .success(update):
+            let tab = self.tabs?.storage.first(where: { $0.id == update.tabId })
+
+            guard let targetTab = tab,
+            let url = URL(string: update.updateProperties.url) else {
+                let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .failure(RPC.Error.invalidParams)
+                HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
+                return
+            }
+
+            targetTab.webView.load(URLRequest(url: url))
+            let result: Result<HoloflowsRPC.Response<Tab.Meta> , RPC.Error> = .success(.init(result: targetTab.meta, id: id))
+            HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
+
+        case let .failure(error):
+            consolePrint(error.localizedDescription)
+            let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .failure(error)
+            HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
+        }
     }
 
     open func browserTabsExecuteScript(id: String, messageBody: String) {
@@ -61,7 +100,7 @@ extension Tab {
             guard let tabs = tabs,
             let targetTab = tabs.storage.first(where: { $0.id == (executeScript.tabID ?? self.id) }) else {
                 let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .failure(RPC.Error.internalError)
-                HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: Tab.completionHandler)
+                HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
                 return
             }
 
@@ -71,7 +110,7 @@ extension Tab {
                 guard let `self` = self else { return }
                 if let error = error {
                     let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .failure(RPCError.serverError)
-                    HoloflowsRPC.dispatchResponse(webView: self.webView, id: id, result: result, completionHandler: Tab.completionHandler)
+                    HoloflowsRPC.dispatchResponse(webView: self.webView, id: id, result: result, completionHandler: self.completionHandler())
                     consolePrint(error.localizedDescription)
 
                 } else {
@@ -85,14 +124,14 @@ extension Tab {
                         return .success(HoloflowsRPC.Response(result: value, id: id))
                     }()
                     consolePrint("\(result), \(String(describing: any))")
-                    HoloflowsRPC.dispatchResponse(webView: self.webView, id: id, result: result, completionHandler: Tab.completionHandler)
+                    HoloflowsRPC.dispatchResponse(webView: self.webView, id: id, result: result, completionHandler: self.completionHandler())
                 }
             }   // end targetTab.seb.evaluateJavaScript(…)
 
         case let .failure(error):
             consolePrint(error.localizedDescription)
             let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .failure(error)
-            HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: Tab.completionHandler)
+            HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
         }
     }
 

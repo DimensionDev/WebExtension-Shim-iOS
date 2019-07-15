@@ -6,16 +6,37 @@
 //
 
 import XCTest
+import WebKit
 import HoloflowsKit
+import SwiftyJSON
 import ConsolePrint
 
 class BrowserURLTests: XCTestCase {
 
-    var browser = Browser()
+    lazy var browser = Browser(core: self)
+
+    let blobResourceManager = BlobResourceManager(realm: RealmService.default.realm)
 
     override func setUp() {
         super.setUp()
-        browser = Browser()
+        browser = Browser(core: self)
+    }
+
+}
+
+extension BrowserURLTests: BrowserCore {
+
+    func plugin(forScriptType type: Plugin.ScriptType) -> Plugin {
+        return Plugin(id: UUID().uuidString, manifest: JSON.null, environment: type, resources: JSON.null)
+    }
+
+    func tab(_ tab: Tab, pluginResourceProviderForURL url: URL) -> PluginResourceProvider? {
+        switch url.scheme {
+        case "holoflows-blob":
+            return blobResourceManager
+        default:
+            return nil
+        }
     }
 
 }
@@ -23,11 +44,6 @@ class BrowserURLTests: XCTestCase {
 extension BrowserURLTests {
 
     func testCreateObjectURL() {
-        let bundleResourceManager = BundleResourceManager(bundle: Bundle(for: BrowserURLTests.self))
-        let blobResourceManager = BlobResourceManager()
-        browser.bundleResourceManager = bundleResourceManager
-        browser.blobResourceManager = blobResourceManager
-
         let tab = browser.tabs.create(options: nil)
         TestHelper.prepareTest(tab: tab, forTestCase: self)
 
@@ -57,7 +73,8 @@ extension BrowserURLTests {
         // creat blob url
         let image = UIImage(named: "lena_std.tif.tiff", in: Bundle(for: BrowserURLTests.self), compatibleWith: nil)!
         let base64EncodedString = image.pngData()!.base64EncodedString()
-        let createObjectURL = WebExtension.URL.CreateObjectURL(extensionID: "HoloflowsKit-UnitTests", uuid: blobID, blob: base64EncodedString, type: "image/png")
+        let data = WebExtension.StringOrBlob(type: .blob, content: base64EncodedString, mimeType: "image/png")
+        let createObjectURL = WebExtension.URL.CreateObjectURL(extensionID: "HoloflowsKit-UnitTests", uuid: blobID, data: data)
         let createObjectURLScript = TestHelper.webKit(messageBody: HoloflowsRPC.Request(params: createObjectURL, id: createObjectURLID))
         let createObjectURLExpectation = TestHelper.expectEvaluateJavaScript(in: tab.webView, script: createObjectURLScript, forTestCase: self) { (any, error) in
             // do nothing

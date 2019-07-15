@@ -14,11 +14,11 @@ extension Tab {
         switch result {
         case let .success(echo):
             let response = HoloflowsRPC.Response(result: echo, id: id)
-            HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: .success(response), completionHandler: Tab.completionHandler)
+            HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: .success(response), completionHandler: completionHandler())
 
         case let .failure(error):
             let result: Result<HoloflowsRPC.Response<WebExtension._Echo>, RPC.Error> = .failure(error)
-            HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: Tab.completionHandler)
+            HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
         }
     }
 

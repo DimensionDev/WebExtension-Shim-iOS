@@ -13,20 +13,7 @@ import ConsolePrint
 
 class ViewController: UIViewController {
 
-    let bundleResourceManager = BundleResourceManager(bundle: Bundle(for: ViewController.self))
-    lazy var browser: Browser = {
-        let browser = Browser.default
-        browser.bundleResourceManager = bundleResourceManager
-        return browser
-    }()
-
-    lazy var tab: Tab = {
-        return browser.tabs.create(options: WebExtension.Browser.Tabs.Create.Options(active: true, url: "https://m.facebook.com"))
-    }()
-
-    lazy var webView: WKWebView = {
-        return tab.webView
-    }()
+    lazy var browser = Browser(core: ExampleBrowserCore())
 
 }
 
@@ -34,9 +21,8 @@ extension ViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-
-        tab.uiDelegate = self
-        tab.navigationDelegate = self
+        let tab = browser.tabs.create(options: WebExtension.Browser.Tabs.Create.Options(active: false, url: "https://www.apple.com"))
+        let webView = tab.webView
 
         webView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(webView)
@@ -48,20 +34,31 @@ extension ViewController {
         ])
     }
 
-    override func didReceiveMemoryWarning() {
-        super.didReceiveMemoryWarning()
-    }
-
 }
 
-extension ViewController: WKUIDelegate {
+extension ViewController {
 
-}
+    override func motionBegan(_ motion: UIEventSubtype, with event: UIEvent?) {
+        guard motion == .motionShake else {
+            return
+        }
 
-extension ViewController: WKNavigationDelegate {
+        let alertController = UIAlertController(title: "Debug", message: nil, preferredStyle: .actionSheet)
 
-    func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
-        consolePrint(navigation)
+        let printCookieAction = UIAlertAction(title: "Print Cookie", style: .default) { _ in
+
+            self.browser.tabs.storage.forEach { tab in
+                tab.webView.configuration.websiteDataStore.httpCookieStore.getAllCookies { (cookies) in
+                    consolePrint(cookies)
+                }
+            }
+        }
+        alertController.addAction(printCookieAction)
+
+        let cancelAction = UIAlertAction(title: "Cancel", style: .cancel, handler: nil)
+        alertController.addAction(cancelAction)
+
+        present(alertController, animated: true, completion: nil)
     }
 
 }
