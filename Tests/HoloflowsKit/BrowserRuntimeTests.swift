@@ -25,10 +25,6 @@ class BrowserRuntimeTests: XCTestCase {
 extension BrowserRuntimeTests {
 
     func testGetURL() {
-//        let bundleResourceManager = BundleResourceManager(bundle: Bundle(for: BrowserRuntimeTests.self))
-//        let handers = [URLSchemeHandlerManager.URLSchemeHander(scheme: "holoflows-kit", extensionID: "HoloflowsKit-UnitTests", urlSchemeHandler: bundleResourceManager)]
-//        browser.schemeHanderManager = URLSchemeHandlerManager(handlers: handers)
-
         let tab = browser.tabs.create(options: nil)
         TestHelper.prepareTest(tab: tab, forTestCase: self)
 
@@ -57,7 +53,7 @@ extension BrowserRuntimeTests {
         // check url
         TestHelper.waitCallback(3.0, forTestCase: self)
         let checkURLExpectation = TestHelper.expectEvaluateJavaScript(in: tab.webView, script: "url;", forTestCase: self) { (any, error) in
-            XCTAssertEqual(any as? String, "holoflows-kit://HoloflowsKit-UnitTests/lena_std.tif.tiff")
+            XCTAssertEqual(any as? String, "holoflows-extension://HoloflowsKit-UnitTests/lena_std.tif.tiff")
         }
         wait(for: [checkURLExpectation], timeout: 3.0)
     }

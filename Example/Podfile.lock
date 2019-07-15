@@ -1,18 +1,23 @@
 PODS:
+  - Alamofire (4.8.2)
+  - AlamofireNetworkActivityLogger (2.4.0):
+    - Alamofire (~> 4.8)
   - ConsolePrint (0.2.0)
-  - HoloflowsKit (0.1.2):
+  - HoloflowsKit (0.2.0):
     - ConsolePrint
-    - HoloflowsKit/HoloflowsKit (= 0.1.2)
+    - HoloflowsKit/HoloflowsKit (= 0.2.0)
     - SwiftyJSON (~> 5.0.0)
-  - HoloflowsKit/HoloflowsKit (0.1.2):
+  - HoloflowsKit/HoloflowsKit (0.2.0):
+    - Alamofire (~> 4.7)
+    - AlamofireNetworkActivityLogger (~> 2.4)
     - ConsolePrint
     - HoloflowsKit/JSONRPC
     - RealmSwift
     - SwiftyJSON (~> 5.0.0)
-  - HoloflowsKit/JSONRPC (0.1.2):
+  - HoloflowsKit/JSONRPC (0.2.0):
     - ConsolePrint
     - SwiftyJSON (~> 5.0.0)
-  - HoloflowsKit/Tests (0.1.2):
+  - HoloflowsKit/Tests (0.2.0):
     - ConsolePrint
     - SwiftyJSON (~> 5.0.0)
   - Realm (3.17.0):
@@ -28,6 +33,8 @@ DEPENDENCIES:
 
 SPEC REPOS:
   https://github.com/cocoapods/specs.git:
+    - Alamofire
+    - AlamofireNetworkActivityLogger
     - ConsolePrint
     - Realm
     - RealmSwift
@@ -38,8 +45,10 @@ EXTERNAL SOURCES:
     :path: "../"
 
 SPEC CHECKSUMS:
+  Alamofire: ae5c501addb7afdbb13687d7f2f722c78734c2d3
+  AlamofireNetworkActivityLogger: 6d3398c692d2c5d83b0c58793537860aca1e383d
   ConsolePrint: 2d5a73bb45f08efa259bef7583707d6dfa007141
-  HoloflowsKit: 2a26855bf327ec3fc581266c84b27c7eff4297b8
+  HoloflowsKit: 149666771e1a2fdb0fe010bd4ae4c809514e3ebb
   Realm: b30db41ff34fc858ffc25ba8d44a82c164e7ccd0
   RealmSwift: fe733e459d60dc7b6971d4cbee2eb4854097d12c
   SwiftyJSON: 36413e04c44ee145039d332b4f4e2d3e8d6c4db7
