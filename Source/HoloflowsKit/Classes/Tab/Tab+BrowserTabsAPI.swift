@@ -15,15 +15,16 @@ extension Tab {
         let messageResult: Result<WebExtension.Browser.Tabs.Create, RPC.Error> = HoloflowsRPC.parseRPC(messageBody: messageBody)
         switch messageResult {
         case let .success(create):
-            let result = (tabs.flatMap { tabs -> Result<HoloflowsRPC.Response<Tab.Meta>, RPC.Error> in
-                let tab = tabs.create(options: create.options)
-                let response = HoloflowsRPC.Response(result: tab.meta, id: id)
-                return .success(response)
-            }) ?? .failure(RPC.Error.serverError)
+            guard let tabs = tabs else {
+                let result: Result<HoloflowsRPC.Response<Tab.Meta>, RPC.Error> = .failure(RPC.Error.serverError)
+                HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
+                return
+            }
 
+            let tab = tabs.create(options: create.options)
+            let result: Result<HoloflowsRPC.Response<Tab.Meta>, RPC.Error> = .success(HoloflowsRPC.Response(result: tab.meta, id: id))
             HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
-
-            consolePrint(tabs?.storage)
+            delegate?.tab(tab, shouldActive: create.options.active ?? true)     // default true to respect WebExtension API
 
         case let .failure(error):
             consolePrint(error.localizedDescription)

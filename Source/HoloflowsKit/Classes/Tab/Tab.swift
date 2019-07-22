@@ -17,6 +17,7 @@ import Alamofire
 public protocol TabDelegate: class {
     func uiDelegate(for tab: Tab) -> WKUIDelegate?
     func navigationDelegate(for tab: Tab) -> WKNavigationDelegate?
+    func tab(_ tab: Tab, localStorageManagerForTab: Tab) -> LocalStorageManager
 
     func tab(_ tab: Tab, shouldActive: Bool)
     func tab(_ tab: Tab, pluginResourceProviderForURL url: URL) -> PluginResourceProvider?
@@ -86,9 +87,9 @@ public class Tab: NSObject {
                 .replacingOccurrences(of: "##Env##", with: plugin?.environment.rawValue ?? "")
                 .replacingOccurrences(of: "##Resources##", with: plugin?.resources.rawString() ?? "")
 
-//            let hasSchemePrefix = options?.url?.hasPrefix("holoflows-extension://") ?? false
-//            let injectionTime: WKUserScriptInjectionTime = hasSchemePrefix ? .atDocumentStart : .atDocumentEnd
-            let injectionTime = WKUserScriptInjectionTime.atDocumentEnd
+            let hasSchemePrefix = options?.url?.hasPrefix("holoflows-extension://") ?? false
+            let injectionTime: WKUserScriptInjectionTime = hasSchemePrefix ? .atDocumentStart : .atDocumentEnd
+//            let injectionTime = WKUserScriptInjectionTime.atDocumentEnd
             let userScript = WKUserScript(source: newScript, injectionTime: injectionTime, forMainFrameOnly: false)
             userContentController.addUserScript(userScript)
         } else {
@@ -190,7 +191,6 @@ extension Tab: WKScriptMessageHandler {
         case .browserStorageLocalSet:               browserStorageLocalSet(id: id, messageBody: messageBody)
         case .browserStorageLocalRemove:            browserStorageLocalRemove(id: id, messageBody: messageBody)
         case .browserStorageLocalClear:             browserStorageLocalClear(id: id, messageBody: messageBody)
-        case .browserStorageLocalGetBytesInUse:     browserStorageLocalGetBytesInUse(id: id, messageBody: messageBody)
         case .websocketCreate:                      websocketCreate(id: id, messageBody: messageBody)
         case .websocketClose:                       websocketClose(id: id, messageBody: messageBody)
         case .websocketSend:                        websocketSend(id: id, messageBody: messageBody)

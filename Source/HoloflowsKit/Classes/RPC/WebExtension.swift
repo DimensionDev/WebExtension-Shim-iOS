@@ -59,7 +59,6 @@ extension WebExtension {
         case browserStorageLocalSet
         case browserStorageLocalRemove
         case browserStorageLocalClear
-        case browserStorageLocalGetBytesInUse
         case websocketCreate
         case websocketClose
         case websocketSend
@@ -89,7 +88,6 @@ extension WebExtension {
             case .browserStorageLocalSet:           return WebExtension.Browser.Storage.Local.Set.method
             case .browserStorageLocalRemove:        return WebExtension.Browser.Storage.Local.Remove.method
             case .browserStorageLocalClear:         return WebExtension.Browser.Storage.Local.Clear.method
-            case .browserStorageLocalGetBytesInUse: return WebExtension.Browser.Storage.Local.GetBytesInUse.method
             case .websocketCreate:                  return WebExtension.WebSocket.Create.method
             case .websocketClose:                   return WebExtension.WebSocket.Close.method
             case .websocketSend:                    return WebExtension.WebSocket.Send.method

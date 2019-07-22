@@ -10,7 +10,7 @@ import WebKit
 import RealmSwift
 import ConsolePrint
 
-open class BlobResourceManager: NSObject, PluginResourceProvider {
+public class BlobResourceManager: NSObject, PluginResourceProvider {
 
     public let realm: Realm
 

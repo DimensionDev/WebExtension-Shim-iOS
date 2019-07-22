@@ -35,4 +35,8 @@ fileprivate class EmptyBrowserCore: BrowserCore {
         return Plugin(id: coreID.uuidString, manifest: JSON.null, environment: type, resources: JSON.null)
     }
 
+    func tab(_ tab: Tab, localStorageManagerForTab: Tab) -> LocalStorageManager {
+        return LocalStorageManager(realm: RealmService.default.realm)
+    }
+
 }

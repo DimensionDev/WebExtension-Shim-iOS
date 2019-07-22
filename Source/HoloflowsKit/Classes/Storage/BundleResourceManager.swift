@@ -9,7 +9,7 @@ import Foundation
 import WebKit
 import ConsolePrint
 
-open class BundleResourceManager: NSObject, PluginResourceProvider {
+public class BundleResourceManager: NSObject, PluginResourceProvider {
 
     public let bundle: Bundle
 
@@ -25,7 +25,7 @@ open class BundleResourceManager: NSObject, PluginResourceProvider {
 
 extension BundleResourceManager {
 
-    open func data(from url: URL, handler: @escaping (Result<(Data, URLResponse), Swift.Error>) -> Void) {
+    public func data(from url: URL, handler: @escaping (Result<(Data, URLResponse), Swift.Error>) -> Void) {
         let fileExtension = url.pathExtension
         let filename = url.deletingPathExtension().lastPathComponent
 
