@@ -58,6 +58,7 @@ public class Tab: NSObject {
 
     public let id: Int
     public let webView: WKWebView
+    public let isActive: Bool
 
     let plugin: Plugin?
     let userContentController: WKUserContentController
@@ -97,6 +98,7 @@ public class Tab: NSObject {
         }
 
         self.webView = WKWebView(frame: CGRect(x: 0, y: 0, width: 100, height: 100), configuration: configuration)
+        self.isActive = options?.active ?? false
 
         super.init()
 

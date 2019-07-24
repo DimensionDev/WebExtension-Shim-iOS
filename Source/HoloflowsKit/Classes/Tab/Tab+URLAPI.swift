@@ -20,7 +20,14 @@ extension Tab {
                 return
             }
 
-            let realm = RealmService.default.realm
+            guard let url = URL(string: blobStorage.url),
+            let blobResourceManager = delegate?.tab(self, pluginResourceProviderForURL: url) as? BlobResourceManager else {
+                let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .failure(.internalError)
+                HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
+                return
+            }
+
+            let realm = blobResourceManager.realm
             do {
                 try realm.write {
                     realm.add(blobStorage, update: .all)

@@ -57,9 +57,15 @@ extension Tab {
     open func browserTabsQuery(id: String, messageBody: String) {
         let messageResult: Result<WebExtension.Browser.Tabs.Query, RPC.Error> = HoloflowsRPC.parseRPC(messageBody: messageBody)
         switch messageResult {
-        case .success:
-            let tabs = self.tabs?.storage.map { $0.meta } ?? []
-            let result: Result<HoloflowsRPC.Response<[Tab.Meta]> , RPC.Error> = .success(.init(result: tabs, id: id))
+        case let .success(query):
+            let tabMetas: [Tab.Meta]
+            if let filterActive = query.queryInfo?["active"].bool, filterActive {
+                let meta = self.tabs?.storage.last(where: { $0.isActive })?.meta
+                tabMetas = meta.flatMap { [$0] } ?? []
+            } else {
+                tabMetas = self.tabs?.storage.map { $0.meta } ?? []
+            }
+            let result: Result<HoloflowsRPC.Response<[Tab.Meta]> , RPC.Error> = .success(.init(result: tabMetas, id: id))
             HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
 
         case let .failure(error):
