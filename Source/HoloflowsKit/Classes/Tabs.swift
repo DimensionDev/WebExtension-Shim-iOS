@@ -61,6 +61,12 @@ extension Tabs {
 
         tab.tabs = self
         tab.delegate = browserCore
+        if let uiDelegate = browserCore?.uiDelegate(for: tab) {
+            tab.uiDelegateProxy?.registerSecondary(uiDelegate)
+        }
+        if let navigationDelegate = browserCore?.navigationDelegate(for: tab) {
+            tab.navigationDelegateProxy?.registerSecondary(navigationDelegate)
+        }
         tab.delegate?.tab(tab, shouldActive: options?.active ?? false)
 
         nextID += 1
@@ -134,6 +140,12 @@ extension Tabs {
 
         tab.tabs = self
         tab.delegate = browserCore
+        if let uiDelegate = browserCore?.uiDelegate(for: tab) {
+            tab.uiDelegateProxy?.registerSecondary(uiDelegate)
+        }
+        if let navigationDelegate = browserCore?.navigationDelegate(for: tab) {
+            tab.navigationDelegateProxy?.registerSecondary(navigationDelegate)
+        }
 
         return tab
     }
