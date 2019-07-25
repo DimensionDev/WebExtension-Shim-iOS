@@ -6,11 +6,12 @@
 //
 
 import Foundation
+import SafariServices
 import WebKit
-import JavaScriptCore
 import ConsolePrint
 import SwiftyJSON
 import Alamofire
+
 
 // MARK: - Delegates
 
@@ -197,13 +198,24 @@ extension Tab: WKScriptMessageHandler {
         case .websocketClose:                       websocketClose(id: id, messageBody: messageBody)
         case .websocketSend:                        websocketSend(id: id, messageBody: messageBody)
         }          
-//        }   // end switch eventType
     }   // end func userContentController
 
 }
 
 // MARK: - WKUIDelegate
 extension Tab: WKUIDelegate {
+
+    public func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration, for navigationAction: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
+        if navigationAction.targetFrame == nil, let url = navigationAction.request.url {
+            let safariViewController = SFSafariViewController(url: url)
+            UIApplication.shared.keyWindow?.rootViewController?.present(safariViewController, animated: true, completion: nil)
+        }
+        return nil
+    }
+
+    public func webView(_ webView: WKWebView, runJavaScriptTextInputPanelWithPrompt prompt: String, defaultText: String?, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping (String?) -> Void) {
+        // do nothing
+    }
 
 }
 
