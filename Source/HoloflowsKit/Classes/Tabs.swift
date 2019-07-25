@@ -61,6 +61,7 @@ extension Tabs {
 
         tab.tabs = self
         tab.delegate = browserCore
+        tab.downloadsDelegate = browserCore
         if let uiDelegate = browserCore?.uiDelegate(for: tab) {
             tab.uiDelegateProxy?.registerSecondary(uiDelegate)
         }
@@ -132,7 +133,7 @@ extension Tabs {
         let pluginForBackgroundScript = browserCore?.plugin(forScriptType: .backgroundScript) ?? Plugin(id: UUID().uuidString, manifest: JSON.null, environment: .backgroundScript, resources: JSON.null)
         let options: WebExtension.Browser.Tabs.Create.Options = {
             let url = Tabs.backgroundPagePath(for: pluginForBackgroundScript)
-            let options = WebExtension.Browser.Tabs.Create.Options(active: false, url: url)
+            let options = WebExtension.Browser.Tabs.Create.Options(active: true, url: url)
             return options
         }()
         let webViewConfiguration = self.webViewConfiguration(forOptions: options, scriptType: .backgroundScript)
@@ -140,12 +141,15 @@ extension Tabs {
 
         tab.tabs = self
         tab.delegate = browserCore
+        tab.downloadsDelegate = browserCore
         if let uiDelegate = browserCore?.uiDelegate(for: tab) {
             tab.uiDelegateProxy?.registerSecondary(uiDelegate)
         }
         if let navigationDelegate = browserCore?.navigationDelegate(for: tab) {
             tab.navigationDelegateProxy?.registerSecondary(navigationDelegate)
         }
+        // should add to background make WebView load
+        tab.delegate?.tab(tab, shouldActive: tab.isActive)
 
         return tab
     }
@@ -169,7 +173,18 @@ extension Tabs: WKURLSchemeHandler {
         let fileExtension = url.pathExtension
         let filename = url.deletingPathExtension().lastPathComponent
         if filename == "_generated_background_page", fileExtension == "html", url.scheme == "holoflows-extension" {
-            let data = "<html><body></body></html>".data(using: .utf8)!
+            let html = """
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>background page</title>
+            </head>
+            <body>
+
+            </body>
+            </html>
+            """
+            let data = html.data(using: .utf8)!
             let returnResponse = URLResponse(
                 url: url,
                 mimeType: "text/html",
