@@ -104,11 +104,18 @@ extension Tab {
 
         switch messageResult {
         case let .success(executeScript):
-            guard let tabs = tabs,
-            let targetTab = tabs.storage.first(where: { $0.id == (executeScript.tabID ?? self.id) }) else {
-                let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .failure(RPC.Error.internalError)
-                HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
-                return
+            var targetTab = self
+            if executeScript.tabID == -1, self.id == -1 {
+                // do nothing
+            } else {
+                guard let tabs = tabs,
+                let target = tabs.storage.first(where: { $0.id == (executeScript.tabID ?? self.id) }) else {
+                    let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .failure(RPC.Error.internalError)
+                    HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
+                    return
+                }
+
+                targetTab = target
             }
 
             let script = executeScript.details.code ?? ""
