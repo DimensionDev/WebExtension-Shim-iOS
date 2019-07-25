@@ -109,6 +109,7 @@ public class Tab: NSObject {
         webView.setNeedsLayout()
         webView.uiDelegate = uiDelegateProxy as? WKUIDelegate
         webView.navigationDelegate = navigationDelegateProxy as? WKNavigationDelegate
+        webView.allowsLinkPreview = false
 
         for event in ScriptEvent.allCases {
             userContentController.add(self, name: event.rawValue)
@@ -213,9 +214,24 @@ extension Tab: WKUIDelegate {
         return nil
     }
 
+    public func webView(_ webView: WKWebView, runJavaScriptAlertPanelWithMessage message: String, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping () -> Void) {
+        // do nothing
+    }
+
+    public func webView(_ webView: WKWebView, runJavaScriptConfirmPanelWithMessage message: String, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping (Bool) -> Void) {
+        // do nothing
+    }
+
     public func webView(_ webView: WKWebView, runJavaScriptTextInputPanelWithPrompt prompt: String, defaultText: String?, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping (String?) -> Void) {
         // do nothing
     }
+
+    public func webViewDidClose(_ webView: WKWebView) {
+        consolePrint(webView)
+    }
+
+    // Disable link preview
+    
 
 }
 
