@@ -27,22 +27,28 @@ extension Tab {
             }
 
             downloadsDelegate?.tab(self, willDownloadBlobWithOptions: download.options)
-            resourceProvider.data(from: url) { [weak self] result in
-                guard let `self` = self else { return }
-                switch result {
-                case let .success(data, response):
-                    let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .success(HoloflowsRPC.Response(result: "", id: id))
-                    HoloflowsRPC.dispatchResponse(webView: self.webView, id: id, result: result, completionHandler: self.completionHandler())
+            // Note: Delay 1 sec to solve createObjectURL script call before download bug
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                consolePrint("browser.downloads.download: \(download)")
+                resourceProvider.data(from: url) { [weak self] result in
+                    guard let `self` = self else {
+                        return
+                    }
+                    switch result {
+                    case let .success(data, response):
+                        let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .success(HoloflowsRPC.Response(result: "", id: id))
+                        HoloflowsRPC.dispatchResponse(webView: self.webView, id: id, result: result, completionHandler: self.completionHandler())
 
-                    self.downloadsDelegate?.tab(self, didDownloadBlobWithOptions: download.options, result: .success((data, response)))
+                        self.downloadsDelegate?.tab(self, didDownloadBlobWithOptions: download.options, result: .success((data, response)))
 
-                case let .failure(error):
-                    consolePrint(error.localizedDescription)
-                    let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .failure(.serverError)
-                    HoloflowsRPC.dispatchResponse(webView: self.webView, id: id, result: result, completionHandler: self.completionHandler())
+                    case let .failure(error):
+                        consolePrint(error.localizedDescription)
+                        let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .failure(.serverError)
+                        HoloflowsRPC.dispatchResponse(webView: self.webView, id: id, result: result, completionHandler: self.completionHandler())
+                    }
                 }
             }
-            
+
         case let .failure(error):
             let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .failure(error)
             HoloflowsRPC.dispatchResponse(webView: self.webView, id: id, result: result, completionHandler: completionHandler())
