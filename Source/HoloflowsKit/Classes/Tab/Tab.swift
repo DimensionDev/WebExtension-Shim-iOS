@@ -98,7 +98,7 @@ public class Tab: NSObject {
         }
 
         self.webView = WKWebView(frame: CGRect(x: 0, y: 0, width: 100, height: 100), configuration: configuration)
-        self.isActive = options?.active ?? false
+        self.isActive = options?.active ?? true
 
         super.init()
 
