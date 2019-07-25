@@ -207,7 +207,7 @@ extension Tab: WKScriptMessageHandler {
 extension Tab: WKUIDelegate {
 
     public func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration, for navigationAction: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
-        if navigationAction.targetFrame == nil, let url = navigationAction.request.url {
+        if navigationAction.targetFrame == nil, let url = navigationAction.request.url, let scheme = url.scheme, scheme.hasPrefix("http") {
             let safariViewController = SFSafariViewController(url: url)
             UIApplication.shared.keyWindow?.rootViewController?.present(safariViewController, animated: true, completion: nil)
         }
@@ -231,7 +231,6 @@ extension Tab: WKUIDelegate {
     }
 
     // Disable link preview
-    
 
 }
 
@@ -248,6 +247,30 @@ extension Tab: WKNavigationDelegate {
         let request = HoloflowsRPC.ServerRequest(params: onCommitted, id: rpcID)
 
         HoloflowsRPC.dispathRequest(webView: webView, id: rpcID, request: request, completionHandler: completionHandler())
+    }
+
+    public func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
+        // do nothing
+    }
+
+    public func webView(_ webView: WKWebView, didReceiveServerRedirectForProvisionalNavigation navigation: WKNavigation!) {
+        // do nothing
+    }
+
+    public func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+        // do nothing
+    }
+
+    public func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+        // do nothing
+    }
+
+    public func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        // do nothing
+    }
+
+    public func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
+        // do nothing
     }
 
 }
