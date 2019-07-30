@@ -18,7 +18,8 @@ import Alamofire
 public protocol TabDelegate: class {
     func uiDelegate(for tab: Tab) -> WKUIDelegate?
     func navigationDelegate(for tab: Tab) -> WKNavigationDelegate?
-    func scriptMessageHandlers(for tab: Tab) -> [String : WKScriptMessageHandler]
+    func customScriptMessageHandlerNames(for tab: Tab) -> [String]
+    func tab(_ tab: Tab, userContentController: WKUserContentController, didReceive message: WKScriptMessage)
     func tab(_ tab: Tab, localStorageManagerForTab: Tab) -> LocalStorageManager
 
     func tab(_ tab: Tab, shouldActive: Bool)
@@ -28,7 +29,8 @@ public protocol TabDelegate: class {
 extension TabDelegate {
     public func uiDelegate(for tab: Tab) -> WKUIDelegate? { return nil }
     public func navigationDelegate(for tab: Tab) -> WKNavigationDelegate? { return nil }
-    public func scriptMessageHandlers(for tab: Tab) -> [String : WKScriptMessageHandler] { return [:] }
+    public func customScriptMessageHandlerNames(for tab: Tab) -> [String] { return [] }
+    public func tab(_ tab: Tab, userContentController: WKUserContentController, didReceive message: WKScriptMessage) { }
 
     public func tab(_ tab: Tab, shouldActive: Bool) { }
     public func tab(_ tab: Tab, pluginResourceProviderForURL url: URL) -> PluginResourceProvider? { return nil }
@@ -68,7 +70,7 @@ public class Tab: NSObject {
 
     var uiDelegateProxy: WebViewProxy<WKUIDelegate>?
     var navigationDelegateProxy: WebViewProxy<WKNavigationDelegate>?
-    var scriptMessageHandlers: [String : WKScriptMessageHandler] = [:]
+    var scriptMessageHandlerNames: [String] = []
 
     weak var delegate: TabDelegate?
     weak var downloadsDelegate: TabDownloadsDelegate?
@@ -128,9 +130,9 @@ public class Tab: NSObject {
         for event in ScriptEvent.allCases {
             userContentController.add(self, name: event.rawValue)
         }
-        scriptMessageHandlers = delegate?.scriptMessageHandlers(for: self) ?? [:]
-        for (name, handler) in scriptMessageHandlers where !ScriptEvent.allCases.contains(where: { $0.rawValue == name }) {
-            userContentController.add(handler, name: name)
+        scriptMessageHandlerNames = delegate?.customScriptMessageHandlerNames(for: self) ?? []
+        for name in scriptMessageHandlerNames where !ScriptEvent.allCases.contains(where: { $0.rawValue == name }) {
+            userContentController.add(self, name: name)
         }
 
         if let url = options?.url, let URL = URL(string: url) {
@@ -156,8 +158,8 @@ public class Tab: NSObject {
             userContentController.removeScriptMessageHandler(forName: event.rawValue)
         }
 
-        for (name, handler) in scriptMessageHandlers where !ScriptEvent.allCases.contains(where: { $0.rawValue == name }) {
-            userContentController.add(handler, name: name)
+        for name in scriptMessageHandlerNames where !ScriptEvent.allCases.contains(where: { $0.rawValue == name }) {
+            userContentController.removeScriptMessageHandler(forName: name)
         }
     }
 
@@ -176,11 +178,15 @@ extension Tab {
 
 }
 
-
 // MARK: - WKScriptMessageHandler
 extension Tab: WKScriptMessageHandler {
 
     public func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+        if scriptMessageHandlerNames.contains(message.name) {
+            delegate?.tab(self, userContentController: userContentController, didReceive: message)
+            return
+        }
+
         guard let eventType = ScriptEvent(rawValue: message.name) else {
             assertionFailure()
             return
