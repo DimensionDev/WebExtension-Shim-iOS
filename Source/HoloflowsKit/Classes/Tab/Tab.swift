@@ -82,17 +82,26 @@ public class Tab: NSObject {
         if let bundleURL = bundle.resourceURL?.appendingPathComponent("WebExtensionScripts.bundle"),
         let scriptsBundle = Bundle(url: bundleURL),
         let scriptPath = scriptsBundle.path(forResource: "webextension-shim", ofType: "js"),
-        let script = try? String(contentsOfFile: scriptPath) {
-            let newScript = script
-                .replacingOccurrences(of: "##ID##", with: plugin?.id ?? "")
-                .replacingOccurrences(of: "##Manifest##", with: plugin?.manifest.rawString() ?? "")
-                .replacingOccurrences(of: "##Env##", with: plugin?.environment.rawValue ?? "")
-                .replacingOccurrences(of: "##Resources##", with: plugin?.resources.rawString() ?? "")
+        var script = try? String(contentsOfFile: scriptPath) {
+            let pattern = """
+            const env = location.href.startsWith('holoflows-extension://') && location.href.endsWith('_generated_background_page.html');
+            """
+            if let patternIndex = script.range(of: pattern)?.upperBound, let plugin = plugin {
+                let registerWebExtension: String = """
 
+                
+                    registerWebExtension(
+                        '\(plugin.id)',
+                        \(plugin.manifest.rawString() ?? ""),
+                        \(plugin.resources.rawString() ?? "")
+                    )
+                """
+                script.insert(contentsOf: registerWebExtension, at: patternIndex)
+            }
             let hasSchemePrefix = options?.url?.hasPrefix("holoflows-extension://") ?? false
             let injectionTime: WKUserScriptInjectionTime = hasSchemePrefix ? .atDocumentStart : .atDocumentEnd
 //            let injectionTime = WKUserScriptInjectionTime.atDocumentEnd
-            let userScript = WKUserScript(source: newScript, injectionTime: injectionTime, forMainFrameOnly: false)
+            let userScript = WKUserScript(source: script, injectionTime: injectionTime, forMainFrameOnly: false)
             userContentController.addUserScript(userScript)
         } else {
             assertionFailure()
