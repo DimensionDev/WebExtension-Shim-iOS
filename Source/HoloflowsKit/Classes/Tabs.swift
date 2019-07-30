@@ -57,11 +57,9 @@ extension Tabs {
     public func create(options: WebExtension.Browser.Tabs.Create.Options?, webViewConfiguration: WKWebViewConfiguration? = nil) -> Tab {
         let webViewConfiguration = self.webViewConfiguration(forOptions: options, scriptType: .contentScript)
         let pluginForContentScript = self.plugin(forScriptType: .contentScript)
-        let tab = Tab(id: nextID, plugin: pluginForContentScript, createOptions: options, webViewConfiguration: webViewConfiguration)
+        let tab = Tab(id: nextID, plugin: pluginForContentScript, createOptions: options, webViewConfiguration: webViewConfiguration, delegate: browserCore, downloadsDelegate: browserCore)
 
         tab.tabs = self
-        tab.delegate = browserCore
-        tab.downloadsDelegate = browserCore
         if let uiDelegate = browserCore?.uiDelegate(for: tab) {
             tab.uiDelegateProxy?.registerSecondary(uiDelegate)
         }
@@ -137,11 +135,9 @@ extension Tabs {
             return options
         }()
         let webViewConfiguration = self.webViewConfiguration(forOptions: options, scriptType: .backgroundScript)
-        let tab = Tab(id: -1, plugin: pluginForBackgroundScript, createOptions: options, webViewConfiguration: webViewConfiguration)
+        let tab = Tab(id: -1, plugin: pluginForBackgroundScript, createOptions: options, webViewConfiguration: webViewConfiguration, delegate: browserCore, downloadsDelegate: browserCore)
 
         tab.tabs = self
-        tab.delegate = browserCore
-        tab.downloadsDelegate = browserCore
         if let uiDelegate = browserCore?.uiDelegate(for: tab) {
             tab.uiDelegateProxy?.registerSecondary(uiDelegate)
         }

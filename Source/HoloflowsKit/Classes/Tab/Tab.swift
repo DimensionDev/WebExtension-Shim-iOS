@@ -18,6 +18,7 @@ import Alamofire
 public protocol TabDelegate: class {
     func uiDelegate(for tab: Tab) -> WKUIDelegate?
     func navigationDelegate(for tab: Tab) -> WKNavigationDelegate?
+    func scriptMessageHandlers(for tab: Tab) -> [String : WKScriptMessageHandler]
     func tab(_ tab: Tab, localStorageManagerForTab: Tab) -> LocalStorageManager
 
     func tab(_ tab: Tab, shouldActive: Bool)
@@ -27,6 +28,7 @@ public protocol TabDelegate: class {
 extension TabDelegate {
     public func uiDelegate(for tab: Tab) -> WKUIDelegate? { return nil }
     public func navigationDelegate(for tab: Tab) -> WKNavigationDelegate? { return nil }
+    public func scriptMessageHandlers(for tab: Tab) -> [String : WKScriptMessageHandler] { return [:] }
 
     public func tab(_ tab: Tab, shouldActive: Bool) { }
     public func tab(_ tab: Tab, pluginResourceProviderForURL url: URL) -> PluginResourceProvider? { return nil }
@@ -66,14 +68,17 @@ public class Tab: NSObject {
 
     var uiDelegateProxy: WebViewProxy<WKUIDelegate>?
     var navigationDelegateProxy: WebViewProxy<WKNavigationDelegate>?
+    var scriptMessageHandlers: [String : WKScriptMessageHandler] = [:]
 
     weak var delegate: TabDelegate?
     weak var downloadsDelegate: TabDownloadsDelegate?
 
-    public init(id: Int, plugin: Plugin?, createOptions options: WebExtension.Browser.Tabs.Create.Options? = nil, webViewConfiguration configuration: WKWebViewConfiguration) {
+    public init(id: Int, plugin: Plugin?, createOptions options: WebExtension.Browser.Tabs.Create.Options? = nil, webViewConfiguration configuration: WKWebViewConfiguration, delegate: TabDelegate? = nil, downloadsDelegate: TabDownloadsDelegate? = nil) {
         self.id = id
         self.plugin = plugin
         self.userContentController = WKUserContentController()
+        self.delegate = delegate
+        self.downloadsDelegate = downloadsDelegate
         configuration.userContentController = userContentController
         
         let bundle = Bundle(for: Tab.self)
@@ -89,7 +94,7 @@ public class Tab: NSObject {
             if let patternIndex = script.range(of: pattern)?.upperBound, let plugin = plugin {
                 let registerWebExtension: String = """
 
-                
+
                     registerWebExtension(
                         '\(plugin.id)',
                         \(plugin.manifest.rawString() ?? ""),
@@ -123,6 +128,10 @@ public class Tab: NSObject {
         for event in ScriptEvent.allCases {
             userContentController.add(self, name: event.rawValue)
         }
+        scriptMessageHandlers = delegate?.scriptMessageHandlers(for: self) ?? [:]
+        for (name, handler) in scriptMessageHandlers where !ScriptEvent.allCases.contains(where: { $0.rawValue == name }) {
+            userContentController.add(handler, name: name)
+        }
 
         if let url = options?.url, let URL = URL(string: url) {
             webView.load(URLRequest(url: URL))
@@ -145,6 +154,10 @@ public class Tab: NSObject {
     public func resignMessageHandler() {
         for event in ScriptEvent.allCases {
             userContentController.removeScriptMessageHandler(forName: event.rawValue)
+        }
+
+        for (name, handler) in scriptMessageHandlers where !ScriptEvent.allCases.contains(where: { $0.rawValue == name }) {
+            userContentController.add(handler, name: name)
         }
     }
 
