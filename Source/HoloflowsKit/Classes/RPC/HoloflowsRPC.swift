@@ -14,26 +14,26 @@ public enum HoloflowsRPC {
     public static let encoder = JSONEncoder()
     public static let decoder = JSONDecoder()
 
-    public static func dispatchScript<T: RPC.Request & Encodable>(id: String, request: T) -> String? {
+    public static func dispatchScript<T: RPC.Request & Encodable>(name: String = ScriptEvent.holoflowsjsonrpc.rawValue, id: String, request: T) -> String? {
         guard let jsonData = try? encoder.encode(request),
         let jsonString = String(data: jsonData, encoding: .utf8) else {
             return nil
         }
 
-        let script = "document.dispatchEvent(new CustomEvent('\(ScriptEvent.holoflowsjsonrpc.rawValue)', { detail: \(jsonString) }))"
+        let script = "document.dispatchEvent(new CustomEvent('\(name)', { detail: \(jsonString) }))"
         return script
     }
 
-    public static func dispatchScript<T: RPC.Response>(id: String, result: Result<T, RPC.Error>) -> String {
+    public static func dispatchScript<T: RPC.Response>(name: String = ScriptEvent.holoflowsjsonrpc.rawValue, id: String, result: Result<T, RPC.Error>) -> String {
         switch result {
         case let .success(response):
             guard let jsonData = try? encoder.encode(response),
             let jsonString = String(data: jsonData, encoding: .utf8) else {
                 assertionFailure()
-                return "document.dispatchEvent(new CustomEvent('\(ScriptEvent.holoflowsjsonrpc.rawValue)', { detail: { jsonrpc: '2.0', error: { id: -32603, message: 'server error. internal xml-rpc error' }, id: \(id) } }))"
+                return "document.dispatchEvent(new CustomEvent('\(name)', { detail: { jsonrpc: '2.0', error: { id: -32603, message: 'server error. internal xml-rpc error' }, id: \(id) } }))"
             }
 
-            let script = "document.dispatchEvent(new CustomEvent('\(ScriptEvent.holoflowsjsonrpc.rawValue)', { detail: \(jsonString) }))"
+            let script = "document.dispatchEvent(new CustomEvent('\(name)', { detail: \(jsonString) }))"
             return script
 
         case let .failure(error):
@@ -41,10 +41,10 @@ public enum HoloflowsRPC {
             guard let jsonData = try? encoder.encode(response),
             let jsonString = String(data: jsonData, encoding: .utf8) else {
                 assertionFailure()
-                return "document.dispatchEvent(new CustomEvent('\(ScriptEvent.holoflowsjsonrpc.rawValue)', { detail: { jsonrpc: '2.0', error: { id: -32603, message: 'server error. internal xml-rpc error' }, id: \(id) } }))"
+                return "document.dispatchEvent(new CustomEvent('\(name)', { detail: { jsonrpc: '2.0', error: { id: -32603, message: 'server error. internal xml-rpc error' }, id: \(id) } }))"
             }
 
-            let script = "document.dispatchEvent(new CustomEvent('\(ScriptEvent.holoflowsjsonrpc.rawValue)', { detail: \(jsonString) }))"
+            let script = "document.dispatchEvent(new CustomEvent('\(name)', { detail: \(jsonString) }))"
             return script
         }
     }
@@ -79,8 +79,8 @@ extension HoloflowsRPC {
 
 extension HoloflowsRPC {
 
-    public static func dispathRequest<T: RPC.Request & Encodable>(webView: WKWebView, id: String, request: T, completionHandler: CompletionHandler?) {
-        guard let script = dispatchScript(id: id, request: request) else {
+    public static func dispathRequest<T: RPC.Request & Encodable>(webView: WKWebView, name: String = ScriptEvent.holoflowsjsonrpc.rawValue, id: String, request: T, completionHandler: CompletionHandler?) {
+        guard let script = dispatchScript(name: name, id: id, request: request) else {
             assertionFailure()
             return
         }
@@ -88,8 +88,8 @@ extension HoloflowsRPC {
         consolePrint("webView: \(webView.url?.absoluteString ?? ""), script: \(script)")
     }
 
-    public static func dispatchResponse<T: RPC.Response>(webView: WKWebView, id: String, result: Result<T, RPC.Error>, completionHandler: CompletionHandler?) {
-        let script = dispatchScript(id: id, result: result)
+    public static func dispatchResponse<T: RPC.Response>(webView: WKWebView, name: String = ScriptEvent.holoflowsjsonrpc.rawValue, id: String, result: Result<T, RPC.Error>, completionHandler: CompletionHandler?) {
+        let script = dispatchScript(name: name, id: id, result: result)
         webView.evaluateJavaScript(script, completionHandler: completionHandler?.completionHandler(id: id))
         consolePrint("webView: \(webView.url?.absoluteString ?? ""), script: \(script.prefix(500))")
     }
