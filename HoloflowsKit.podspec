@@ -27,6 +27,10 @@ Implement basic web extension interface and provide strandard way to use Holoflo
   s.source           = { :git => 'https://github.com/SujiTech/HoloflowsKit-iOS.git', :tag => s.version.to_s }
   s.swift_version    = '5.0'
 
+  # s.prepare_command = <<-CMD
+  #   Source/HoloflowsKit/build.sh
+  # CMD
+
   s.ios.deployment_target = '11.0'
 
   s.default_subspec = 'HoloflowsKit'
