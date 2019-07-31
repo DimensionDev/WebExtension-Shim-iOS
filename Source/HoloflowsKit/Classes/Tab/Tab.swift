@@ -235,7 +235,8 @@ extension Tab: WKScriptMessageHandler {
 extension Tab: WKUIDelegate {
 
     public func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration, for navigationAction: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
-        if navigationAction.targetFrame == nil, let url = navigationAction.request.url, let scheme = url.scheme, scheme.hasPrefix("http") {
+        if navigationAction.targetFrame == nil, let url = navigationAction.request.url,
+        let scheme = url.scheme, (scheme.hasPrefix("http://") || scheme.hasPrefix("https://"))  {
             let safariViewController = SFSafariViewController(url: url)
             UIApplication.shared.keyWindow?.rootViewController?.present(safariViewController, animated: true, completion: nil)
         }
@@ -268,6 +269,14 @@ extension Tab: WKNavigationDelegate {
     public func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
         consolePrint(webView.url)
 
+        if let previousScheme = webView.backForwardList.backItem?.url.scheme,
+        let currentURL = webView.url, let currentScheme = webView.url?.scheme,
+        previousScheme != currentScheme {
+            tabs?.create(options: WebExtension.Browser.Tabs.Create.Options(active: isActive, url: currentURL.absoluteString ))
+            tabs?.remove(id: id)
+            return
+        }
+
         typealias OnCommitted = WebExtension.Browser.WebNavigation.OnCommitted
 
         let rpcID = UUID().uuidString
@@ -299,6 +308,10 @@ extension Tab: WKNavigationDelegate {
 
     public func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
         // do nothing
+    }
+
+    public func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
+        decisionHandler(WKNavigationActionPolicy(rawValue: WKNavigationActionPolicy.allow.rawValue + 2)!)
     }
 
 }
