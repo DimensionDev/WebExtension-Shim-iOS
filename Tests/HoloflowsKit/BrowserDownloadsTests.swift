@@ -6,7 +6,7 @@
 //
 
 import XCTest
-import HoloflowsKit
+import WebExtension_Shim
 import ConsolePrint
 
 class BrowserDownloadsTests: XCTestCase {

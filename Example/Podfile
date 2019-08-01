@@ -1,10 +1,10 @@
 platform :ios, '11.0'
 use_frameworks!
 
-target 'HoloflowsKit_Example' do
-  pod 'HoloflowsKit', :path => '../', :testspecs => ['Tests']
+target 'Example' do
+  pod 'WebExtension-Shim', :path => '../', :testspecs => ['Tests']
 
-  target 'HoloflowsKit_Tests' do
+  target 'Tests' do
     inherit! :search_paths
 
     

@@ -3,33 +3,33 @@ PODS:
   - AlamofireNetworkActivityLogger (2.4.0):
     - Alamofire (~> 4.8)
   - ConsolePrint (0.2.0)
-  - HoloflowsKit (0.2.0):
+  - Realm (3.17.1):
+    - Realm/Headers (= 3.17.1)
+  - Realm/Headers (3.17.1)
+  - RealmSwift (3.17.1):
+    - Realm (= 3.17.1)
+  - SwiftyJSON (5.0.0)
+  - WebExtension-Shim (0.3.0):
     - ConsolePrint
-    - HoloflowsKit/HoloflowsKit (= 0.2.0)
     - SwiftyJSON (~> 5.0.0)
-  - HoloflowsKit/HoloflowsKit (0.2.0):
+    - WebExtension-Shim/WebExtension-Shim (= 0.3.0)
+  - WebExtension-Shim/JSONRPC (0.3.0):
+    - ConsolePrint
+    - SwiftyJSON (~> 5.0.0)
+  - WebExtension-Shim/Tests (0.3.0):
+    - ConsolePrint
+    - SwiftyJSON (~> 5.0.0)
+  - WebExtension-Shim/WebExtension-Shim (0.3.0):
     - Alamofire (~> 4.7)
     - AlamofireNetworkActivityLogger (~> 2.4)
     - ConsolePrint
-    - HoloflowsKit/JSONRPC
     - RealmSwift
     - SwiftyJSON (~> 5.0.0)
-  - HoloflowsKit/JSONRPC (0.2.0):
-    - ConsolePrint
-    - SwiftyJSON (~> 5.0.0)
-  - HoloflowsKit/Tests (0.2.0):
-    - ConsolePrint
-    - SwiftyJSON (~> 5.0.0)
-  - Realm (3.17.0):
-    - Realm/Headers (= 3.17.0)
-  - Realm/Headers (3.17.0)
-  - RealmSwift (3.17.0):
-    - Realm (= 3.17.0)
-  - SwiftyJSON (5.0.0)
+    - WebExtension-Shim/JSONRPC
 
 DEPENDENCIES:
-  - HoloflowsKit (from `../`)
-  - HoloflowsKit/Tests (from `../`)
+  - WebExtension-Shim (from `../`)
+  - WebExtension-Shim/Tests (from `../`)
 
 SPEC REPOS:
   https://github.com/cocoapods/specs.git:
@@ -41,18 +41,18 @@ SPEC REPOS:
     - SwiftyJSON
 
 EXTERNAL SOURCES:
-  HoloflowsKit:
+  WebExtension-Shim:
     :path: "../"
 
 SPEC CHECKSUMS:
   Alamofire: ae5c501addb7afdbb13687d7f2f722c78734c2d3
   AlamofireNetworkActivityLogger: 6d3398c692d2c5d83b0c58793537860aca1e383d
   ConsolePrint: 2d5a73bb45f08efa259bef7583707d6dfa007141
-  HoloflowsKit: 149666771e1a2fdb0fe010bd4ae4c809514e3ebb
-  Realm: b30db41ff34fc858ffc25ba8d44a82c164e7ccd0
-  RealmSwift: fe733e459d60dc7b6971d4cbee2eb4854097d12c
+  Realm: c204f1a890f07dea43b14132a6aad118c054b8f2
+  RealmSwift: 4d3c9233544b9cd08a8913e0872b9038eb99b054
   SwiftyJSON: 36413e04c44ee145039d332b4f4e2d3e8d6c4db7
+  WebExtension-Shim: 38b281f04672db02cd706e4d7729aa8fc275636f
 
-PODFILE CHECKSUM: 829906f067aba8ac88cd9d67cec53dc407f83a1f
+PODFILE CHECKSUM: 36f0086db586a83efb2da9adc3764ba2406a7f12
 
 COCOAPODS: 1.7.3

@@ -7,15 +7,15 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		5B5074C8EF39AE96613A3149 /* Pods_HoloflowsKit_Tests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2011439182D545123537AE73 /* Pods_HoloflowsKit_Tests.framework */; };
-		607FACD61AFB9204008FA782 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 607FACD51AFB9204008FA782 /* AppDelegate.swift */; };
-		607FACD81AFB9204008FA782 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 607FACD71AFB9204008FA782 /* ViewController.swift */; };
-		607FACDB1AFB9204008FA782 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 607FACD91AFB9204008FA782 /* Main.storyboard */; };
-		607FACDD1AFB9204008FA782 /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 607FACDC1AFB9204008FA782 /* Images.xcassets */; };
-		607FACE01AFB9204008FA782 /* LaunchScreen.xib in Resources */ = {isa = PBXBuildFile; fileRef = 607FACDE1AFB9204008FA782 /* LaunchScreen.xib */; };
+		3D8336B1B241FF9451B6435F /* Pods_Example.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 43A346FEEF23E4BC72F81A90 /* Pods_Example.framework */; };
+		57D6A65ACC7514BC6A43F4CC /* Pods_Tests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7BD8512EC7F288ABA984D17B /* Pods_Tests.framework */; };
 		607FACEC1AFB9204008FA782 /* Tests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 607FACEB1AFB9204008FA782 /* Tests.swift */; };
-		9483A97EA9B35346A2DD9F04 /* Pods_HoloflowsKit_Example.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FECF285B39A6976DC657C0D8 /* Pods_HoloflowsKit_Example.framework */; };
-		DBAADD3722D4A69B00ABE702 /* ExampleBrowserCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBAADD3622D4A69B00ABE702 /* ExampleBrowserCore.swift */; };
+		DBC21AE822F28F3900BB5A64 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBC21ADF22F28F3900BB5A64 /* ViewController.swift */; };
+		DBC21AE922F28F3900BB5A64 /* ExampleBrowserCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBC21AE022F28F3900BB5A64 /* ExampleBrowserCore.swift */; };
+		DBC21AEA22F28F3900BB5A64 /* LaunchScreen.xib in Resources */ = {isa = PBXBuildFile; fileRef = DBC21AE122F28F3900BB5A64 /* LaunchScreen.xib */; };
+		DBC21AEB22F28F3900BB5A64 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = DBC21AE322F28F3900BB5A64 /* Main.storyboard */; };
+		DBC21AEC22F28F3900BB5A64 /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = DBC21AE522F28F3900BB5A64 /* Images.xcassets */; };
+		DBC21AED22F28F3900BB5A64 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBC21AE622F28F3900BB5A64 /* AppDelegate.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -30,25 +30,29 @@
 
 /* Begin PBXFileReference section */
 		1607888B68C46DFEDF6FE069 /* HoloflowsKit.podspec */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text; name = HoloflowsKit.podspec; path = ../HoloflowsKit.podspec; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.ruby; };
-		2011439182D545123537AE73 /* Pods_HoloflowsKit_Tests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_HoloflowsKit_Tests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		2DEF2FA78565C79820B96815 /* Pods-HoloflowsKit_Tests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-HoloflowsKit_Tests.release.xcconfig"; path = "Target Support Files/Pods-HoloflowsKit_Tests/Pods-HoloflowsKit_Tests.release.xcconfig"; sourceTree = "<group>"; };
-		607FACD01AFB9204008FA782 /* HoloflowsKit_Example.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HoloflowsKit_Example.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		607FACD41AFB9204008FA782 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		607FACD51AFB9204008FA782 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
-		607FACD71AFB9204008FA782 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
-		607FACDA1AFB9204008FA782 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
-		607FACDC1AFB9204008FA782 /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Images.xcassets; sourceTree = "<group>"; };
-		607FACDF1AFB9204008FA782 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/LaunchScreen.xib; sourceTree = "<group>"; };
-		607FACE51AFB9204008FA782 /* HoloflowsKit_Tests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = HoloflowsKit_Tests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		302719D31D096C3CBA6A2FA1 /* Pods-Example.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Example.debug.xcconfig"; path = "Target Support Files/Pods-Example/Pods-Example.debug.xcconfig"; sourceTree = "<group>"; };
+		43A346FEEF23E4BC72F81A90 /* Pods_Example.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Example.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		607FACD01AFB9204008FA782 /* Example.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Example.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		607FACE51AFB9204008FA782 /* Tests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = Tests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		607FACEA1AFB9204008FA782 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		607FACEB1AFB9204008FA782 /* Tests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests.swift; sourceTree = "<group>"; };
 		69551F2F22A56FD9370A20CC /* LICENSE */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text; name = LICENSE; path = ../LICENSE; sourceTree = "<group>"; };
 		69A7CBB5DCEBCA8BDE702252 /* Pods-HoloflowsKit_Example.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-HoloflowsKit_Example.release.xcconfig"; path = "Target Support Files/Pods-HoloflowsKit_Example/Pods-HoloflowsKit_Example.release.xcconfig"; sourceTree = "<group>"; };
+		7BD8512EC7F288ABA984D17B /* Pods_Tests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Tests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		95C4A48C5097C4513B50D034 /* Pods-Example.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Example.release.xcconfig"; path = "Target Support Files/Pods-Example/Pods-Example.release.xcconfig"; sourceTree = "<group>"; };
 		A542D1B36F70BD444538D16A /* Pods-HoloflowsKit_Tests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-HoloflowsKit_Tests.debug.xcconfig"; path = "Target Support Files/Pods-HoloflowsKit_Tests/Pods-HoloflowsKit_Tests.debug.xcconfig"; sourceTree = "<group>"; };
 		A921DD134E6D65EC0D456B6F /* README.md */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = net.daringfireball.markdown; name = README.md; path = ../README.md; sourceTree = "<group>"; };
 		D32C612D0291F9AF66C60D44 /* Pods-HoloflowsKit_Example.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-HoloflowsKit_Example.debug.xcconfig"; path = "Target Support Files/Pods-HoloflowsKit_Example/Pods-HoloflowsKit_Example.debug.xcconfig"; sourceTree = "<group>"; };
-		DBAADD3622D4A69B00ABE702 /* ExampleBrowserCore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExampleBrowserCore.swift; sourceTree = "<group>"; };
-		FECF285B39A6976DC657C0D8 /* Pods_HoloflowsKit_Example.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_HoloflowsKit_Example.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		DBC21ADF22F28F3900BB5A64 /* ViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
+		DBC21AE022F28F3900BB5A64 /* ExampleBrowserCore.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ExampleBrowserCore.swift; sourceTree = "<group>"; };
+		DBC21AE222F28F3900BB5A64 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/LaunchScreen.xib; sourceTree = "<group>"; };
+		DBC21AE422F28F3900BB5A64 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
+		DBC21AE522F28F3900BB5A64 /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Images.xcassets; sourceTree = "<group>"; };
+		DBC21AE622F28F3900BB5A64 /* AppDelegate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		DBC21AE722F28F3900BB5A64 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		E18FCAB9AA74535BEC16B133 /* Pods-Tests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Tests.debug.xcconfig"; path = "Target Support Files/Pods-Tests/Pods-Tests.debug.xcconfig"; sourceTree = "<group>"; };
+		EA60D46A7B012BE436D11ABE /* Pods-Tests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Tests.release.xcconfig"; path = "Target Support Files/Pods-Tests/Pods-Tests.release.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -56,7 +60,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				9483A97EA9B35346A2DD9F04 /* Pods_HoloflowsKit_Example.framework in Frameworks */,
+				3D8336B1B241FF9451B6435F /* Pods_Example.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -64,7 +68,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				5B5074C8EF39AE96613A3149 /* Pods_HoloflowsKit_Tests.framework in Frameworks */,
+				57D6A65ACC7514BC6A43F4CC /* Pods_Tests.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -78,6 +82,10 @@
 				69A7CBB5DCEBCA8BDE702252 /* Pods-HoloflowsKit_Example.release.xcconfig */,
 				A542D1B36F70BD444538D16A /* Pods-HoloflowsKit_Tests.debug.xcconfig */,
 				2DEF2FA78565C79820B96815 /* Pods-HoloflowsKit_Tests.release.xcconfig */,
+				302719D31D096C3CBA6A2FA1 /* Pods-Example.debug.xcconfig */,
+				95C4A48C5097C4513B50D034 /* Pods-Example.release.xcconfig */,
+				E18FCAB9AA74535BEC16B133 /* Pods-Tests.debug.xcconfig */,
+				EA60D46A7B012BE436D11ABE /* Pods-Tests.release.xcconfig */,
 			);
 			path = Pods;
 			sourceTree = "<group>";
@@ -85,8 +93,8 @@
 		607FACC71AFB9204008FA782 = {
 			isa = PBXGroup;
 			children = (
+				DBC21ADE22F28F3900BB5A64 /* Example */,
 				607FACF51AFB993E008FA782 /* Podspec Metadata */,
-				607FACD21AFB9204008FA782 /* Example for HoloflowsKit */,
 				607FACE81AFB9204008FA782 /* Tests */,
 				607FACD11AFB9204008FA782 /* Products */,
 				2212A8DAC0AA76D9AE591FEA /* Pods */,
@@ -97,33 +105,10 @@
 		607FACD11AFB9204008FA782 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				607FACD01AFB9204008FA782 /* HoloflowsKit_Example.app */,
-				607FACE51AFB9204008FA782 /* HoloflowsKit_Tests.xctest */,
+				607FACD01AFB9204008FA782 /* Example.app */,
+				607FACE51AFB9204008FA782 /* Tests.xctest */,
 			);
 			name = Products;
-			sourceTree = "<group>";
-		};
-		607FACD21AFB9204008FA782 /* Example for HoloflowsKit */ = {
-			isa = PBXGroup;
-			children = (
-				607FACD51AFB9204008FA782 /* AppDelegate.swift */,
-				607FACD71AFB9204008FA782 /* ViewController.swift */,
-				DBAADD3622D4A69B00ABE702 /* ExampleBrowserCore.swift */,
-				607FACD91AFB9204008FA782 /* Main.storyboard */,
-				607FACDC1AFB9204008FA782 /* Images.xcassets */,
-				607FACDE1AFB9204008FA782 /* LaunchScreen.xib */,
-				607FACD31AFB9204008FA782 /* Supporting Files */,
-			);
-			name = "Example for HoloflowsKit";
-			path = HoloflowsKit;
-			sourceTree = "<group>";
-		};
-		607FACD31AFB9204008FA782 /* Supporting Files */ = {
-			isa = PBXGroup;
-			children = (
-				607FACD41AFB9204008FA782 /* Info.plist */,
-			);
-			name = "Supporting Files";
 			sourceTree = "<group>";
 		};
 		607FACE81AFB9204008FA782 /* Tests */ = {
@@ -156,18 +141,32 @@
 		D92B3FEF461DCA55B42D2C8E /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				FECF285B39A6976DC657C0D8 /* Pods_HoloflowsKit_Example.framework */,
-				2011439182D545123537AE73 /* Pods_HoloflowsKit_Tests.framework */,
+				43A346FEEF23E4BC72F81A90 /* Pods_Example.framework */,
+				7BD8512EC7F288ABA984D17B /* Pods_Tests.framework */,
 			);
 			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		DBC21ADE22F28F3900BB5A64 /* Example */ = {
+			isa = PBXGroup;
+			children = (
+				DBC21ADF22F28F3900BB5A64 /* ViewController.swift */,
+				DBC21AE022F28F3900BB5A64 /* ExampleBrowserCore.swift */,
+				DBC21AE122F28F3900BB5A64 /* LaunchScreen.xib */,
+				DBC21AE322F28F3900BB5A64 /* Main.storyboard */,
+				DBC21AE522F28F3900BB5A64 /* Images.xcassets */,
+				DBC21AE622F28F3900BB5A64 /* AppDelegate.swift */,
+				DBC21AE722F28F3900BB5A64 /* Info.plist */,
+			);
+			path = Example;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		607FACCF1AFB9204008FA782 /* HoloflowsKit_Example */ = {
+		607FACCF1AFB9204008FA782 /* Example */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 607FACEF1AFB9204008FA782 /* Build configuration list for PBXNativeTarget "HoloflowsKit_Example" */;
+			buildConfigurationList = 607FACEF1AFB9204008FA782 /* Build configuration list for PBXNativeTarget "Example" */;
 			buildPhases = (
 				CD476200A8DBD89F34B7FDC9 /* [CP] Check Pods Manifest.lock */,
 				607FACCC1AFB9204008FA782 /* Sources */,
@@ -179,14 +178,14 @@
 			);
 			dependencies = (
 			);
-			name = HoloflowsKit_Example;
+			name = Example;
 			productName = HoloflowsKit;
-			productReference = 607FACD01AFB9204008FA782 /* HoloflowsKit_Example.app */;
+			productReference = 607FACD01AFB9204008FA782 /* Example.app */;
 			productType = "com.apple.product-type.application";
 		};
-		607FACE41AFB9204008FA782 /* HoloflowsKit_Tests */ = {
+		607FACE41AFB9204008FA782 /* Tests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 607FACF21AFB9204008FA782 /* Build configuration list for PBXNativeTarget "HoloflowsKit_Tests" */;
+			buildConfigurationList = 607FACF21AFB9204008FA782 /* Build configuration list for PBXNativeTarget "Tests" */;
 			buildPhases = (
 				901ADC9EA0679D53C64979E8 /* [CP] Check Pods Manifest.lock */,
 				607FACE11AFB9204008FA782 /* Sources */,
@@ -198,9 +197,9 @@
 			dependencies = (
 				607FACE71AFB9204008FA782 /* PBXTargetDependency */,
 			);
-			name = HoloflowsKit_Tests;
+			name = Tests;
 			productName = Tests;
-			productReference = 607FACE51AFB9204008FA782 /* HoloflowsKit_Tests.xctest */;
+			productReference = 607FACE51AFB9204008FA782 /* Tests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
 /* End PBXNativeTarget section */
@@ -226,7 +225,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 607FACCB1AFB9204008FA782 /* Build configuration list for PBXProject "HoloflowsKit" */;
+			buildConfigurationList = 607FACCB1AFB9204008FA782 /* Build configuration list for PBXProject "Example" */;
 			compatibilityVersion = "Xcode 3.2";
 			developmentRegion = English;
 			hasScannedForEncodings = 0;
@@ -240,8 +239,8 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				607FACCF1AFB9204008FA782 /* HoloflowsKit_Example */,
-				607FACE41AFB9204008FA782 /* HoloflowsKit_Tests */,
+				607FACCF1AFB9204008FA782 /* Example */,
+				607FACE41AFB9204008FA782 /* Tests */,
 			);
 		};
 /* End PBXProject section */
@@ -251,9 +250,9 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				607FACDB1AFB9204008FA782 /* Main.storyboard in Resources */,
-				607FACE01AFB9204008FA782 /* LaunchScreen.xib in Resources */,
-				607FACDD1AFB9204008FA782 /* Images.xcassets in Resources */,
+				DBC21AEC22F28F3900BB5A64 /* Images.xcassets in Resources */,
+				DBC21AEA22F28F3900BB5A64 /* LaunchScreen.xib in Resources */,
+				DBC21AEB22F28F3900BB5A64 /* Main.storyboard in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -282,7 +281,7 @@
 			outputFileListPaths = (
 			);
 			outputPaths = (
-				"$(DERIVED_FILE_DIR)/Pods-HoloflowsKit_Tests-checkManifestLockResult.txt",
+				"$(DERIVED_FILE_DIR)/Pods-Tests-checkManifestLockResult.txt",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -295,28 +294,28 @@
 			files = (
 			);
 			inputPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-HoloflowsKit_Example/Pods-HoloflowsKit_Example-frameworks.sh",
+				"${PODS_ROOT}/Target Support Files/Pods-Example/Pods-Example-frameworks.sh",
 				"${BUILT_PRODUCTS_DIR}/Alamofire/Alamofire.framework",
 				"${BUILT_PRODUCTS_DIR}/AlamofireNetworkActivityLogger/AlamofireNetworkActivityLogger.framework",
 				"${BUILT_PRODUCTS_DIR}/ConsolePrint/ConsolePrint.framework",
-				"${BUILT_PRODUCTS_DIR}/HoloflowsKit/HoloflowsKit.framework",
 				"${BUILT_PRODUCTS_DIR}/Realm/Realm.framework",
 				"${BUILT_PRODUCTS_DIR}/RealmSwift/RealmSwift.framework",
 				"${BUILT_PRODUCTS_DIR}/SwiftyJSON/SwiftyJSON.framework",
+				"${BUILT_PRODUCTS_DIR}/WebExtension-Shim/WebExtension_Shim.framework",
 			);
 			name = "[CP] Embed Pods Frameworks";
 			outputPaths = (
 				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/Alamofire.framework",
 				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/AlamofireNetworkActivityLogger.framework",
 				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/ConsolePrint.framework",
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/HoloflowsKit.framework",
 				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/Realm.framework",
 				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/RealmSwift.framework",
 				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/SwiftyJSON.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/WebExtension_Shim.framework",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-HoloflowsKit_Example/Pods-HoloflowsKit_Example-frameworks.sh\"\n";
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Example/Pods-Example-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
 		CD476200A8DBD89F34B7FDC9 /* [CP] Check Pods Manifest.lock */ = {
@@ -334,7 +333,7 @@
 			outputFileListPaths = (
 			);
 			outputPaths = (
-				"$(DERIVED_FILE_DIR)/Pods-HoloflowsKit_Example-checkManifestLockResult.txt",
+				"$(DERIVED_FILE_DIR)/Pods-Example-checkManifestLockResult.txt",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -348,9 +347,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				DBAADD3722D4A69B00ABE702 /* ExampleBrowserCore.swift in Sources */,
-				607FACD81AFB9204008FA782 /* ViewController.swift in Sources */,
-				607FACD61AFB9204008FA782 /* AppDelegate.swift in Sources */,
+				DBC21AED22F28F3900BB5A64 /* AppDelegate.swift in Sources */,
+				DBC21AE922F28F3900BB5A64 /* ExampleBrowserCore.swift in Sources */,
+				DBC21AE822F28F3900BB5A64 /* ViewController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -367,26 +366,26 @@
 /* Begin PBXTargetDependency section */
 		607FACE71AFB9204008FA782 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 607FACCF1AFB9204008FA782 /* HoloflowsKit_Example */;
+			target = 607FACCF1AFB9204008FA782 /* Example */;
 			targetProxy = 607FACE61AFB9204008FA782 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
 /* Begin PBXVariantGroup section */
-		607FACD91AFB9204008FA782 /* Main.storyboard */ = {
+		DBC21AE122F28F3900BB5A64 /* LaunchScreen.xib */ = {
 			isa = PBXVariantGroup;
 			children = (
-				607FACDA1AFB9204008FA782 /* Base */,
-			);
-			name = Main.storyboard;
-			sourceTree = "<group>";
-		};
-		607FACDE1AFB9204008FA782 /* LaunchScreen.xib */ = {
-			isa = PBXVariantGroup;
-			children = (
-				607FACDF1AFB9204008FA782 /* Base */,
+				DBC21AE222F28F3900BB5A64 /* Base */,
 			);
 			name = LaunchScreen.xib;
+			sourceTree = "<group>";
+		};
+		DBC21AE322F28F3900BB5A64 /* Main.storyboard */ = {
+			isa = PBXVariantGroup;
+			children = (
+				DBC21AE422F28F3900BB5A64 /* Base */,
+			);
+			name = Main.storyboard;
 			sourceTree = "<group>";
 		};
 /* End PBXVariantGroup section */
@@ -499,11 +498,11 @@
 		};
 		607FACF01AFB9204008FA782 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = D32C612D0291F9AF66C60D44 /* Pods-HoloflowsKit_Example.debug.xcconfig */;
+			baseConfigurationReference = 302719D31D096C3CBA6A2FA1 /* Pods-Example.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				DEVELOPMENT_TEAM = 7LFDZ96332;
-				INFOPLIST_FILE = HoloflowsKit/Info.plist;
+				INFOPLIST_FILE = "$(SRCROOT)/Example/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				MODULE_NAME = ExampleApp;
 				PRODUCT_BUNDLE_IDENTIFIER = "org.cocoapods.demo.$(PRODUCT_NAME:rfc1034identifier)";
@@ -515,11 +514,11 @@
 		};
 		607FACF11AFB9204008FA782 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 69A7CBB5DCEBCA8BDE702252 /* Pods-HoloflowsKit_Example.release.xcconfig */;
+			baseConfigurationReference = 95C4A48C5097C4513B50D034 /* Pods-Example.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				DEVELOPMENT_TEAM = 7LFDZ96332;
-				INFOPLIST_FILE = HoloflowsKit/Info.plist;
+				INFOPLIST_FILE = "$(SRCROOT)/Example/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				MODULE_NAME = ExampleApp;
 				PRODUCT_BUNDLE_IDENTIFIER = "org.cocoapods.demo.$(PRODUCT_NAME:rfc1034identifier)";
@@ -531,8 +530,9 @@
 		};
 		607FACF31AFB9204008FA782 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = A542D1B36F70BD444538D16A /* Pods-HoloflowsKit_Tests.debug.xcconfig */;
+			baseConfigurationReference = E18FCAB9AA74535BEC16B133 /* Pods-Tests.debug.xcconfig */;
 			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				DEVELOPMENT_TEAM = 7LFDZ96332;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(SDKROOT)/Developer/Library/Frameworks",
@@ -548,14 +548,15 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_SWIFT3_OBJC_INFERENCE = Default;
 				SWIFT_VERSION = 4.0;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/HoloflowsKit_Example.app/HoloflowsKit_Example";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Example.app/Example";
 			};
 			name = Debug;
 		};
 		607FACF41AFB9204008FA782 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 2DEF2FA78565C79820B96815 /* Pods-HoloflowsKit_Tests.release.xcconfig */;
+			baseConfigurationReference = EA60D46A7B012BE436D11ABE /* Pods-Tests.release.xcconfig */;
 			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				DEVELOPMENT_TEAM = 7LFDZ96332;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(SDKROOT)/Developer/Library/Frameworks",
@@ -567,14 +568,14 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_SWIFT3_OBJC_INFERENCE = Default;
 				SWIFT_VERSION = 4.0;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/HoloflowsKit_Example.app/HoloflowsKit_Example";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Example.app/Example";
 			};
 			name = Release;
 		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		607FACCB1AFB9204008FA782 /* Build configuration list for PBXProject "HoloflowsKit" */ = {
+		607FACCB1AFB9204008FA782 /* Build configuration list for PBXProject "Example" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				607FACED1AFB9204008FA782 /* Debug */,
@@ -583,7 +584,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		607FACEF1AFB9204008FA782 /* Build configuration list for PBXNativeTarget "HoloflowsKit_Example" */ = {
+		607FACEF1AFB9204008FA782 /* Build configuration list for PBXNativeTarget "Example" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				607FACF01AFB9204008FA782 /* Debug */,
@@ -592,7 +593,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		607FACF21AFB9204008FA782 /* Build configuration list for PBXNativeTarget "HoloflowsKit_Tests" */ = {
+		607FACF21AFB9204008FA782 /* Build configuration list for PBXNativeTarget "Tests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				607FACF31AFB9204008FA782 /* Debug */,

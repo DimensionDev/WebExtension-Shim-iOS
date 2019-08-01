@@ -1,5 +1,5 @@
 import XCTest
-import HoloflowsKit
+import WebExtension_Shim
 import SwiftyJSON
 
 class JSONRPCTests: XCTestCase {

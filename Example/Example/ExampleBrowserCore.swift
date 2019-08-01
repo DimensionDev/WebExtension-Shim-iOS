@@ -9,7 +9,7 @@
 import Foundation
 import WebKit
 
-import HoloflowsKit
+import WebExtension_Shim
 import SwiftyJSON
 
 class ExampleBrowserCore: BrowserCore {
@@ -23,31 +23,14 @@ extension ExampleBrowserCore {
         return Plugin(id: UUID().uuidString, manifest: JSON(stringLiteral: "{}"), environment: type, resources: JSON(stringLiteral: ""))
     }
 
-    func tabs(_ tabs: Tabs, webViewConfigurationForOptions options: WebExtension.Browser.Tabs.Create.Options?) -> WKWebViewConfiguration {
-        return WKWebViewConfiguration()
-    }
-
 }
 
 // MARK: - TabDelegate
 extension ExampleBrowserCore {
 
-    func uiDelegate(for tab: Tab) -> WKUIDelegate? {
-        return nil
+    func tab(_ tab: Tab, localStorageManagerForTab: Tab) -> LocalStorageManager {
+        return LocalStorageManager(realm: RealmService.default.realm)
     }
-
-    func navigationDelegate(for tab: Tab) -> WKNavigationDelegate? {
-        return nil
-    }
-
-    func tab(_ tab: Tab, bundleResourceManagerOfExtensionID extensionID: String, forPath path: String) -> BundleResourceManager? {
-        return nil
-    }
-
-    func tab(_ tab: Tab, blobResourceManagerOfExtensionID extensionID: String, forPath path: String) -> BlobResourceManager? {
-        return nil
-    }
-
 
 }
 

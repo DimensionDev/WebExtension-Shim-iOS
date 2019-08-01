@@ -6,7 +6,7 @@
 //
 
 import XCTest
-import HoloflowsKit
+import WebExtension_Shim
 import SwiftyJSON
 
 class BrowserTabsTests: XCTestCase {

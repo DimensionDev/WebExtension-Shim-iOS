@@ -7,7 +7,7 @@
 //
 
 import UIKit
-import HoloflowsKit
+import WebExtension_Shim
 import WebKit
 import ConsolePrint
 
