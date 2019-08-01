@@ -86,7 +86,7 @@ public class Tab: NSObject {
         let bundle = Bundle(for: Tab.self)
 
         // FIXME:
-        if let bundleURL = bundle.resourceURL?.appendingPathComponent("WebExtensionScripts.bundle"),
+        if let bundleURL = bundle.resourceURL?.appendingPathComponent("WebExtensionShimScripts.bundle"),
         let scriptsBundle = Bundle(url: bundleURL),
         let scriptPath = scriptsBundle.path(forResource: "webextension-shim", ofType: "js"),
         var script = try? String(contentsOfFile: scriptPath) {

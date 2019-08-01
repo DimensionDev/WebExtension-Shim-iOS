@@ -1,14 +1,14 @@
-# HoloflowsKit-iOS Documents
+# WebExtension-Shim Documents
 
-HoloflowsKit-iOS is the bridge between your HoloflowsKit based web extension and iOS WKWebView. This document is describe how to setup the environment to drive your extension. In that scenario we use *Plugin* to describe your web extension. 
+WebExtension-Shim (iOS) is the bridge between your web extension and iOS WKWebView. This document is describe how to setup the environment to drive your extension. In that scenario we use *Plugin* to describe the extension. 
 
-To learn more informations about how to write plugin with HoloflowsKit. Please refer the [HoloflowsKit](https://github.com/DimensionDev/Holoflows-Kit) documents.
+To learn more informations about how to write plugin script with WebExtension-Shim. Please check the [webextension-shim](https://github.com/SujiTech/webextension-shim) repo. And refer the real world plugin [Maskbook](https://github.com/DimensionDev/Maskbook) function in app [Maskbook-iOS](https://github.com/SujiTech/Maskbook-iOS).
 
 ## Setup
 
 ### Create Tab
 ```swift
-import HoloflowsKit
+import WebExtension_Shim
 
 final class ViewController: UIViewController {
 
@@ -27,7 +27,7 @@ extension ViewController {
 }
 ```
 
-`Browser` hold the **weak** reference to the instance which conforms `BrowserCore` protocol. In commom usage you want to keep one `Browser` instance in entire app lifetime. The one solution is create the singleton manager class to keep the controller reference and make sure the `BrowserCore` and `Browser` instance not deinit before it's should be.
+`Browser` hold the **weak** reference to the instance which conforms `BrowserCore` protocol. In commom usage you want to keep one `Browser` instance in entire app lifetime. For example create one singleton manager class to keep the controller reference and make sure the `BrowserCore` and `Browser` instance not deinit before it's should be.
 
 
 ### Active Tab
@@ -60,14 +60,14 @@ import SwiftyJSON
     func plugin(forScriptType type: Plugin.ScriptType) -> Plugin {
         return Plugin(id: yourPluginID,                 // String
                       manifest: yourPluginManifest,     // JSON
-                      environment: type,        
+                      environment: type,                // .contentScript or .backgroundScript
                       resources: yourPluginResources)   // JSON
     }
 ```
 
 The **background script** and **content Script** plugins will be injected to WKWebView when tab created. You should assemble your plugin for the specifc script type. 
 
-The background script is always available when browser alive as your plugin context. The content script is as long as the tab lifetime. The communication between background script and content script is via `sendMessage` interface which provided by HoloflowsKit-iOS.
+The background script is always available when browser alive as your plugin context. The content script is as long as the tab lifetime. The communication between background script and content script is via `sendMessage` interface which provided by WebExtension-Shim.
 
 ### Access Resource
 ```swift
@@ -82,7 +82,7 @@ The background script is always available when browser alive as your plugin cont
     }
 ```
 
-The HoloflowsKit-iOS register two scheme to handler plugin resource. "holoflows-extension" for plugin bundle resource access. "holoflows-blob" for plugin blob data store. The `BundleResourceManager` and `BlobResourceManager` are two tool classes which comform `PluginResourceProvider` protocol. For more detail info please check `PluginResourceProvider` protocol.
+The WebExtension-Shim register two scheme to handler plugin resource. "holoflows-extension" for plugin bundle resource access. "holoflows-blob" for plugin blob data store. The `BundleResourceManager` and `BlobResourceManager` are two tool classes which comform `PluginResourceProvider` protocol. For more detail info please check `PluginResourceProvider` protocol.
 
 
 ## Advance

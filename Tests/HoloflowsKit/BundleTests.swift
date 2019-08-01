@@ -1,7 +1,7 @@
 import XCTest
 import UIKit
 import WebKit
-import HoloflowsKit
+import WebExtension_Shim
 import ConsolePrint
 import RealmSwift
 import SwiftyJSON
