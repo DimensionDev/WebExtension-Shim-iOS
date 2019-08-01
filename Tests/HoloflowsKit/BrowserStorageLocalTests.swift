@@ -6,17 +6,41 @@
 //
 
 import XCTest
-import HoloflowsKit
+import WebExtension_Shim
 import SwiftyJSON
 import ConsolePrint
 
 class BrowserStorageLocalTests: XCTestCase {
 
-    var browser = Browser()
+    lazy var browser = Browser(core: self)
+    let localStorageManager = LocalStorageManager(realm: RealmService.default.realm)
+    let blobResourceManager = BlobResourceManager(realm: RealmService.default.realm)
 
     override func setUp() {
         super.setUp()
-        browser = Browser()
+        browser = Browser(core: self)
+    }
+
+}
+
+extension BrowserStorageLocalTests: BrowserCore {
+
+    func plugin(forScriptType type: Plugin.ScriptType) -> Plugin {
+        return Plugin(id: UUID().uuidString, manifest: JSON.null, environment: type, resources: JSON.null)
+    }
+
+
+    func tab(_ tab: Tab, localStorageManagerForTab: Tab) -> LocalStorageManager {
+        return localStorageManager
+    }
+
+    func tab(_ tab: Tab, pluginResourceProviderForURL url: URL) -> PluginResourceProvider? {
+        switch url.scheme {
+        case "holoflows-blob":
+            return blobResourceManager
+        default:
+            return nil
+        }
     }
 
 }
@@ -139,21 +163,6 @@ extension BrowserStorageLocalTests {
         wait(for: [clearExpectation], timeout: 3.0)
 
         XCTAssertEqual(getRealmDataStub().count, 0)
-    }
-
-    func testGetBytesInUse() {
-        let tab = browser.tabs.create(options: nil)
-        TestHelper.prepareTest(tab: tab, forTestCase: self)
-        addRealmDataStub()
-        XCTAssertEqual(getRealmDataStub().count, 2)
-
-        let getBytesInUse = WebExtension.Browser.Storage.Local.GetBytesInUse(extensionID: "HoloflowsKit-UnitTests", keys: ["kitten", "monster"])
-        let getBytesInUseScript = TestHelper.webKit(messageBody: HoloflowsRPC.Request(params: getBytesInUse, id: UUID().uuidString))
-        let getBytesInUseExpectation = TestHelper.expectEvaluateJavaScript(in: tab.webView, script: getBytesInUseScript, forTestCase: self) { (any, error) in
-            // do nothing
-        }
-        wait(for: [getBytesInUseExpectation], timeout: 3.0)
-        // result: 109
     }
 
 }

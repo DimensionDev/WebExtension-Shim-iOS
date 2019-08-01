@@ -7,7 +7,7 @@
 
 import XCTest
 import WebKit
-import HoloflowsKit
+import WebExtension_Shim
 import SwiftyJSON
 import ConsolePrint
 
@@ -15,6 +15,7 @@ class BrowserURLTests: XCTestCase {
 
     lazy var browser = Browser(core: self)
 
+    let localStorageManager = LocalStorageManager(realm: RealmService.default.realm)
     let blobResourceManager = BlobResourceManager(realm: RealmService.default.realm)
 
     override func setUp() {
@@ -28,6 +29,11 @@ extension BrowserURLTests: BrowserCore {
 
     func plugin(forScriptType type: Plugin.ScriptType) -> Plugin {
         return Plugin(id: UUID().uuidString, manifest: JSON.null, environment: type, resources: JSON.null)
+    }
+
+
+    func tab(_ tab: Tab, localStorageManagerForTab: Tab) -> LocalStorageManager {
+        return localStorageManager
     }
 
     func tab(_ tab: Tab, pluginResourceProviderForURL url: URL) -> PluginResourceProvider? {
