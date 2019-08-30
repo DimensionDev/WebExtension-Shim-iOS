@@ -202,7 +202,18 @@ extension Tabs: WKURLSchemeHandler {
         resourceProviderForURL.data(from: url) { result in
             switch result {
             case .success(let (data, response)):
-                urlSchemeTask.didReceive(response)
+//                let httpResponse = HTTPURLResponse(url: response.url, mimeType: response.mimeType, expectedContentLength: response.expectedContentLength, textEncodingName: response.textEncodingName)
+//                httpResponse.statusCode
+
+                let header: [String : String] = [
+                    "Content-Type": response.mimeType ?? "",
+                    "Content-Length" : String(response.expectedContentLength),
+                ]
+                guard let httpURLResponse = HTTPURLResponse(url: url, statusCode: 200, httpVersion: "HTTP/1.1", headerFields: header) else {
+                    urlSchemeTask.didFailWithError(BundleResourceManager.Error.fileNotFound)
+                    return
+                }
+                urlSchemeTask.didReceive(httpURLResponse)
                 urlSchemeTask.didReceive(data)
                 urlSchemeTask.didFinish()
 

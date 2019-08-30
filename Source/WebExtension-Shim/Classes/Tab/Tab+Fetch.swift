@@ -34,7 +34,6 @@ extension Tab {
 
             group.notify(queue: .main) {
 
-
                 let request: URLRequest = {
                     var request = URLRequest(url: url, cachePolicy: .useProtocolCachePolicy, timeoutInterval: 10.0)
                     request.httpMethod = fetch.request.method
