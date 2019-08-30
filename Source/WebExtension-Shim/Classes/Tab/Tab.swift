@@ -109,6 +109,7 @@ public class Tab: NSObject {
             let injectionTime: WKUserScriptInjectionTime = hasSchemePrefix ? .atDocumentStart : .atDocumentEnd
 //            let injectionTime = WKUserScriptInjectionTime.atDocumentEnd
             let userScript = WKUserScript(source: script, injectionTime: injectionTime, forMainFrameOnly: false)
+
             userContentController.addUserScript(userScript)
         } else {
             assertionFailure()
@@ -282,6 +283,11 @@ extension Tab: WKNavigationDelegate {
         let rpcID = UUID().uuidString
         let onCommitted =  OnCommitted(tab: .init(tabId: id, url: webView.url?.absoluteString ?? ""))
         let request = HoloflowsRPC.ServerRequest(params: onCommitted, id: rpcID)
+
+        if let backgroundWebView = tabs?.extensionTab.webView {
+            let backgroundRpcID = UUID().uuidString
+            HoloflowsRPC.dispathRequest(webView: backgroundWebView, id: backgroundRpcID, request: request, completionHandler: completionHandler())
+        }
 
         HoloflowsRPC.dispathRequest(webView: webView, id: rpcID, request: request, completionHandler: completionHandler())
     }
