@@ -82,10 +82,10 @@ public class Tab: NSObject {
         self.delegate = delegate
         self.downloadsDelegate = downloadsDelegate
         configuration.userContentController = userContentController
-        
-        let bundle = Bundle(for: Tab.self)
 
         // FIXME:
+        /*
+        let bundle = Bundle(for: Tab.self)
         if let bundleURL = bundle.resourceURL?.appendingPathComponent("WebExtensionShimScripts.bundle"),
         let scriptsBundle = Bundle(url: bundleURL),
         let scriptPath = scriptsBundle.path(forResource: "webextension-shim", ofType: "js"),
@@ -112,6 +112,11 @@ public class Tab: NSObject {
             userContentController.addUserScript(userScript)
         } else {
             assertionFailure()
+        }
+         */
+
+        for userScript in plugin?.userScripts ?? [] {
+            userContentController.addUserScript(userScript)
         }
 
         self.webView = WKWebView(frame: CGRect(x: 0, y: 0, width: 100, height: 100), configuration: configuration)
