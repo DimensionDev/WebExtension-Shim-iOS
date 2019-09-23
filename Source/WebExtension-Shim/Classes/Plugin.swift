@@ -7,12 +7,15 @@
 
 import Foundation
 import SwiftyJSON
+import WebKit
 
 public struct Plugin {
     public let id: String
     public let manifest: JSON
     public let environment: ScriptType
     public let resources: JSON
+
+    public var userScripts: [WKUserScript] = []
 
     public enum ScriptType: String {
         case backgroundScript = "background script"
