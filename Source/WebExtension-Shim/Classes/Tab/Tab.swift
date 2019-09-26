@@ -289,6 +289,11 @@ extension Tab: WKNavigationDelegate {
         let onCommitted =  OnCommitted(tab: .init(tabId: id, url: webView.url?.absoluteString ?? ""))
         let request = HoloflowsRPC.ServerRequest(params: onCommitted, id: rpcID)
 
+        // Do not send didCommit to background page
+        guard tabs?.extensionTab.id != id else {
+            return
+        }
+
         if let backgroundWebView = tabs?.extensionTab.webView {
             let backgroundRpcID = UUID().uuidString
             HoloflowsRPC.dispathRequest(webView: backgroundWebView, id: backgroundRpcID, request: request, completionHandler: completionHandler())

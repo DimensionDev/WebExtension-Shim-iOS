@@ -218,7 +218,6 @@ extension Tabs: WKURLSchemeHandler {
                 urlSchemeTask.didFinish()
 
                 consolePrint("urlSchemeTask.didFinish() =: \(response)")
-
             case .failure(let error):
                 urlSchemeTask.didFailWithError(error)
                 consolePrint("urlSchemeTask.didFailWithError() =: \(error.localizedDescription)")
@@ -231,6 +230,10 @@ extension Tabs: WKURLSchemeHandler {
     }
 
     static func backgroundPagePath(for plugin: Plugin) -> String {
+        // Infinite loop whne use background.html
+        if let backgroundPageFilename = plugin.manifest["background"].dictionaryValue["page"]?.string {
+            return "holoflows-extension://\(plugin.id)/\(backgroundPageFilename)"
+        }
         return "holoflows-extension://\(plugin.id)/_generated_background_page.html"
     }
 
