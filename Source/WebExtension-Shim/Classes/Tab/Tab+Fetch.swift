@@ -24,6 +24,49 @@ extension Tab {
                 return
             }
 
+            // fetch local resource
+            if let recourceProvider = delegate?.tab(self, pluginResourceProviderForURL: url) {
+                recourceProvider.data(from: url) { [weak self] result in
+                    guard let `self` = self else {
+                        return
+                    }
+
+                    switch result {
+                    case let .success(data, response):
+
+                        let fetchResponse: WebExtension.Fetch.Response
+                        if let dataString = String(data: data, encoding: .utf8) {
+                            let data = WebExtension.StringOrBlob(type: .text, content: dataString, mimeType: response.mimeType ?? "")
+                            fetchResponse = WebExtension.Fetch.Response(status: 200,
+                                                                        statusText: HTTPResponseStatus(statusCode: 200).reasonPhrase,
+                                                                        data: data)
+                            consolePrint(dataString.prefix(300))
+                        } else {
+                            let data = WebExtension.StringOrBlob(type: .blob, content: data.base64EncodedString(), mimeType: response.mimeType ?? "")
+                            fetchResponse = WebExtension.Fetch.Response(status: 200,
+                                                                        statusText: HTTPURLResponse.localizedString(forStatusCode: 200),
+                                                                        data: data)
+                            consolePrint(data)
+                        }
+
+
+                        let result: Result<HoloflowsRPC.Response<WebExtension.Fetch.Response>, RPC.Error> = .success(HoloflowsRPC.Response(result: fetchResponse, id: id))
+                        DispatchQueue.main.async { [weak self] in
+                            guard let `self` = self else { return }
+                            HoloflowsRPC.dispatchResponse(webView: self.webView, id: id, result: result, completionHandler: self.completionHandler())
+                        }
+                    case let .failure(error):
+                        let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .failure(RPC.Error.internalError)
+                        HoloflowsRPC.dispatchResponse(webView: self.webView, id: id, result: result, completionHandler: self.completionHandler())
+                        consolePrint(error.localizedDescription)
+                        return
+                    }   // end switch
+                }   // end resourceProvider.data(from:) { }
+
+                return
+            }   // end url.scheme == …
+
+            // fetch remote resource
             let group = DispatchGroup()
 
             group.enter()
@@ -51,9 +94,7 @@ extension Tab {
                     let _error = defaultDataResponse.error
 
                     consolePrint(defaultDataResponse.request)
-//                })
-//
-//                URLSession(configuration: configuration).dataTask(with: request) { [weak self] data, response, error in
+
                     guard let `self` = self else { return }
                     guard _error == nil,
                     let response = _response,
@@ -80,12 +121,12 @@ extension Tab {
                     }
 
                     let result: Result<HoloflowsRPC.Response<WebExtension.Fetch.Response>, RPC.Error> = .success(HoloflowsRPC.Response(result: fetchResponse, id: id))
+
                     DispatchQueue.main.async { [weak self] in
                         guard let `self` = self else { return }
                         HoloflowsRPC.dispatchResponse(webView: self.webView, id: id, result: result, completionHandler: self.completionHandler())
                     }
                 }
-//                }.resume()
             }   // end group.notify
 
         case let .failure(error):
