@@ -275,6 +275,7 @@ extension Tab: WKNavigationDelegate {
     public func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
         consolePrint(webView.url)
 
+        // Create new tab when direct to local scheme. Make UserScript inject .atDocumentStart
         if let previousScheme = webView.backForwardList.backItem?.url.scheme,
         let currentURL = webView.url, let currentScheme = webView.url?.scheme,
         previousScheme != currentScheme {
@@ -294,12 +295,12 @@ extension Tab: WKNavigationDelegate {
             return
         }
 
-        if let backgroundWebView = tabs?.extensionTab.webView {
-            let backgroundRpcID = UUID().uuidString
-            HoloflowsRPC.dispathRequest(webView: backgroundWebView, id: backgroundRpcID, request: request, completionHandler: completionHandler())
-        }
-
-        HoloflowsRPC.dispathRequest(webView: webView, id: rpcID, request: request, completionHandler: completionHandler())
+//        if let backgroundWebView = tabs?.extensionTab.webView {
+//            let backgroundRpcID = UUID().uuidString
+//            HoloflowsRPC.dispathRequest(webView: backgroundWebView, id: backgroundRpcID, request: request, completionHandler: completionHandler())
+//        }
+//
+//        HoloflowsRPC.dispathRequest(webView: webView, id: rpcID, request: request, completionHandler: completionHandler())
     }
 
     public func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {

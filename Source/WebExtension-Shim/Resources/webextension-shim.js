@@ -590,6 +590,8 @@
      */
     const EventPools = {
         'browser.webNavigation.onCommitted': new Map(),
+        'browser.webNavigation.onDOMContentLoaded': new Map(),
+        'browser.webNavigation.onCompleted': new Map(),
         'browser.runtime.onMessage': new Map(),
         'browser.runtime.onInstall': new Map(),
     };
@@ -748,6 +750,27 @@
                 type);
     }
 
+    /**
+     * This ID is used by this polyfill itself.
+     */
+    const reservedID = '150ea6ee-2b0a-4587-9879-0ca5dfc1d046';
+    async function useInternalStorage(extensionID, modify) {
+        if (isDebug) {
+            const obj = JSON.parse(localStorage.getItem(reservedID + ':' + extensionID) || '{}');
+            if (!modify)
+                return Promise.resolve(obj);
+            modify(obj);
+            localStorage.setItem(reservedID + ':' + extensionID, JSON.stringify(obj));
+            return Promise.resolve(obj);
+        }
+        const obj = (await Host['browser.storage.local.get'](reservedID, extensionID))[extensionID] || {};
+        if (!modify)
+            return obj;
+        modify(obj);
+        Host['browser.storage.local.set'](reservedID, { [extensionID]: obj });
+        return obj;
+    }
+
     /// <reference path="../node_modules/web-ext-types/global/index.d.ts" />
     const key = 'holoflowsjsonrpc';
     class iOSWebkitChannel {
@@ -800,6 +823,8 @@
     const ThisSideImplementation = {
         // todo: check dispatch target's manifest
         'browser.webNavigation.onCommitted': dispatchNormalEvent.bind(null, 'browser.webNavigation.onCommitted', '*'),
+        'browser.webNavigation.onDOMContentLoaded': dispatchNormalEvent.bind(null, 'browser.webNavigation.onDOMContentLoaded', '*'),
+        'browser.webNavigation.onCompleted': dispatchNormalEvent.bind(null, 'browser.webNavigation.onCompleted', '*'),
         async onMessage(extensionID, toExtensionID, messageID, message, sender) {
             switch (message.type) {
                 case 'message':
@@ -824,6 +849,26 @@
                             matches: ['<all_urls>'],
                         }, ext.preloadedResources);
                     break;
+                case 'onWebNavigationChanged':
+                    const param = {
+                        tabId: parseInt(sender.id || '-1'),
+                        url: message.location,
+                    };
+                    switch (message.status) {
+                        case 'onCommitted':
+                            ThisSideImplementation['browser.webNavigation.onCommitted'](param);
+                            break;
+                        case 'onCompleted':
+                            ThisSideImplementation['browser.webNavigation.onCompleted'](param);
+                            break;
+                        case 'onDOMContentLoaded':
+                            ThisSideImplementation['browser.webNavigation.onDOMContentLoaded'](param);
+                            break;
+                        case 'onHistoryStateUpdated':
+                            // TODO: not implemented
+                            break;
+                    }
+                    break;
                 default:
                     break;
             }
@@ -837,6 +882,28 @@
         log: false,
         messageChannel: isDebug ? new SamePageDebugChannel('client') : new iOSWebkitChannel(),
     });
+    Host.sendMessage(reservedID, reservedID, null, Math.random() + '', {
+        type: 'onWebNavigationChanged',
+        status: 'onCommitted',
+        location: location.href,
+    });
+    if (typeof window === 'object') {
+        window.addEventListener('DOMContentLoaded', () => {
+            Host.sendMessage(reservedID, reservedID, null, Math.random() + '', {
+                type: 'onWebNavigationChanged',
+                status: 'onDOMContentLoaded',
+                location: location.href,
+            });
+        });
+        window.addEventListener('load', () => {
+            Host.sendMessage(reservedID, reservedID, null, Math.random() + '', {
+                type: 'onWebNavigationChanged',
+                status: 'onCompleted',
+                location: location.href,
+            });
+        });
+        // TODO: implements onHistoryStateUpdated event.
+    }
 
     function decodeStringOrBlob(val) {
         if (val.type === 'text')
@@ -954,27 +1021,6 @@
         };
     }
 
-    /**
-     * This ID is used by this polyfill itself.
-     */
-    const reservedID = '150ea6ee-2b0a-4587-9879-0ca5dfc1d046';
-    async function useInternalStorage(extensionID, modify) {
-        if (isDebug) {
-            const obj = JSON.parse(localStorage.getItem(reservedID + ':' + extensionID) || '{}');
-            if (!modify)
-                return Promise.resolve(obj);
-            modify(obj);
-            localStorage.setItem(reservedID + ':' + extensionID, JSON.stringify(obj));
-            return Promise.resolve(obj);
-        }
-        const obj = (await Host['browser.storage.local.get'](reservedID, extensionID))[extensionID] || {};
-        if (!modify)
-            return obj;
-        modify(obj);
-        Host['browser.storage.local.set'](reservedID, { [extensionID]: obj });
-        return obj;
-    }
-
     const originalConfirm = window.confirm;
     /**
      * Create a new `browser` object.
@@ -1064,6 +1110,8 @@
             },
             webNavigation: NotImplementedProxy({
                 onCommitted: createEventListener(extensionID, 'browser.webNavigation.onCommitted'),
+                onCompleted: createEventListener(extensionID, 'browser.webNavigation.onCompleted'),
+                onDOMContentLoaded: createEventListener(extensionID, 'browser.webNavigation.onDOMContentLoaded'),
             }),
             extension: NotImplementedProxy({
                 getBackgroundPage() {
@@ -1156,7 +1204,7 @@ ${(req.origins || []).join('\n')}`);
     function PartialImplemented(obj = {}, ...keys) {
         const obj2 = Object.assign({}, obj);
         keys.forEach(x => delete obj2[x]);
-        if (Object.keys(obj2).length)
+        if (Object.keys(obj2).filter(k => obj[k] !== undefined || obj[k] !== null).length)
             console.warn(`Not implemented options`, obj2, `at`, new Error().stack);
     }
     /**
