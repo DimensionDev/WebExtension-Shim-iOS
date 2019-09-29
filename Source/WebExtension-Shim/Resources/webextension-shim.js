@@ -672,7 +672,7 @@
     function sendMessageWithResponse(extensionID, toExtensionID, tabId, message) {
         return new Promise((resolve, reject) => {
             const messageID = Math.random().toString();
-            Host.sendMessage(extensionID, toExtensionID, tabId, messageID, {
+            FrameworkRPC.sendMessage(extensionID, toExtensionID, tabId, messageID, {
                 type: 'message',
                 data: message,
                 response: false,
@@ -707,7 +707,7 @@
                         if (data === undefined || responseSend)
                             return;
                         responseSend = true;
-                        Host.sendMessage(toExtensionID, extensionID, sender.tab.id, messageID, {
+                        FrameworkRPC.sendMessage(toExtensionID, extensionID, sender.tab.id, messageID, {
                             data,
                             response: true,
                             type: 'message',
@@ -763,15 +763,106 @@
             localStorage.setItem(reservedID + ':' + extensionID, JSON.stringify(obj));
             return Promise.resolve(obj);
         }
-        const obj = (await Host['browser.storage.local.get'](reservedID, extensionID))[extensionID] || {};
+        const obj = (await FrameworkRPC['browser.storage.local.get'](reservedID, extensionID))[extensionID] || {};
         if (!modify)
             return obj;
         modify(obj);
-        Host['browser.storage.local.set'](reservedID, { [extensionID]: obj });
+        FrameworkRPC['browser.storage.local.set'](reservedID, { [extensionID]: obj });
         return obj;
     }
 
-    /// <reference path="../node_modules/web-ext-types/global/index.d.ts" />
+    /**
+     * Internal RPC calls of webextension-shim. Does not related to the native part.
+     *
+     * This channel is used as internal RPCs.
+     * Use Host.onMessage and Host.sendMessage as channel.
+     */
+    const internalRPCChannel = new (class WebExtensionInternalChannel {
+        constructor() {
+            this.listener = [];
+        }
+        on(_, cb) {
+            this.listener.push(cb);
+        }
+        onReceiveMessage(key, data) {
+            for (const f of this.listener) {
+                try {
+                    f(data);
+                }
+                catch (_a) { }
+            }
+        }
+        emit(key, data) {
+            if (isDebug) {
+                console.log('send', data);
+            }
+            if (!(typeof data === 'object'))
+                return;
+            if (data.method) {
+                if (!Array.isArray(data.params))
+                    return;
+                if (typeof data.params[0] !== 'number')
+                    throw new Error(`Every method of InternalRPCMethods must start with parameter 0 as targetTabID: number`);
+                FrameworkRPC.sendMessage(reservedID, reservedID, data.params[0], Math.random() + '', {
+                    type: 'internal-rpc',
+                    message: data,
+                });
+                return;
+            }
+            else {
+                FrameworkRPC.sendMessage(reservedID, reservedID, null, Math.random() + '', {
+                    type: 'internal-rpc',
+                    message: data,
+                });
+            }
+        }
+    })();
+    const internalRPCLocalImplementation = {
+        async executeContentScript(targetTabID, extensionID, manifest, options) {
+            console.debug('[WebExtension] requested to inject code', options);
+            const ext = registeredWebExtension.get(extensionID);
+            if (options.code)
+                ext.environment.evaluate(options.code);
+            else if (options.file)
+                loadContentScript(extensionID, ext.manifest, {
+                    js: [options.file],
+                    // TODO: check the permission to inject the script
+                    matches: ['<all_urls>'],
+                }, ext.preloadedResources);
+        },
+    };
+    const internalRPC = AsyncCall(internalRPCLocalImplementation, {
+        log: false,
+        messageChannel: internalRPCChannel,
+    });
+
+    class SamePageDebugChannel {
+        constructor(actor) {
+            this.actor = actor;
+            this.listener = [];
+            SamePageDebugChannel[actor].addEventListener('targetEventChannel', e => {
+                const detail = e.detail;
+                for (const f of this.listener) {
+                    try {
+                        f(detail);
+                    }
+                    catch (_a) { }
+                }
+            });
+        }
+        on(_, cb) {
+            this.listener.push(cb);
+        }
+        emit(_, data) {
+            SamePageDebugChannel[this.actor === 'client' ? 'server' : 'client'].dispatchEvent(new CustomEvent('targetEventChannel', { detail: data }));
+        }
+    }
+    SamePageDebugChannel.server = document.createElement('a');
+    SamePageDebugChannel.client = document.createElement('a');
+
+    /**
+     * how webextension-shim communicate with native code.
+     */
     const key = 'holoflowsjsonrpc';
     class iOSWebkitChannel {
         constructor() {
@@ -797,29 +888,6 @@
                 window.webkit.messageHandlers[key].postMessage(data);
         }
     }
-    class SamePageDebugChannel {
-        constructor(actor) {
-            this.actor = actor;
-            this.listener = [];
-            SamePageDebugChannel[actor].addEventListener('targetEventChannel', e => {
-                const detail = e.detail;
-                for (const f of this.listener) {
-                    try {
-                        f(detail);
-                    }
-                    catch (_a) { }
-                }
-            });
-        }
-        on(_, cb) {
-            this.listener.push(cb);
-        }
-        emit(_, data) {
-            SamePageDebugChannel[this.actor === 'client' ? 'server' : 'client'].dispatchEvent(new CustomEvent('targetEventChannel', { detail: data }));
-        }
-    }
-    SamePageDebugChannel.server = document.createElement('a');
-    SamePageDebugChannel.client = document.createElement('a');
     const ThisSideImplementation = {
         // todo: check dispatch target's manifest
         'browser.webNavigation.onCommitted': dispatchNormalEvent.bind(null, 'browser.webNavigation.onCommitted', '*'),
@@ -827,6 +895,9 @@
         'browser.webNavigation.onCompleted': dispatchNormalEvent.bind(null, 'browser.webNavigation.onCompleted', '*'),
         async onMessage(extensionID, toExtensionID, messageID, message, sender) {
             switch (message.type) {
+                case 'internal-rpc':
+                    internalRPCChannel.onReceiveMessage('', message.message);
+                    break;
                 case 'message':
                     // ? this is a response to the message
                     if (TwoWayMessagePromiseResolver.has(messageID) && message.response) {
@@ -838,20 +909,11 @@
                         onNormalMessage(message.data, sender, toExtensionID, extensionID, messageID);
                     }
                     break;
-                case 'executeScript':
-                    const ext = registeredWebExtension.get(extensionID);
-                    if (message.code)
-                        ext.environment.evaluate(message.code);
-                    else if (message.file)
-                        loadContentScript(extensionID, ext.manifest, {
-                            js: [message.file],
-                            // TODO: check the permission to inject the script
-                            matches: ['<all_urls>'],
-                        }, ext.preloadedResources);
-                    break;
                 case 'onWebNavigationChanged':
+                    if (!sender.tab || sender.tab.id === undefined)
+                        break;
                     const param = {
-                        tabId: parseInt(sender.id || '-1'),
+                        tabId: sender.tab.id,
                         url: message.location,
                     };
                     switch (message.status) {
@@ -873,30 +935,27 @@
                     break;
             }
         },
-        async 'browser.tabs.executeScript'(extensionID, tabID, details) {
-            return Host.sendMessage(extensionID, extensionID, tabID, Math.random().toString(), Object.assign(Object.assign({}, details), { type: 'executeScript' }));
-        },
     };
-    const Host = AsyncCall(ThisSideImplementation, {
+    const FrameworkRPC = AsyncCall(ThisSideImplementation, {
         key: '',
         log: false,
         messageChannel: isDebug ? new SamePageDebugChannel('client') : new iOSWebkitChannel(),
     });
-    Host.sendMessage(reservedID, reservedID, null, Math.random() + '', {
+    FrameworkRPC.sendMessage(reservedID, reservedID, null, Math.random() + '', {
         type: 'onWebNavigationChanged',
         status: 'onCommitted',
         location: location.href,
     });
     if (typeof window === 'object') {
         window.addEventListener('DOMContentLoaded', () => {
-            Host.sendMessage(reservedID, reservedID, null, Math.random() + '', {
+            FrameworkRPC.sendMessage(reservedID, reservedID, null, Math.random() + '', {
                 type: 'onWebNavigationChanged',
                 status: 'onDOMContentLoaded',
                 location: location.href,
             });
         });
         window.addEventListener('load', () => {
-            Host.sendMessage(reservedID, reservedID, null, Math.random() + '', {
+            FrameworkRPC.sendMessage(reservedID, reservedID, null, Math.random() + '', {
                 type: 'onWebNavigationChanged',
                 status: 'onCompleted',
                 location: location.href,
@@ -1007,7 +1066,7 @@
         return (url) => {
             revokeObjectURL(url);
             const id = getIDFromBlobURL(url);
-            Host['URL.revokeObjectURL'](extensionID, id);
+            FrameworkRPC['URL.revokeObjectURL'](extensionID, id);
         };
     }
     function createObjectURLEnhanced(extensionID) {
@@ -1015,7 +1074,7 @@
             const url = createObjectURL(obj);
             const resourceID = getIDFromBlobURL(url);
             if (obj instanceof Blob) {
-                encodeStringOrBlob(obj).then(blob => Host['URL.createObjectURL'](extensionID, resourceID, blob));
+                encodeStringOrBlob(obj).then(blob => FrameworkRPC['URL.createObjectURL'](extensionID, resourceID, blob));
             }
             return url;
         };
@@ -1059,7 +1118,7 @@
             tabs: NotImplementedProxy({
                 async executeScript(tabID, details) {
                     PartialImplemented(details, 'code', 'file', 'runAt');
-                    await ThisSideImplementation['browser.tabs.executeScript'](extensionID, tabID === undefined ? -1 : tabID, details);
+                    await internalRPC.executeContentScript(tabID, extensionID, manifest, details);
                     return [];
                 },
                 create: binding(extensionID, 'browser.tabs.create')(),
@@ -1069,7 +1128,7 @@
                         t = [tabID];
                     else
                         t = tabID;
-                    await Promise.all(t.map(x => Host['browser.tabs.remove'](extensionID, x)));
+                    await Promise.all(t.map(x => FrameworkRPC['browser.tabs.remove'](extensionID, x)));
                 },
                 query: binding(extensionID, 'browser.tabs.query')(),
                 update: binding(extensionID, 'browser.tabs.update')(),
@@ -1228,7 +1287,7 @@ ${(req.origins || []).join('\n')}`);
         options = {}) => {
             const noop = (x) => x;
             const noopArgs = (...args) => args;
-            const hostDefinition = Host[key];
+            const hostDefinition = FrameworkRPC[key];
             return (async (...args) => {
                 // ? Transform WebExtension API arguments to host arguments
                 const hostArgs = (options.param || noopArgs)(...args);
@@ -1278,7 +1337,7 @@ ${(req.origins || []).join('\n')}`);
                 else {
                     if (isDebug)
                         return origFetch(requestInfo, requestInit);
-                    const result = await Host.fetch(extensionID, { method: request.method, url: url.toJSON() });
+                    const result = await FrameworkRPC.fetch(extensionID, { method: request.method, url: url.toJSON() });
                     const data = decodeStringOrBlob(result.data);
                     if (data === null)
                         throw new Error('');
@@ -1304,7 +1363,7 @@ ${(req.origins || []).join('\n')}`);
                 return null;
             if ((target && target !== '_blank') || features || replace)
                 console.warn('Unsupported open', url, target, features, replace);
-            Host['browser.tabs.create'](extensionID, {
+            FrameworkRPC['browser.tabs.create'](extensionID, {
                 active: true,
                 url,
             });
@@ -1315,7 +1374,7 @@ ${(req.origins || []).join('\n')}`);
         return () => {
             if (!hasValidUserInteractive())
                 return;
-            Host['browser.tabs.query'](extensionID, { active: true }).then(i => Host['browser.tabs.remove'](extensionID, i[0].id));
+            FrameworkRPC['browser.tabs.query'](extensionID, { active: true }).then(i => FrameworkRPC['browser.tabs.remove'](extensionID, i[0].id));
         };
     }
 
@@ -1504,6 +1563,7 @@ ${(req.origins || []).join('\n')}`);
                 ],
             });
             this[Symbol.toStringTag] = 'Realm';
+            console.log('[WebExtension] Content Script JS environment created.');
             PrepareWebAPIs(this.global);
             const browser = BrowserFactory(this.extensionID, this.manifest);
             Object.defineProperty(this.global, 'browser', {
@@ -1592,7 +1652,7 @@ ${(req.origins || []).join('\n')}`);
         if (preloaded)
             return preloaded;
         const url = normalizePath(path, extensionID);
-        const response = await Host.fetch(extensionID, { method: 'GET', url });
+        const response = await FrameworkRPC.fetch(extensionID, { method: 'GET', url });
         const result = decodeStringOrBlob(response.data);
         if (result === null)
             return undefined;
@@ -1692,13 +1752,14 @@ ${(req.origins || []).join('\n')}`);
     async function registerWebExtension(extensionID, manifest, preloadedResources = {}) {
         if (extensionID === reservedID)
             throw new TypeError('You cannot use reserved id ' + reservedID + ' as the extension id');
-        let environment = getContext(manifest, extensionID, preloadedResources);
+        let environment = getContext(manifest);
         let debugModeURL = '';
         if (isDebug) {
             const opt = parseDebugModeURL(extensionID, manifest);
             environment = opt.env;
             debugModeURL = opt.src;
         }
+        console.debug(`[WebExtension] Loading extension ${manifest.name}(${extensionID}) with manifest`, manifest, `and preloaded resource`, preloadedResources, `in ${environment} mode`);
         try {
             switch (environment) {
                 case Environment.debugModeManagedPage:
@@ -1717,6 +1778,7 @@ ${(req.origins || []).join('\n')}`);
                     await LoadBackgroundScript(manifest, extensionID, preloadedResources);
                     break;
                 case Environment.contentScript:
+                    createContentScriptEnvironment(manifest, extensionID, preloadedResources, debugModeURL);
                     await untilDocumentReady();
                     await LoadContentScript(manifest, extensionID, preloadedResources);
                     break;
@@ -1761,7 +1823,6 @@ ${(req.origins || []).join('\n')}`);
         else {
             environment = Environment.contentScript;
         }
-        console.debug(`[WebExtension] Loading extension ${manifest.name}(${extensionID}) with manifest`, manifest, `and preloaded resource`, preloadedResources, `in ${environment} mode`);
         return environment;
     }
     function untilDocumentReady() {
@@ -1916,6 +1977,19 @@ It's running in the background page mode`;
             eval(source);
         }
     }
+    function createContentScriptEnvironment(manifest, extensionID, preloadedResources, debugModePretendedURL) {
+        if (!registeredWebExtension.has(extensionID)) {
+            const environment = new WebExtensionContentScriptEnvironment(extensionID, manifest);
+            if (debugModePretendedURL)
+                environment.global.location = createLocationProxy(extensionID, manifest, debugModePretendedURL);
+            const ext = {
+                manifest,
+                environment,
+                preloadedResources,
+            };
+            registeredWebExtension.set(extensionID, ext);
+        }
+    }
     async function LoadContentScript(manifest, extensionID, preloadedResources, debugModePretendedURL) {
         if (!isDebug && debugModePretendedURL)
             throw new TypeError('Invalid state');
@@ -1938,17 +2012,6 @@ var x = new XMLSerializer();
 var html = x.serializeToString(dom);
 document.write(html);">Remove script tags and go</button>
 `;
-        }
-        if (!registeredWebExtension.has(extensionID)) {
-            const environment = new WebExtensionContentScriptEnvironment(extensionID, manifest);
-            if (debugModePretendedURL)
-                environment.global.location = createLocationProxy(extensionID, manifest, debugModePretendedURL);
-            const ext = {
-                manifest,
-                environment,
-                preloadedResources,
-            };
-            registeredWebExtension.set(extensionID, ext);
         }
         for (const [index, content] of (manifest.content_scripts || []).entries()) {
             warningNotImplementedItem(content, index);
