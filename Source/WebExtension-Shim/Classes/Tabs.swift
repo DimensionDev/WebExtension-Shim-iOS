@@ -9,6 +9,7 @@ import Foundation
 import WebKit
 import SwiftyJSON
 import ConsolePrint
+import os
 
 public protocol TabsDelegate: class {
     func plugin(forScriptType type: Plugin.ScriptType) -> Plugin
@@ -31,7 +32,7 @@ public class Tabs: NSObject {
 
     private(set) lazy var extensionTab: Tab = createExtensionTab()
     private(set) var userAgent = ""
-    private var nextID = 0
+    private var nextID = 1
 
     init(browserCore: BrowserCore) {
         self.browserCore = browserCore
@@ -55,6 +56,9 @@ extension Tabs {
     /// - Note: https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/tabs/create
     @discardableResult
     public func create(options: WebExtension.Browser.Tabs.Create.Options?, webViewConfiguration: WKWebViewConfiguration? = nil) -> Tab {
+        consolePrint("create tab: options: \(options)")
+        os_log("^ %{public}s[%{public}ld], %{public}s: %{public}s", ((#file as NSString).lastPathComponent), #line, #function, String(describing: options))
+
         let webViewConfiguration = self.webViewConfiguration(forOptions: options, scriptType: .contentScript)
         let pluginForContentScript = self.plugin(forScriptType: .contentScript)
         let tab = Tab(id: nextID, plugin: pluginForContentScript, createOptions: options, webViewConfiguration: webViewConfiguration, delegate: browserCore, downloadsDelegate: browserCore)
