@@ -200,12 +200,12 @@ extension Tab: WKScriptMessageHandler {
         }
         let messageBody = JSON(rawValue: message.body)?.rawString() ?? ""
         consolePrint("[\(eventType.rawValue)]: \(messageBody.prefix(300))")
-        os_log("%{public}s[%{public}ld], %{public}s: [%{public}s|%{public}s]: %{public}s", ((#file as NSString).lastPathComponent), #line, #function, String(describing: id), eventType.rawValue, messageBody)
+        os_log("^ %{public}s[%{public}ld], %{public}s: [%{public}s|%{public}s]: %{public}s", ((#file as NSString).lastPathComponent), #line, #function, String(describing: id), eventType.rawValue, messageBody)
 
         guard let (method, id) = try? HoloflowsRPC.parseRPCMeta(messageBody: messageBody) else {
             //assertionFailure()
             consolePrint(messageBody)
-            os_log("%{public}s[%{public}ld], %{public}s: invalid RPC message: %{public}s|%{public}s", ((#file as NSString).lastPathComponent), #line, #function, String(describing: self.id), messageBody)
+            os_log("^ %{public}s[%{public}ld], %{public}s: invalid RPC message: %{public}s|%{public}s", ((#file as NSString).lastPathComponent), #line, #function, String(describing: self.id), messageBody)
             return
         }
 
