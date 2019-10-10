@@ -22,6 +22,7 @@ public protocol TabDelegate: class {
     func tab(_ tab: Tab, localStorageManagerForTab: Tab) -> LocalStorageManager
 
     func tab(_ tab: Tab, shouldActive: Bool)
+    func tab(_ tab: Tab, webViewWillRemoveFromSuperview: WKWebView)
     func tab(_ tab: Tab, pluginResourceProviderForURL url: URL) -> PluginResourceProvider?
 }
 
@@ -32,6 +33,7 @@ extension TabDelegate {
     public func tab(_ tab: Tab, userContentController: WKUserContentController, didReceive message: WKScriptMessage) { }
 
     public func tab(_ tab: Tab, shouldActive: Bool) { }
+    public func tab(_ tab: Tab, webViewWillRemoveFromSuperview: WKWebView) { }
     public func tab(_ tab: Tab, pluginResourceProviderForURL url: URL) -> PluginResourceProvider? { return nil }
 }
 
@@ -158,6 +160,7 @@ public class Tab: NSObject {
     }
 
     deinit {
+        delegate?.tab(self, webViewWillRemoveFromSuperview: webView)
         webView.removeFromSuperview()
         consolePrint("deinit")
     }
