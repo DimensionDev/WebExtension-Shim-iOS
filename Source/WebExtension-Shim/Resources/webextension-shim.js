@@ -1149,7 +1149,9 @@
                         param(keys) {
                             if (Array.isArray(keys))
                                 return [keys];
-                            if (typeof keys === 'object') {
+                            else if (typeof keys === 'string')
+                                return [keys];
+                            else if (typeof keys === 'object') {
                                 if (keys === null)
                                     return [null];
                                 return [Object.keys(keys)];
