@@ -9,6 +9,7 @@ import Foundation
 import WebKit
 import SwiftyJSON
 import ConsolePrint
+import os
 
 public protocol TabsDelegate: class {
     func plugin(forScriptType type: Plugin.ScriptType) -> Plugin
@@ -30,15 +31,15 @@ public class Tabs: NSObject {
     weak var browserCore: BrowserCore?
 
     private(set) lazy var extensionTab: Tab = createExtensionTab()
-    private(set) var userAgent = ""
-    private var nextID = 0
+    private(set) var userAgent: String?
+    private var nextID = 1
 
     init(browserCore: BrowserCore) {
         self.browserCore = browserCore
 
         super.init()
 
-        // Setup User-Agent
+        // Init User-Agent
         extensionTab.webView.evaluateJavaScript("navigator.userAgent") { any, error in
             guard let userAgent = any as? String else { return }
             self.userAgent = userAgent
@@ -55,18 +56,33 @@ extension Tabs {
     /// - Note: https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/tabs/create
     @discardableResult
     public func create(options: WebExtension.Browser.Tabs.Create.Options?, webViewConfiguration: WKWebViewConfiguration? = nil) -> Tab {
-        let webViewConfiguration = self.webViewConfiguration(forOptions: options, scriptType: .contentScript)
-        let pluginForContentScript = self.plugin(forScriptType: .contentScript)
-        let tab = Tab(id: nextID, plugin: pluginForContentScript, createOptions: options, webViewConfiguration: webViewConfiguration, delegate: browserCore, downloadsDelegate: browserCore)
+        consolePrint("create tab: options: \(String(describing: options))")
+        os_log("^ %{public}s[%{public}ld], %{public}s: %{public}s", ((#file as NSString).lastPathComponent), #line, #function, String(describing: options))
 
-        tab.tabs = self
+        let tab: Tab = {
+            let pluginForContentScript = self.plugin(forScriptType: .contentScript)
+            let webViewConfiguration = self.webViewConfiguration(forOptions: options, scriptType: .contentScript)
+            let tabConfiguration = TabConfiguration(id: nextID,
+                                                    plugin: pluginForContentScript,
+                                                    createOptions: options,
+                                                    webViewConfiguration: webViewConfiguration,
+                                                    tabDelegate: browserCore,
+                                                    tabDownloadDelegate: browserCore,
+                                                    tabs: self)
+
+            return Tab(configuration: tabConfiguration)
+        }()
+
+        // dispatch delegate from browser core into proxy
         if let uiDelegate = browserCore?.uiDelegate(for: tab) {
             tab.uiDelegateProxy?.registerSecondary(uiDelegate)
         }
         if let navigationDelegate = browserCore?.navigationDelegate(for: tab) {
             tab.navigationDelegateProxy?.registerSecondary(navigationDelegate)
         }
-        tab.delegate?.tab(tab, shouldActive: options?.active ?? false)
+
+        // active tab
+        tab.delegate?.tab(tab, shouldActive: tab.isActive)
 
         nextID += 1
         storage.append(tab)
@@ -128,23 +144,34 @@ extension Tabs {
     }
 
     private func createExtensionTab() -> Tab {
-        let pluginForBackgroundScript = browserCore?.plugin(forScriptType: .backgroundScript) ?? Plugin(id: UUID().uuidString, manifest: JSON.null, environment: .backgroundScript, resources: JSON.null)
-        let options: WebExtension.Browser.Tabs.Create.Options = {
-            let url = Tabs.backgroundPagePath(for: pluginForBackgroundScript)
-            let options = WebExtension.Browser.Tabs.Create.Options(active: true, url: url)
-            return options
-        }()
-        let webViewConfiguration = self.webViewConfiguration(forOptions: options, scriptType: .backgroundScript)
-        let tab = Tab(id: -1, plugin: pluginForBackgroundScript, createOptions: options, webViewConfiguration: webViewConfiguration, delegate: browserCore, downloadsDelegate: browserCore)
 
-        tab.tabs = self
+        let tab: Tab = {
+            let pluginForBackgroundScript = browserCore?.plugin(forScriptType: .backgroundScript) ?? Plugin(id: UUID().uuidString, manifest: JSON.null, environment: .backgroundScript, resources: JSON.null)
+            let options: WebExtension.Browser.Tabs.Create.Options = {
+                let url = Tabs.backgroundPagePath(for: pluginForBackgroundScript)
+                let options = WebExtension.Browser.Tabs.Create.Options(active: true, url: url)
+                return options
+            }()
+            let webViewConfiguration = self.webViewConfiguration(forOptions: options, scriptType: .backgroundScript)
+            let tabConfiguration = TabConfiguration(id: -1,
+                                                    plugin: pluginForBackgroundScript,
+                                                    createOptions: options,
+                                                    webViewConfiguration: webViewConfiguration,
+                                                    tabDelegate: browserCore,
+                                                    tabDownloadDelegate: browserCore,
+                                                    tabs: self)
+
+            return Tab(configuration: tabConfiguration)
+        }()
+
+        // dispatch delegate from browser core into proxy
         if let uiDelegate = browserCore?.uiDelegate(for: tab) {
             tab.uiDelegateProxy?.registerSecondary(uiDelegate)
         }
         if let navigationDelegate = browserCore?.navigationDelegate(for: tab) {
             tab.navigationDelegateProxy?.registerSecondary(navigationDelegate)
         }
-        // should add to background make WebView load
+
         tab.delegate?.tab(tab, shouldActive: tab.isActive)
 
         return tab
@@ -202,12 +229,22 @@ extension Tabs: WKURLSchemeHandler {
         resourceProviderForURL.data(from: url) { result in
             switch result {
             case .success(let (data, response)):
-                urlSchemeTask.didReceive(response)
+//                let httpResponse = HTTPURLResponse(url: response.url, mimeType: response.mimeType, expectedContentLength: response.expectedContentLength, textEncodingName: response.textEncodingName)
+//                httpResponse.statusCode
+
+                let header: [String : String] = [
+                    "Content-Type": response.mimeType ?? "",
+                    "Content-Length" : String(response.expectedContentLength),
+                ]
+                guard let httpURLResponse = HTTPURLResponse(url: url, statusCode: 200, httpVersion: "HTTP/1.1", headerFields: header) else {
+                    urlSchemeTask.didFailWithError(BundleResourceManager.Error.fileNotFound)
+                    return
+                }
+                urlSchemeTask.didReceive(httpURLResponse)
                 urlSchemeTask.didReceive(data)
                 urlSchemeTask.didFinish()
 
                 consolePrint("urlSchemeTask.didFinish() =: \(response)")
-
             case .failure(let error):
                 urlSchemeTask.didFailWithError(error)
                 consolePrint("urlSchemeTask.didFailWithError() =: \(error.localizedDescription)")
@@ -220,6 +257,10 @@ extension Tabs: WKURLSchemeHandler {
     }
 
     static func backgroundPagePath(for plugin: Plugin) -> String {
+        // Infinite loop whne use background.html
+        if let backgroundPageFilename = plugin.manifest["background"].dictionaryValue["page"]?.string {
+            return "holoflows-extension://\(plugin.id)/\(backgroundPageFilename)"
+        }
         return "holoflows-extension://\(plugin.id)/_generated_background_page.html"
     }
 

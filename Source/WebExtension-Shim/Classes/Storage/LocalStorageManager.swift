@@ -20,9 +20,16 @@ public class LocalStorageManager {
 
 extension LocalStorageManager {
 
+
+    /// Get values on keys. Return all values when keys is empty
+    /// - Parameter keys: <#keys description#>
     public func get(keys: [String]) -> [LocalStorage] {
         let objects = realm.objects(LocalStorage.self)
-        return objects.filter { keys.contains($0.key) }
+        if keys.isEmpty {
+            return Array(objects)
+        } else {
+            return objects.filter { keys.contains($0.key) }
+        }
     }
 
     public func set(localStorages: [LocalStorage]) throws {

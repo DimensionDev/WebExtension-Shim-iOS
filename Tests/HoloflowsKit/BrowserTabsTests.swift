@@ -25,14 +25,14 @@ extension BrowserTabsTests {
     func testCreate() {
         XCTAssertEqual(browser.tabs.storage.count, 0)
         let tab = browser.tabs.create(options: nil)
-        XCTAssertEqual(tab.id, 0)
+        XCTAssertEqual(tab.id, 1)
         XCTAssertEqual(browser.tabs.storage.count, 1)
     }
 
     func testRemove() {
         XCTAssertEqual(browser.tabs.storage.count, 0)
         let tab = browser.tabs.create(options: nil)
-        XCTAssertEqual(tab.id, 0)
+        XCTAssertEqual(tab.id, 1)
         XCTAssertEqual(browser.tabs.storage.count, 1)
         browser.tabs.remove(id: tab.id)
         XCTAssertEqual(browser.tabs.storage.count, 0)
@@ -101,9 +101,9 @@ extension BrowserTabsTests {
             XCTAssertNil(error)
             let array = JSON(rawValue: any ?? Data())?.arrayValue ?? []
             XCTAssertEqual(array.count, 2)
-            XCTAssertEqual(array[0]["id"], 0)
+            XCTAssertEqual(array[0]["id"], 1)
             XCTAssertEqual(array[0]["url"], "about:blank")
-            XCTAssertEqual(array[1]["id"], 1)
+            XCTAssertEqual(array[1]["id"], 2)
             XCTAssertEqual(array[1]["url"], "https://www.apple.com/")
         }
         wait(for: [checkExpectation], timeout: 3.0)
@@ -146,9 +146,9 @@ extension BrowserTabsTests {
             XCTAssertNil(error)
             let array = JSON(rawValue: any ?? Data())?.arrayValue ?? []
             XCTAssertEqual(array.count, 3)
-            XCTAssertEqual(array[0]["id"], 0)
+            XCTAssertEqual(array[0]["id"], 1)
             XCTAssertEqual(array[0]["url"], "about:blank")
-            XCTAssertEqual(array[1]["id"], 1)
+            XCTAssertEqual(array[1]["id"], 2)
             XCTAssertEqual(array[1]["url"], "https://www.apple.com/")
         }
         wait(for: [checkExpectation], timeout: 3.0)

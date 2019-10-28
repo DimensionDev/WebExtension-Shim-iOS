@@ -6,16 +6,44 @@
 //
 
 import XCTest
+import SwiftyJSON
 import WebExtension_Shim
 import ConsolePrint
 
 class BrowserDownloadsTests: XCTestCase {
 
-    var browser = Browser()
+    lazy var browser = Browser(core: self)
+    let localStorageManager = LocalStorageManager(realm: RealmService.default.realm)
+    let blobResourceManager = BlobResourceManager(realm: RealmService.default.realm)
+    let bundleResourceManager = BundleResourceManager(bundle: Bundle(for: BrowserDownloadsTests.self))
 
     override func setUp() {
         super.setUp()
-        browser = Browser()
+        browser = Browser(core: self)
+    }
+
+}
+
+extension BrowserDownloadsTests: BrowserCore {
+
+    func plugin(forScriptType type: Plugin.ScriptType) -> Plugin {
+        return Plugin(id: UUID().uuidString, manifest: JSON.null, environment: type, resources: JSON.null)
+    }
+
+
+    func tab(_ tab: Tab, localStorageManagerForTab: Tab) -> LocalStorageManager {
+        return localStorageManager
+    }
+
+    func tab(_ tab: Tab, pluginResourceProviderForURL url: URL) -> PluginResourceProvider? {
+        switch url.scheme {
+        case "holoflows-blob":
+            return blobResourceManager
+        case "holoflows-extension":
+            return bundleResourceManager
+        default:
+            return nil
+        }
     }
 
 }
@@ -23,18 +51,8 @@ class BrowserDownloadsTests: XCTestCase {
 extension BrowserDownloadsTests {
 
     func testDownload() {
-//        let stubTabDelegate = StubTabDelegate()
-//        stubTabDelegate.downloadExpectation = expectation(description: "download check")
-
-//        let bundleResourceManager = BundleResourceManager(bundle: Bundle(for: BrowserDownloadsTests.self))
-//        let blobResourceManager = BlobResourceManager(realm: RealmService.default.realm)
-//        stubTabDelegate.bundleResourceManager = bundleResourceManager
-//        stubTabDelegate.blobResourceManager = blobResourceManager
-
         let tab = browser.tabs.create(options: nil)
-//        tab.delegate = stubTabDelegate
         TestHelper.prepareTest(tab: tab, forTestCase: self)
-
 
         // add create object URL listener
         let createObjectURLID = UUID().uuidString
@@ -78,49 +96,6 @@ extension BrowserDownloadsTests {
             // do nothing
         }
         wait(for: [downloadExpectation], timeout: 3.0)
-//        wait(for: [stubTabDelegate.downloadExpectation!], timeout: 3.0)
     }
-
-//    private class StubTabDelegate: TabDelegate {
-//
-//        weak var downloadExpectation: XCTestExpectation?
-//        var bundleResourceManager: BundleResourceManager?
-//        var blobResourceManager: BlobResourceManager?
-//
-//        func tab(_ tab: Tab, requestURLSchemeHanderForExtension extensionID: String, forPath path: String) -> [URLSchemeHandlerManager.URLSchemeHander] {
-//            guard let url = URL(string: path) else {
-//                consolePrint("not found bundle resource manager for path: \(path)")
-//                return []
-//            }
-//
-//            if let scheme = url.scheme {
-//                if scheme == "holoflows-extension", let manager = bundleResourceManager {
-//                    return [URLSchemeHandlerManager.URLSchemeHander(scheme: "holoflows-extension", extensionID: extensionID, urlSchemeHandler: manager)]
-//                } else if scheme == "holoflows-blob", let manager = blobResourceManager {
-//                    return [URLSchemeHandlerManager.URLSchemeHander(scheme: "holoflows-blob", extensionID: extensionID, urlSchemeHandler: manager)]
-//                } else {
-//                    return []
-//                }
-//
-//            } else {
-//                // FIXME:
-//                return []
-//            }
-//        }
-//
-//        func tab(_ tab: Tab, willDownloadBlobWithOptions options: WebExtension.Browser.Downloads.Download.Options) {
-//            // do nothing
-//        }
-//
-//        func tab(_ tab: Tab, didDownloadBlobWithOptions options: WebExtension.Browser.Downloads.Download.Options, result: Result<BlobStorage, Error>) {
-//            switch result {
-//            case let .success(blobStorage):
-//                downloadExpectation?.fulfill()
-//                consolePrint(blobStorage)
-//            case .failure:
-//                XCTFail()
-//            }
-//        }
-//    }
 
 }

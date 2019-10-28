@@ -11,10 +11,9 @@ import WebKit
 import ConsolePrint
 import SwiftyJSON
 import Alamofire
+import os
 
-
-// MARK: - Delegates
-
+// MARK: - TabDelegate
 public protocol TabDelegate: class {
     func uiDelegate(for tab: Tab) -> WKUIDelegate?
     func navigationDelegate(for tab: Tab) -> WKNavigationDelegate?
@@ -23,6 +22,7 @@ public protocol TabDelegate: class {
     func tab(_ tab: Tab, localStorageManagerForTab: Tab) -> LocalStorageManager
 
     func tab(_ tab: Tab, shouldActive: Bool)
+    func tab(_ tab: Tab, webViewWillRemoveFromSuperview webView: WKWebView)
     func tab(_ tab: Tab, pluginResourceProviderForURL url: URL) -> PluginResourceProvider?
 }
 
@@ -33,9 +33,11 @@ extension TabDelegate {
     public func tab(_ tab: Tab, userContentController: WKUserContentController, didReceive message: WKScriptMessage) { }
 
     public func tab(_ tab: Tab, shouldActive: Bool) { }
+    public func tab(_ tab: Tab, webViewWillRemoveFromSuperview webView: WKWebView) { }
     public func tab(_ tab: Tab, pluginResourceProviderForURL url: URL) -> PluginResourceProvider? { return nil }
 }
 
+// MARK: - TabDownloadsDelegate
 public protocol TabDownloadsDelegate: class {
     typealias Result = Swift.Result
     
@@ -48,25 +50,30 @@ extension TabDownloadsDelegate {
     public func tab(_ tab: Tab, didDownloadBlobWithOptions options: WebExtension.Browser.Downloads.Download.Options, result: Result<(Data, URLResponse), Error>) { }
 }
 
+public struct TabConfiguration {
+    public let id: Int
+    public let plugin: Plugin?
+    public let createOptions: WebExtension.Browser.Tabs.Create.Options?
+    public let webViewConfiguration: WKWebViewConfiguration
+    public let tabDelegate: TabDelegate?
+    public let tabDownloadDelegate: TabDownloadsDelegate?
+
+    public weak var tabs: Tabs? = nil
+}
+
 // MARK: - Tab
 public class Tab: NSObject {
 
     weak var tabs: Tabs?
 
-    let session: SessionManager = {
-        let configuration = URLSessionConfiguration.ephemeral
-//        configuration.httpAdditionalHeaders = ["User-Agent" : self.tabs?.userAgent as Any]
-        configuration.httpAdditionalHeaders = ["User-Agent" : "Mozilla/5.0 (iPhone; CPU iPhone OS 12_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148"]
-        let session = Alamofire.SessionManager(configuration: configuration)
-        return session
-    }()
+    let session: SessionManager
 
     public let id: Int
     public let webView: WKWebView
     public let isActive: Bool
 
     let plugin: Plugin?
-    let userContentController: WKUserContentController
+    let userContentController = WKUserContentController()
 
     var uiDelegateProxy: WebViewProxy<WKUIDelegate>?
     var navigationDelegateProxy: WebViewProxy<WKNavigationDelegate>?
@@ -75,55 +82,36 @@ public class Tab: NSObject {
     weak var delegate: TabDelegate?
     weak var downloadsDelegate: TabDownloadsDelegate?
 
-    public init(id: Int, plugin: Plugin?, createOptions options: WebExtension.Browser.Tabs.Create.Options? = nil, webViewConfiguration configuration: WKWebViewConfiguration, delegate: TabDelegate? = nil, downloadsDelegate: TabDownloadsDelegate? = nil) {
-        self.id = id
-        self.plugin = plugin
-        self.userContentController = WKUserContentController()
-        self.delegate = delegate
-        self.downloadsDelegate = downloadsDelegate
-        configuration.userContentController = userContentController
+    public init(configuration: TabConfiguration) {
+        self.id = configuration.id
+        self.plugin = configuration.plugin
+        self.delegate = configuration.tabDelegate
+        self.downloadsDelegate = configuration.tabDownloadDelegate
+        self.tabs = configuration.tabs
 
-        // FIXME:
-        /*
-        let bundle = Bundle(for: Tab.self)
-        if let bundleURL = bundle.resourceURL?.appendingPathComponent("WebExtensionShimScripts.bundle"),
-        let scriptsBundle = Bundle(url: bundleURL),
-        let scriptPath = scriptsBundle.path(forResource: "webextension-shim", ofType: "js"),
-        var script = try? String(contentsOfFile: scriptPath) {
-            let pattern = """
-            const env = location.href.startsWith('holoflows-extension://') && location.href.endsWith('_generated_background_page.html');
-            """
-            if let patternIndex = script.range(of: pattern)?.upperBound, let plugin = plugin {
-                let registerWebExtension: String = """
-
-
-                    registerWebExtension(
-                        '\(plugin.id)',
-                        \(plugin.manifest.rawString() ?? ""),
-                        \(plugin.resources.rawString() ?? "")
-                    )
-                """
-                script.insert(contentsOf: registerWebExtension, at: patternIndex)
-            }
-            let hasSchemePrefix = options?.url?.hasPrefix("holoflows-extension://") ?? false
-            let injectionTime: WKUserScriptInjectionTime = hasSchemePrefix ? .atDocumentStart : .atDocumentEnd
-//            let injectionTime = WKUserScriptInjectionTime.atDocumentEnd
-            let userScript = WKUserScript(source: script, injectionTime: injectionTime, forMainFrameOnly: false)
-            userContentController.addUserScript(userScript)
-        } else {
-            assertionFailure()
-        }
-         */
-
+        // Setup WKWebView
+        configuration.webViewConfiguration.userContentController = self.userContentController
         for userScript in plugin?.userScripts ?? [] {
             userContentController.addUserScript(userScript)
         }
 
-        self.webView = WKWebView(frame: CGRect(x: 0, y: 0, width: 100, height: 100), configuration: configuration)
-        self.isActive = options?.active ?? true
+        self.webView = WKWebView(frame: CGRect(x: 0, y: 0, width: 100, height: 100), configuration: configuration.webViewConfiguration)
+        self.isActive = configuration.createOptions?.active ?? true     // set active status. default true)
+
+        // Setup Alamofire session
+        self.session = {
+            let userAgent = configuration.tabs?.userAgent ?? "Mozilla/5.0 (iPhone; CPU iPhone OS 12_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148"
+
+            let sessionConfiguration = URLSessionConfiguration.ephemeral
+            sessionConfiguration.httpAdditionalHeaders = ["User-Agent" : userAgent]
+            let session = Alamofire.SessionManager(configuration: sessionConfiguration)
+
+            return session
+       }()
 
         super.init()
 
+        // dispatch self to delegate proxy
         uiDelegateProxy = WebViewProxy(self)
         navigationDelegateProxy = WebViewProxy(self)
 
@@ -132,15 +120,18 @@ public class Tab: NSObject {
         webView.navigationDelegate = navigationDelegateProxy as? WKNavigationDelegate
         webView.allowsLinkPreview = false
 
+        // register Holoflows RPC event
         for event in ScriptEvent.allCases {
             userContentController.add(self, name: event.rawValue)
         }
+        // register app custom message handler
         scriptMessageHandlerNames = delegate?.customScriptMessageHandlerNames(for: self) ?? []
         for name in scriptMessageHandlerNames where !ScriptEvent.allCases.contains(where: { $0.rawValue == name }) {
             userContentController.add(self, name: name)
         }
 
-        if let url = options?.url, let URL = URL(string: url) {
+        // Load url
+        if let url = configuration.createOptions?.url, let URL = URL(string: url) {
             webView.load(URLRequest(url: URL))
         } else {
             let html = """
@@ -169,6 +160,7 @@ public class Tab: NSObject {
     }
 
     deinit {
+        delegate?.tab(self, webViewWillRemoveFromSuperview: webView)
         webView.removeFromSuperview()
         consolePrint("deinit")
     }
@@ -198,10 +190,12 @@ extension Tab: WKScriptMessageHandler {
         }
         let messageBody = JSON(rawValue: message.body)?.rawString() ?? ""
         consolePrint("[\(eventType.rawValue)]: \(messageBody.prefix(300))")
+        os_log("^ %{public}s[%{public}ld], %{public}s: [%{public}s|%{public}s]: %{public}s", ((#file as NSString).lastPathComponent), #line, #function, String(describing: id), eventType.rawValue, messageBody)
 
         guard let (method, id) = try? HoloflowsRPC.parseRPCMeta(messageBody: messageBody) else {
             //assertionFailure()
             consolePrint(messageBody)
+            os_log("^ %{public}s[%{public}ld], %{public}s: invalid RPC message: %{public}s|%{public}s", ((#file as NSString).lastPathComponent), #line, #function, String(describing: self.id), messageBody)
             return
         }
 
@@ -274,6 +268,7 @@ extension Tab: WKNavigationDelegate {
     public func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
         consolePrint(webView.url)
 
+        // Create new tab when direct to local scheme. Make UserScript inject .atDocumentStart
         if let previousScheme = webView.backForwardList.backItem?.url.scheme,
         let currentURL = webView.url, let currentScheme = webView.url?.scheme,
         previousScheme != currentScheme {
@@ -288,7 +283,17 @@ extension Tab: WKNavigationDelegate {
         let onCommitted =  OnCommitted(tab: .init(tabId: id, url: webView.url?.absoluteString ?? ""))
         let request = HoloflowsRPC.ServerRequest(params: onCommitted, id: rpcID)
 
-        HoloflowsRPC.dispathRequest(webView: webView, id: rpcID, request: request, completionHandler: completionHandler())
+        // Do not send didCommit to background page
+        guard tabs?.extensionTab.id != id else {
+            return
+        }
+
+//        if let backgroundWebView = tabs?.extensionTab.webView {
+//            let backgroundRpcID = UUID().uuidString
+//            HoloflowsRPC.dispathRequest(webView: backgroundWebView, id: backgroundRpcID, request: request, completionHandler: completionHandler())
+//        }
+//
+//        HoloflowsRPC.dispathRequest(webView: webView, id: rpcID, request: request, completionHandler: completionHandler())
     }
 
     public func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
