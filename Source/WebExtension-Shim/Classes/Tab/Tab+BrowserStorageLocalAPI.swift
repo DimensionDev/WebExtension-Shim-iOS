@@ -25,7 +25,7 @@ extension Tab {
             let entires = localStorageManager.get(keys: keys)
 
             let dict = entires.reduce(into: [String : JSON]()) { dict, localStorgae in
-                dict[localStorgae.key] = JSON(parseJSON: localStorgae.value)
+                dict[localStorgae.key] = JSON(localStorgae.value)
             }
 
             let result: Result<HoloflowsRPC.Response<[String:JSON]>, RPC.Error> = .success(HoloflowsRPC.Response(result: dict, id: id))

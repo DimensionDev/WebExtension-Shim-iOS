@@ -941,27 +941,29 @@
         log: false,
         messageChannel: isDebug ? new SamePageDebugChannel('client') : new iOSWebkitChannel(),
     });
-    FrameworkRPC.sendMessage(reservedID, reservedID, null, Math.random() + '', {
-        type: 'onWebNavigationChanged',
-        status: 'onCommitted',
-        location: location.href,
-    });
-    if (typeof window === 'object') {
-        window.addEventListener('DOMContentLoaded', () => {
-            FrameworkRPC.sendMessage(reservedID, reservedID, null, Math.random() + '', {
-                type: 'onWebNavigationChanged',
-                status: 'onDOMContentLoaded',
-                location: location.href,
-            });
+    if (location.protocol !== 'holoflows-extension') {
+        FrameworkRPC.sendMessage(reservedID, reservedID, null, Math.random() + '', {
+            type: 'onWebNavigationChanged',
+            status: 'onCommitted',
+            location: location.href,
         });
-        window.addEventListener('load', () => {
-            FrameworkRPC.sendMessage(reservedID, reservedID, null, Math.random() + '', {
-                type: 'onWebNavigationChanged',
-                status: 'onCompleted',
-                location: location.href,
+        if (typeof window === 'object') {
+            window.addEventListener('DOMContentLoaded', () => {
+                FrameworkRPC.sendMessage(reservedID, reservedID, null, Math.random() + '', {
+                    type: 'onWebNavigationChanged',
+                    status: 'onDOMContentLoaded',
+                    location: location.href,
+                });
             });
-        });
-        // TODO: implements onHistoryStateUpdated event.
+            window.addEventListener('load', () => {
+                FrameworkRPC.sendMessage(reservedID, reservedID, null, Math.random() + '', {
+                    type: 'onWebNavigationChanged',
+                    status: 'onCompleted',
+                    location: location.href,
+                });
+            });
+            // TODO: implements onHistoryStateUpdated event.
+        }
     }
 
     function decodeStringOrBlob(val) {
@@ -1576,6 +1578,20 @@ ${(req.origins || []).join('\n')}`);
             this.global.fetch = createFetch(this.extensionID, window.fetch);
             this.global.open = openEnhanced(this.extensionID);
             this.global.close = closeEnhanced(this.extensionID);
+            function globalThisFix() {
+                var originalFunction = Function;
+                function newFunction(...args) {
+                    const fn = new originalFunction(...args);
+                    return new Proxy(fn, {
+                        apply(a, b, c) {
+                            return Reflect.apply(a, b || globalThis, c);
+                        },
+                    });
+                }
+                // @ts-ignore
+                globalThis.Function = newFunction;
+            }
+            this.evaluate(globalThisFix.toString() + '\n' + globalThisFix.name + '()');
         }
         get global() {
             return this.realm.global;
