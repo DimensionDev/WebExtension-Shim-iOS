@@ -1,25 +1,25 @@
 PODS:
-  - Alamofire (4.8.2)
+  - Alamofire (4.9.1)
   - AlamofireNetworkActivityLogger (2.4.0):
     - Alamofire (~> 4.8)
   - ConsolePrint (0.2.0)
-  - Realm (3.17.1):
-    - Realm/Headers (= 3.17.1)
-  - Realm/Headers (3.17.1)
-  - RealmSwift (3.17.1):
-    - Realm (= 3.17.1)
+  - Realm (3.20.0):
+    - Realm/Headers (= 3.20.0)
+  - Realm/Headers (3.20.0)
+  - RealmSwift (3.20.0):
+    - Realm (= 3.20.0)
   - SwiftyJSON (5.0.0)
-  - WebExtension-Shim (0.3.0):
+  - WebExtension-Shim (0.3.2):
     - ConsolePrint
     - SwiftyJSON (~> 5.0.0)
-    - WebExtension-Shim/WebExtension-Shim (= 0.3.0)
-  - WebExtension-Shim/JSONRPC (0.3.0):
+    - WebExtension-Shim/WebExtension-Shim (= 0.3.2)
+  - WebExtension-Shim/JSONRPC (0.3.2):
     - ConsolePrint
     - SwiftyJSON (~> 5.0.0)
-  - WebExtension-Shim/Tests (0.3.0):
+  - WebExtension-Shim/Tests (0.3.2):
     - ConsolePrint
     - SwiftyJSON (~> 5.0.0)
-  - WebExtension-Shim/WebExtension-Shim (0.3.0):
+  - WebExtension-Shim/WebExtension-Shim (0.3.2):
     - Alamofire (~> 4.7)
     - AlamofireNetworkActivityLogger (~> 2.4)
     - ConsolePrint
@@ -32,7 +32,7 @@ DEPENDENCIES:
   - WebExtension-Shim/Tests (from `../`)
 
 SPEC REPOS:
-  https://github.com/cocoapods/specs.git:
+  trunk:
     - Alamofire
     - AlamofireNetworkActivityLogger
     - ConsolePrint
@@ -45,14 +45,14 @@ EXTERNAL SOURCES:
     :path: "../"
 
 SPEC CHECKSUMS:
-  Alamofire: ae5c501addb7afdbb13687d7f2f722c78734c2d3
+  Alamofire: 85e8a02c69d6020a0d734f6054870d7ecb75cf18
   AlamofireNetworkActivityLogger: 6d3398c692d2c5d83b0c58793537860aca1e383d
   ConsolePrint: 2d5a73bb45f08efa259bef7583707d6dfa007141
-  Realm: c204f1a890f07dea43b14132a6aad118c054b8f2
-  RealmSwift: 4d3c9233544b9cd08a8913e0872b9038eb99b054
+  Realm: 8b2ca5bc6479a91f379b6b42b5922e396cd5ba5a
+  RealmSwift: 1949ef26a279e1845bd51d591b9103adfcd121df
   SwiftyJSON: 36413e04c44ee145039d332b4f4e2d3e8d6c4db7
-  WebExtension-Shim: 38b281f04672db02cd706e4d7729aa8fc275636f
+  WebExtension-Shim: e6e25d8049f7a9002bbe629a2620ebd79def32f1
 
 PODFILE CHECKSUM: 36f0086db586a83efb2da9adc3764ba2406a7f12
 
-COCOAPODS: 1.7.3
+COCOAPODS: 1.8.4

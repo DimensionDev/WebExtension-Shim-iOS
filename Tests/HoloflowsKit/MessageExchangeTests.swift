@@ -30,7 +30,7 @@ extension MessageExchangeTests {
         XCTAssertEqual(request.method, WebExtension.SendMessage.method)
         XCTAssertEqual(request.params.extensionID, "eofkdgkhfoebecmamljfaepckoecjhib")
         XCTAssertEqual(request.params.toExtensionID, "eofkdgkhfoebecmamljfaepckoecjhib")
-        XCTAssertEqual(request.params.tabId, 0)
+        XCTAssertEqual(request.params.tabId, 1)
         XCTAssertEqual(request.params.messageID, "0.c7zclkj3")
         XCTAssertEqual(request.params.message.string, "Message Body")
         XCTAssertEqual(request.id, "0.d832czxv3y")
