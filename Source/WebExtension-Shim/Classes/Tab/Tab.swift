@@ -19,7 +19,7 @@ public protocol TabDelegate: class {
     func navigationDelegate(for tab: Tab) -> WKNavigationDelegate?
     func customScriptMessageHandlerNames(for tab: Tab) -> [String]
     func tab(_ tab: Tab, userContentController: WKUserContentController, didReceive message: WKScriptMessage)
-    func tab(_ tab: Tab, localStorageManagerForTab: Tab) -> LocalStorageManager
+    func tab(_ tab: Tab, localStorageManagerForExtension id: String) -> LocalStorageManager
 
     func tab(_ tab: Tab, shouldActive: Bool)
     func tab(_ tab: Tab, webViewWillRemoveFromSuperview webView: WKWebView)
@@ -222,9 +222,11 @@ extension Tab: WKScriptMessageHandler {
         case .browserStorageLocalSet:               browserStorageLocalSet(id: id, messageBody: messageBody)
         case .browserStorageLocalRemove:            browserStorageLocalRemove(id: id, messageBody: messageBody)
         case .browserStorageLocalClear:             browserStorageLocalClear(id: id, messageBody: messageBody)
+        /*
         case .websocketCreate:                      websocketCreate(id: id, messageBody: messageBody)
         case .websocketClose:                       websocketClose(id: id, messageBody: messageBody)
         case .websocketSend:                        websocketSend(id: id, messageBody: messageBody)
+         */
         }          
     }   // end func userContentController
 
@@ -277,23 +279,7 @@ extension Tab: WKNavigationDelegate {
             return
         }
 
-        typealias OnCommitted = WebExtension.Browser.WebNavigation.OnCommitted
-
-        let rpcID = UUID().uuidString
-        let onCommitted =  OnCommitted(tab: .init(tabId: id, url: webView.url?.absoluteString ?? ""))
-        let request = HoloflowsRPC.ServerRequest(params: onCommitted, id: rpcID)
-
-        // Do not send didCommit to background page
-        guard tabs?.extensionTab.id != id else {
-            return
-        }
-
-//        if let backgroundWebView = tabs?.extensionTab.webView {
-//            let backgroundRpcID = UUID().uuidString
-//            HoloflowsRPC.dispathRequest(webView: backgroundWebView, id: backgroundRpcID, request: request, completionHandler: completionHandler())
-//        }
-//
-//        HoloflowsRPC.dispathRequest(webView: webView, id: rpcID, request: request, completionHandler: completionHandler())
+        // background page will handle didCommit message
     }
 
     public func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {

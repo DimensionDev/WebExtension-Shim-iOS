@@ -13,7 +13,6 @@ import ConsolePrint
 class BrowserDownloadsTests: XCTestCase {
 
     lazy var browser = Browser(core: self)
-    let localStorageManager = LocalStorageManager(realm: RealmService.default.realm)
     let blobResourceManager = BlobResourceManager(realm: RealmService.default.realm)
     let bundleResourceManager = BundleResourceManager(bundle: Bundle(for: BrowserDownloadsTests.self))
 
@@ -30,10 +29,10 @@ extension BrowserDownloadsTests: BrowserCore {
         return Plugin(id: UUID().uuidString, manifest: JSON.null, environment: type, resources: JSON.null)
     }
 
-
-    func tab(_ tab: Tab, localStorageManagerForTab: Tab) -> LocalStorageManager {
-        return localStorageManager
+    func tab(_ tab: Tab, localStorageManagerForExtension id: String) -> LocalStorageManager {
+        return LocalStorageManager(realm: RealmService(name: id).realm)
     }
+
 
     func tab(_ tab: Tab, pluginResourceProviderForURL url: URL) -> PluginResourceProvider? {
         switch url.scheme {

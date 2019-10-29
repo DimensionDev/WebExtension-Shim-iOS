@@ -20,7 +20,7 @@ class ExampleBrowserCore: BrowserCore {
 extension ExampleBrowserCore {
 
     func plugin(forScriptType type: Plugin.ScriptType) -> Plugin {
-        return Plugin(id: UUID().uuidString, manifest: JSON(stringLiteral: "{}"), environment: type, resources: JSON(stringLiteral: ""))
+        return Plugin(id: UUID().uuidString, manifest: JSON(parseJSON: "{}"), environment: type, resources: JSON(parseJSON: ""))
     }
 
 }
