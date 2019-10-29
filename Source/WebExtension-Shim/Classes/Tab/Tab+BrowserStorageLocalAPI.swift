@@ -16,7 +16,7 @@ extension Tab {
         let messageResult: Result<WebExtension.Browser.Storage.Local.Get, RPC.Error> = HoloflowsRPC.parseRPC(messageBody: messageBody)
         switch messageResult {
         case let .success(get):
-            guard let localStorageManager = delegate?.tab(self, localStorageManagerForTab: self) else {
+            guard let localStorageManager = delegate?.tab(self, localStorageManagerForExtension: get.extensionID) else {
                 let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .failure(RPC.Error.serverError)
                 HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
                 return
@@ -25,7 +25,7 @@ extension Tab {
             let entires = localStorageManager.get(keys: keys)
 
             let dict = entires.reduce(into: [String : JSON]()) { dict, localStorgae in
-                dict[localStorgae.key] = JSON(localStorgae.value)
+                dict[localStorgae.key] = JSON(parseJSON: localStorgae.value)
             }
 
             let result: Result<HoloflowsRPC.Response<[String:JSON]>, RPC.Error> = .success(HoloflowsRPC.Response(result: dict, id: id))
@@ -42,7 +42,7 @@ extension Tab {
         let messageResult: Result<WebExtension.Browser.Storage.Local.Set, RPC.Error> = HoloflowsRPC.parseRPC(messageBody: messageBody)
         switch messageResult {
         case let .success(set):
-            guard let localStorageManager = delegate?.tab(self, localStorageManagerForTab: self) else {
+            guard let localStorageManager = delegate?.tab(self, localStorageManagerForExtension: set.extensionID) else {
                 let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .failure(RPC.Error.serverError)
                 HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
                 return
@@ -77,7 +77,7 @@ extension Tab {
         let messageResult: Result<WebExtension.Browser.Storage.Local.Remove, RPC.Error> = HoloflowsRPC.parseRPC(messageBody: messageBody)
         switch messageResult {
         case let .success(remove):
-            guard let localStorageManager = delegate?.tab(self, localStorageManagerForTab: self) else {
+            guard let localStorageManager = delegate?.tab(self, localStorageManagerForExtension: remove.extensionID) else {
                 let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .failure(RPC.Error.serverError)
                 HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
                 return
@@ -87,21 +87,21 @@ extension Tab {
                 let keys = remove.keyValues
                 let removed = try localStorageManager.remove(keys: keys)
                 let dict = removed.reduce(into: [String : JSON]()) { dict, localStorgae in
-                    dict[localStorgae.key] = JSON(stringLiteral: localStorgae.value)
+                    dict[localStorgae.key] = JSON(parseJSON: localStorgae.value)
                 }
 
-                let result: Result<HoloflowsRPC.Response<[String:JSON]>, RPC.Error> = .success(HoloflowsRPC.Response(result: dict, id: id))
+                let result: Result<HoloflowsRPC.Response<[String: JSON]>, RPC.Error> = .success(HoloflowsRPC.Response(result: dict, id: id))
                 HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
 
             } catch {
                 consolePrint(error.localizedDescription)
-                let result: Result<HoloflowsRPC.Response<[String:JSON]>, RPC.Error> = .failure(RPC.Error.serverError)
+                let result: Result<HoloflowsRPC.Response<[String: JSON]>, RPC.Error> = .failure(RPC.Error.serverError)
                 HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
             }
 
         case let .failure(error):
             consolePrint(error.localizedDescription)
-            let result: Result<HoloflowsRPC.Response<[String:JSON]>, RPC.Error> = .failure(error)
+            let result: Result<HoloflowsRPC.Response<[String: JSON]>, RPC.Error> = .failure(error)
             HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
         }
     }
@@ -109,8 +109,8 @@ extension Tab {
     open func browserStorageLocalClear(id: String, messageBody: String) {
         let messageResult: Result<WebExtension.Browser.Storage.Local.Clear, RPC.Error> = HoloflowsRPC.parseRPC(messageBody: messageBody)
         switch messageResult {
-        case .success:
-            guard let localStorageManager = delegate?.tab(self, localStorageManagerForTab: self) else {
+        case let .success(clear):
+            guard let localStorageManager = delegate?.tab(self, localStorageManagerForExtension: clear.extensionID) else {
                 let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .failure(RPC.Error.serverError)
                 HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
                 return

@@ -13,7 +13,6 @@ import ConsolePrint
 class BrowserStorageLocalTests: XCTestCase {
 
     lazy var browser = Browser(core: self)
-    let localStorageManager = LocalStorageManager(realm: RealmService.default.realm)
     let blobResourceManager = BlobResourceManager(realm: RealmService.default.realm)
 
     override func setUp() {
@@ -29,9 +28,8 @@ extension BrowserStorageLocalTests: BrowserCore {
         return Plugin(id: UUID().uuidString, manifest: JSON.null, environment: type, resources: JSON.null)
     }
 
-
-    func tab(_ tab: Tab, localStorageManagerForTab: Tab) -> LocalStorageManager {
-        return localStorageManager
+    func tab(_ tab: Tab, localStorageManagerForExtension id: String) -> LocalStorageManager {
+        return LocalStorageManager(realm: RealmService(name: id).realm)
     }
 
     func tab(_ tab: Tab, pluginResourceProviderForURL url: URL) -> PluginResourceProvider? {
@@ -50,10 +48,12 @@ extension BrowserStorageLocalTests {
     func testGet() {
         let tab = browser.tabs.create(options: nil)
         TestHelper.prepareTest(tab: tab, forTestCase: self)
-        addRealmDataStub()
 
-        let get = WebExtension.Browser.Storage.Local.Get(extensionID: "HoloflowsKit-UnitTests", keys: ["kitten", "monster"])
-        let request = HoloflowsRPC.Request(params: get, id: UUID().uuidString)
+        let id = UUID().uuidString
+        addRealmDataStub(for: id)
+
+        let get = WebExtension.Browser.Storage.Local.Get(extensionID: id, keys: ["kitten", "monster"])
+        let request = HoloflowsRPC.Request(params: get, id: id)
         let getScript = TestHelper.webKit(messageBody: request)
         let getExpectation = TestHelper.expectEvaluateJavaScript(in: tab.webView, script: getScript, forTestCase: self) { (any, error) in
             // do nothing
@@ -66,10 +66,12 @@ extension BrowserStorageLocalTests {
     func testGet_kitten() {
         let tab = browser.tabs.create(options: nil)
         TestHelper.prepareTest(tab: tab, forTestCase: self)
-        addRealmDataStub()
 
-        let get = WebExtension.Browser.Storage.Local.Get(extensionID: "HoloflowsKit-UnitTests", keys: ["kitten"])
-        let request = HoloflowsRPC.Request(params: get, id: UUID().uuidString)
+        let id = UUID().uuidString
+        addRealmDataStub(for: id)
+
+        let get = WebExtension.Browser.Storage.Local.Get(extensionID: id, keys: ["kitten"])
+        let request = HoloflowsRPC.Request(params: get, id: id)
         let getScript = TestHelper.webKit(messageBody: request)
         let getExpectation = TestHelper.expectEvaluateJavaScript(in: tab.webView, script: getScript, forTestCase: self) { (any, error) in
             // do nothing
@@ -82,8 +84,10 @@ extension BrowserStorageLocalTests {
     func testSet() {
         let tab = browser.tabs.create(options: nil)
         TestHelper.prepareTest(tab: tab, forTestCase: self)
-        removeRealmDataStub()
-        XCTAssertEqual(getRealmDataStub().count, 0)
+
+        let id = UUID().uuidString
+        removeRealmDataStub(for: id)
+        XCTAssertEqual(getRealmDataStub(for: id).count, 0)
 
         let object = """
         {
@@ -92,8 +96,8 @@ extension BrowserStorageLocalTests {
         }
         """
         let objectJSON = JSON(parseJSON: object)
-        let set = WebExtension.Browser.Storage.Local.Set(extensionID: "HoloflowsKit-UnitTests", object: objectJSON)
-        let setScript = TestHelper.webKit(messageBody: HoloflowsRPC.Request(params: set, id: UUID().uuidString))
+        let set = WebExtension.Browser.Storage.Local.Set(extensionID: id, object: objectJSON)
+        let setScript = TestHelper.webKit(messageBody: HoloflowsRPC.Request(params: set, id: id))
         let setExpectation = TestHelper.expectEvaluateJavaScript(in: tab.webView, script: setScript, forTestCase: self) { (any, error) in
             // do nothing
         }
@@ -102,14 +106,16 @@ extension BrowserStorageLocalTests {
         consolePrint(RealmService.default.realm.configuration.fileURL)
         TestHelper.waitCallback(3.0, forTestCase: self)
 
-        XCTAssertEqual(getRealmDataStub().count, 2)
+        XCTAssertEqual(getRealmDataStub(for: id).count, 2)
     }
 
     func testSet_monster() {
         let tab = browser.tabs.create(options: nil)
         TestHelper.prepareTest(tab: tab, forTestCase: self)
-        removeRealmDataStub()
-        XCTAssertEqual(getRealmDataStub().count, 0)
+
+        let id = UUID().uuidString
+        removeRealmDataStub(for: id)
+        XCTAssertEqual(getRealmDataStub(for: id).count, 0)
 
         let object = """
         {
@@ -117,8 +123,8 @@ extension BrowserStorageLocalTests {
         }
         """
         let objectJSON = JSON(parseJSON: object)
-        let set = WebExtension.Browser.Storage.Local.Set(extensionID: "HoloflowsKit-UnitTests", object: objectJSON)
-        let setScript = TestHelper.webKit(messageBody: HoloflowsRPC.Request(params: set, id: UUID().uuidString))
+        let set = WebExtension.Browser.Storage.Local.Set(extensionID: id, object: objectJSON)
+        let setScript = TestHelper.webKit(messageBody: HoloflowsRPC.Request(params: set, id: id))
         let setExpectation = TestHelper.expectEvaluateJavaScript(in: tab.webView, script: setScript, forTestCase: self) { (any, error) in
             // do nothing
         }
@@ -127,17 +133,19 @@ extension BrowserStorageLocalTests {
         consolePrint(RealmService.default.realm.configuration.fileURL)
         TestHelper.waitCallback(3.0, forTestCase: self)
 
-        XCTAssertEqual(getRealmDataStub().count, 1)
+        XCTAssertEqual(getRealmDataStub(for: id).count, 1)
     }
 
     func testRemove() {
         let tab = browser.tabs.create(options: nil)
         TestHelper.prepareTest(tab: tab, forTestCase: self)
-        addRealmDataStub()
-        XCTAssertEqual(getRealmDataStub().count, 2)
 
-        let remove = WebExtension.Browser.Storage.Local.Remove(extensionID: "HoloflowsKit-UnitTests", keys: ["kitten", "monster"])
-        let removeScript = TestHelper.webKit(messageBody: HoloflowsRPC.Request(params: remove, id: UUID().uuidString))
+        let id = UUID().uuidString
+        addRealmDataStub(for: id)
+        XCTAssertEqual(getRealmDataStub(for: id).count, 2)
+
+        let remove = WebExtension.Browser.Storage.Local.Remove(extensionID: id, keys: ["kitten", "monster"])
+        let removeScript = TestHelper.webKit(messageBody: HoloflowsRPC.Request(params: remove, id: id))
         let removeExpectation = TestHelper.expectEvaluateJavaScript(in: tab.webView, script: removeScript, forTestCase: self) { (any, error) in
             // do nothing
         }
@@ -146,23 +154,25 @@ extension BrowserStorageLocalTests {
         consolePrint(RealmService.default.realm.configuration.fileURL)
         TestHelper.waitCallback(3.0, forTestCase: self)
 
-        XCTAssertEqual(getRealmDataStub().count, 0)
+        XCTAssertEqual(getRealmDataStub(for: id).count, 0)
     }
 
     func testClear() {
         let tab = browser.tabs.create(options: nil)
         TestHelper.prepareTest(tab: tab, forTestCase: self)
-        addRealmDataStub()
-        XCTAssertEqual(getRealmDataStub().count, 2)
 
-        let clear = WebExtension.Browser.Storage.Local.Clear(extensionID: "HoloflowsKit-UnitTests")
-        let clearScript = TestHelper.webKit(messageBody: HoloflowsRPC.Request(params: clear, id: UUID().uuidString))
+        let id = UUID().uuidString
+        addRealmDataStub(for: id)
+        XCTAssertEqual(getRealmDataStub(for: id).count, 2)
+
+        let clear = WebExtension.Browser.Storage.Local.Clear(extensionID: id)
+        let clearScript = TestHelper.webKit(messageBody: HoloflowsRPC.Request(params: clear, id: id))
         let clearExpectation = TestHelper.expectEvaluateJavaScript(in: tab.webView, script: clearScript, forTestCase: self) { (any, error) in
             // do nothing
         }
         wait(for: [clearExpectation], timeout: 3.0)
 
-        XCTAssertEqual(getRealmDataStub().count, 0)
+        XCTAssertEqual(getRealmDataStub(for: id).count, 0)
     }
 
 }
@@ -170,8 +180,8 @@ extension BrowserStorageLocalTests {
 
 extension BrowserStorageLocalTests {
 
-    fileprivate func removeRealmDataStub() {
-        let realm = RealmService.default.realm
+    fileprivate func removeRealmDataStub(for id: String) {
+        let realm = RealmService(name: id).realm
         // purge database
         let entriesToRemove = realm.objects(LocalStorage.self).filter { ["kitten", "monster"].contains($0.key) }
         realm.beginWrite()
@@ -179,8 +189,8 @@ extension BrowserStorageLocalTests {
         try! realm.commitWrite()
     }
 
-    fileprivate func addRealmDataStub() {
-        let realm = RealmService.default.realm
+    fileprivate func addRealmDataStub(for id: String) {
+        let realm = RealmService(name: id).realm
         realm.beginWrite()
         let kitten: LocalStorage = {
             let entry = LocalStorage()
@@ -203,8 +213,8 @@ extension BrowserStorageLocalTests {
         try! realm.commitWrite()
     }
 
-    fileprivate func getRealmDataStub() -> [LocalStorage] {
-        let realm = RealmService.default.realm
+    fileprivate func getRealmDataStub(for id: String) -> [LocalStorage] {
+        let realm = RealmService(name: id).realm
         return realm.objects(LocalStorage.self).filter { ["kitten", "monster"].contains($0.key) }
     }
 

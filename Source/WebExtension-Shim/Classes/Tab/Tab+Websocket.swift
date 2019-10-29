@@ -9,6 +9,7 @@ import Foundation
 import ConsolePrint
 import SwiftyJSON
 
+/*
 extension Tab {
 
     public func websocketCreate(id: String, messageBody: String) {
@@ -54,7 +55,7 @@ extension Tab {
             // TODO:
             let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .failure(RPC.Error.serverError)
             HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
-            
+
         case let .failure(error):
             consolePrint(error.localizedDescription)
             let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .failure(error)
@@ -63,3 +64,4 @@ extension Tab {
     }
 
 }
+ */
