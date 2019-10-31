@@ -237,7 +237,7 @@ extension Tab: WKUIDelegate {
 
     public func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration, for navigationAction: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
         if navigationAction.targetFrame == nil, let url = navigationAction.request.url,
-        let scheme = url.scheme, (scheme.hasPrefix("http://") || scheme.hasPrefix("https://"))  {
+        let scheme = url.scheme, (scheme == "http" || scheme == "https") {
             let safariViewController = SFSafariViewController(url: url)
             UIApplication.shared.keyWindow?.rootViewController?.present(safariViewController, animated: true, completion: nil)
         }
