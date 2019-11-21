@@ -31,6 +31,9 @@ extension TabDelegate {
     public func navigationDelegate(for tab: Tab) -> WKNavigationDelegate? { return nil }
     public func customScriptMessageHandlerNames(for tab: Tab) -> [String] { return [] }
     public func tab(_ tab: Tab, userContentController: WKUserContentController, didReceive message: WKScriptMessage) { }
+    public func tab(_ tab: Tab, localStorageManagerForExtension id: String) -> LocalStorageManager {
+        return LocalStorageManager(realm: RealmService(name: id).realm)
+    }
 
     public func tab(_ tab: Tab, shouldActive: Bool) { }
     public func tab(_ tab: Tab, webViewWillRemoveFromSuperview webView: WKWebView) { }
