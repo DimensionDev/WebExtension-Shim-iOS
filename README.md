@@ -26,9 +26,16 @@ pod 'WebExtension-Shim'
 ## Documents
 [WebExtension-Shim Documents](./Documents.md)
 
-<!--## Author
+## Maintains
+```bash
+git push
 
-CMK, cirno.mainasuk@gmail.com-->
+pod trunk me
+pod lib lint --allow-warnings --no-clean --verbose --fail-fast
+pod spec lint --allow-warnings --no-clean --verbose --fail-fast
+
+pod repo push sujitech ./WebExtension-Shim.podspec --verbose --allow-warnings
+```
 
 ## License
 

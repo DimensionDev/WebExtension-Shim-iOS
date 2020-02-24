@@ -103,34 +103,9 @@
     }
 
     /**
-     * This is a light implementation of JSON RPC 2.0
-     *
-     * https://www.jsonrpc.org/specification
-     *
-     * -----------------------------------------------------------------------------
-     * Extends to the specification:
-     *
-     * Request object:
-     *      remoteStack?: string
-     *          This property will help server print the log better.
-     *
-     * Error object:
-     *      data?: { stack?: string, type?: string }
-     *          This property will help client to build a better Error object.
-     *              Supported value for "type" field (Defined in ECMAScript standard):
-     *                  Error, EvalError, RangeError, ReferenceError,
-     *                  SyntaxError, TypeError, URIError
-     *
-     * Response object:
-     *      resultIsUndefined?: boolean
-     *          This property is a hint. If the client is run in JavaScript,
-     *          it should treat "result: null" as "result: undefined"
-     * -----------------------------------------------------------------------------
-     * Implemented JSON RPC extension (internal methods):
-     * None
-     */
-    /**
      * Serialization implementation that do nothing
+     * @remarks {@link Serialization}
+     * @public
      */
     const NoSerialization = {
         async serialization(from) {
@@ -149,71 +124,25 @@
         preferLocalImplementation: false,
     });
     /**
-     * Async call between different context.
+     * Create a RPC server & client.
      *
      * @remarks
-     * Async call is a high level abstraction of MessageCenter.
+     * See {@link AsyncCallOptions}
      *
-     * # Shared code
-     *
-     * - How to stringify/parse parameters/returns should be shared, defaults to NoSerialization.
-     *
-     * - `key` should be shared.
-     *
-     * # One side
-     *
-     * - Should provide some functions then export its type (for example, `BackgroundCalls`)
-     *
-     * - `const call = AsyncCall<ForegroundCalls>(backgroundCalls)`
-     *
-     * - Then you can `call` any method on `ForegroundCalls`
-     *
-     * # Other side
-     *
-     * - Should provide some functions then export its type (for example, `ForegroundCalls`)
-     *
-     * - `const call = AsyncCall<BackgroundCalls>(foregroundCalls)`
-     *
-     * - Then you can `call` any method on `BackgroundCalls`
-     *
-     * Note: Two sides can implement the same function
-     *
-     * @example
-     * For example, here is a mono repo.
-     *
-     * Code for UI part:
-     * ```ts
-     * const UI = {
-     *      async dialog(text: string) {
-     *          alert(text)
-     *      },
-     * }
-     * export type UI = typeof UI
-     * const callsClient = AsyncCall<Server>(UI)
-     * callsClient.sendMail('hello world', 'what')
-     * ```
-     *
-     * Code for server part
-     * ```ts
-     * const Server = {
-     *      async sendMail(text: string, to: string) {
-     *          return true
-     *      }
-     * }
-     * export type Server = typeof Server
-     * const calls = AsyncCall<UI>(Server)
-     * calls.dialog('hello')
-     * ```
-     *
-     * @param implementation - Implementation of this side.
-     * @param options - Define your own serializer, MessageCenter or other options.
-     *
+     * @param thisSideImplementation - The implementation when this AsyncCall acts as a JSON RPC server.
+     * @param options - {@link AsyncCallOptions}
+     * @typeParam OtherSideImplementedFunctions - The type of the API that server expose. For any function on this interface, AsyncCall will convert it to the Promised type.
+     * @returns Same as the `OtherSideImplementedFunctions` type parameter, but every function in that interface becomes async and non-function value is removed.
+     * @public
      */
-    function AsyncCall(implementation = {}, options) {
-        const { serializer, key, strict, log, parameterStructures, preferLocalImplementation } = Object.assign(Object.assign({}, AsyncCallDefaultOptions), options);
+    function AsyncCall(thisSideImplementation = {}, options) {
+        const { serializer, key, strict, log, parameterStructures, preferLocalImplementation } = {
+            ...AsyncCallDefaultOptions,
+            ...options,
+        };
         const message = options.messageChannel;
-        const { methodNotFound: banMethodNotFound = false, noUndefined: noUndefinedKeeping = false, unknownMessage: banUnknownMessage = false, } = calcStrictOptions(strict);
-        const { beCalled: logBeCalled = true, localError: logLocalError = true, remoteError: logRemoteError = true, type: logType = 'pretty', sendLocalStack = false, } = calcLogOptions(log);
+        const { methodNotFound: banMethodNotFound = false, noUndefined: noUndefinedKeeping = false, unknownMessage: banUnknownMessage = false, } = _calcStrictOptions(strict);
+        const { beCalled: logBeCalled = true, localError: logLocalError = true, remoteError: logRemoteError = true, type: logType = 'pretty', sendLocalStack = false, } = _calcLogOptions(log);
         const console = getConsole();
         const requestContext = new Map();
         async function onRequest(data) {
@@ -223,7 +152,7 @@
                 const key = (data.method.startsWith('rpc.')
                     ? Symbol.for(data.method)
                     : data.method);
-                const executor = implementation[key];
+                const executor = thisSideImplementation[key];
                 if (!executor || typeof executor !== 'function') {
                     if (!banMethodNotFound) {
                         if (logLocalError)
@@ -268,7 +197,7 @@
                         }
                     }
                     const result = await promise;
-                    if (result === $AsyncCallIgnoreResponse)
+                    if (result === _AsyncCallIgnoreResponse)
                         return;
                     return new SuccessResponse(data.id, await promise, !!noUndefinedKeeping);
                 }
@@ -380,7 +309,7 @@
                     else if (method.startsWith('rpc.'))
                         return Promise.reject(new TypeError('[AsyncCall] You cannot call JSON RPC internal methods directly'));
                     if (preferLocalImplementation && typeof method === 'string') {
-                        const localImpl = implementation[method];
+                        const localImpl = thisSideImplementation[method];
                         if (localImpl && typeof localImpl === 'function') {
                             return new Promise((resolve, reject) => {
                                 try {
@@ -393,7 +322,7 @@
                         }
                     }
                     return new Promise((resolve, reject) => {
-                        const id = generateRandomID();
+                        const id = _generateRandomID();
                         const param0 = params[0];
                         const sendingStack = sendLocalStack ? stack : '';
                         const param = parameterStructures === 'by-name' && params.length === 1 && isObject(param0)
@@ -429,11 +358,10 @@
             return undefined;
         }
     }
-    const $AsyncCallIgnoreResponse = Symbol.for('AsyncCall: This response should be ignored.');
-    /**
-     * @internal
-     */
-    function generateRandomID() {
+    /** @internal */
+    const _AsyncCallIgnoreResponse = Symbol.for('AsyncCall: This response should be ignored.');
+    /** @internal */
+    function _generateRandomID() {
         return Math.random()
             .toString(36)
             .slice(2);
@@ -441,7 +369,7 @@
     /**
      * @internal
      */
-    function calcLogOptions(log) {
+    function _calcLogOptions(log) {
         const logAllOn = { beCalled: true, localError: true, remoteError: true, type: 'pretty' };
         const logAllOff = { beCalled: false, localError: false, remoteError: false, type: 'basic' };
         return typeof log === 'boolean' ? (log ? logAllOn : logAllOff) : log;
@@ -449,7 +377,7 @@
     /**
      * @internal
      */
-    function calcStrictOptions(strict) {
+    function _calcStrictOptions(strict) {
         const strictAllOn = { methodNotFound: true, unknownMessage: true, noUndefined: true };
         const strictAllOff = { methodNotFound: false, unknownMessage: false, noUndefined: false };
         return typeof strict === 'boolean' ? (strict ? strictAllOn : strictAllOff) : strict;
@@ -822,7 +750,7 @@
             console.debug('[WebExtension] requested to inject code', options);
             const ext = registeredWebExtension.get(extensionID);
             if (options.code)
-                ext.environment.evaluate(options.code);
+                ext.environment.evaluateInlineScript(options.code);
             else if (options.file)
                 loadContentScript(extensionID, ext.manifest, {
                     js: [options.file],
@@ -926,12 +854,7 @@
                         case 'onDOMContentLoaded':
                             ThisSideImplementation['browser.webNavigation.onDOMContentLoaded'](param);
                             break;
-                        case 'onHistoryStateUpdated':
-                            // TODO: not implemented
-                            break;
                     }
-                    break;
-                default:
                     break;
             }
         },
@@ -1088,7 +1011,9 @@
      * @param extensionID - Extension ID
      * @param manifest - Manifest of the extension
      */
-    function BrowserFactory(extensionID, manifest) {
+    function BrowserFactory(extensionID, manifest, proto) {
+        if (!extensionID)
+            throw new TypeError();
         const implementation = {
             downloads: NotImplementedProxy({
                 download: binding(extensionID, 'browser.downloads.download')({
@@ -1116,6 +1041,8 @@
                 onMessage: createEventListener(extensionID, 'browser.runtime.onMessage'),
                 sendMessage: createRuntimeSendMessage(extensionID),
                 onInstalled: createEventListener(extensionID, 'browser.runtime.onInstall'),
+                // TODO: is it?
+                id: extensionID,
             }),
             tabs: NotImplementedProxy({
                 async executeScript(tabID, details) {
@@ -1242,7 +1169,10 @@ ${(req.origins || []).join('\n')}`);
                 },
             }),
         };
-        return NotImplementedProxy(implementation, false);
+        const proxy = NotImplementedProxy(implementation, false);
+        // WebExtension polyfill (moz) will check if the proto is equal to Object.prototype
+        Object.setPrototypeOf(proxy, proto);
+        return proxy;
     }
     function Implements(implementation) {
         return implementation;
@@ -1326,7 +1256,8 @@ ${(req.origins || []).join('\n')}`);
         return url;
     }
 
-    function createFetch(extensionID, origFetch) {
+    const origFetch = window.fetch;
+    function createFetch(extensionID) {
         return new Proxy(origFetch, {
             async apply(origFetch, thisArg, [requestInfo, requestInit]) {
                 const request = new Request(requestInfo, requestInit);
@@ -1383,44 +1314,42 @@ ${(req.origins || []).join('\n')}`);
     }
 
     /**
-     * Transform any `this` to `(typeof this === "undefined" ? globalThis : this)`
+     * Transform any `this` to `(x =>
+        typeof x === 'undefined'
+            ? globalThis
+            : x && Object.getPrototypeOf(x) === null && Object.isFrozen(x)
+            ? globalThis
+            : x)(this)`
+     * The frozen check is to bypass systemjs's nullContext
      * @param context
      */
     function thisTransformation(context) {
         function visit(node) {
             if (ts.isSourceFile(node)) {
-                if (isInStrictMode(node.getChildAt(0)))
+                if (isInStrictMode(node.statements))
                     return node;
             }
             else if (ts.isFunctionDeclaration(node) || ts.isFunctionExpression(node)) {
                 if (node.body) {
-                    const syntaxList = node
-                        .getChildren()
-                        .filter(x => x.kind === ts.SyntaxKind.SyntaxList)[0];
-                    if (isInStrictMode(syntaxList))
+                    if (isInStrictMode(node.body.statements))
                         return node;
                 }
             }
             else if (node.kind === ts.SyntaxKind.ThisKeyword) {
-                return ts.createParen(ts.createConditional(ts.createBinary(ts.createTypeOf(ts.createThis()), ts.createToken(ts.SyntaxKind.EqualsEqualsEqualsToken), ts.createStringLiteral('undefined')), ts.createIdentifier('globalThis'), ts.createThis()));
+                return ts.createCall(ts.createParen(ts.createArrowFunction(void 0, void 0, [ts.createParameter(void 0, void 0, void 0, ts.createIdentifier('x'), void 0, void 0, void 0)], void 0, ts.createToken(ts.SyntaxKind.EqualsGreaterThanToken), ts.createConditional(ts.createBinary(ts.createTypeOf(ts.createIdentifier('x')), ts.createToken(ts.SyntaxKind.EqualsEqualsEqualsToken), ts.createStringLiteral('undefined')), ts.createIdentifier('globalThis'), ts.createConditional(ts.createBinary(ts.createBinary(ts.createIdentifier('x'), ts.createToken(ts.SyntaxKind.AmpersandAmpersandToken), ts.createBinary(ts.createCall(ts.createPropertyAccess(ts.createIdentifier('Object'), ts.createIdentifier('getPrototypeOf')), void 0, [ts.createIdentifier('x')]), ts.createToken(ts.SyntaxKind.EqualsEqualsEqualsToken), ts.createNull())), ts.createToken(ts.SyntaxKind.AmpersandAmpersandToken), ts.createCall(ts.createPropertyAccess(ts.createIdentifier('Object'), ts.createIdentifier('isFrozen')), void 0, [ts.createIdentifier('x')])), ts.createIdentifier('globalThis'), ts.createIdentifier('x'))))), void 0, [ts.createThis()]);
             }
             return ts.visitEachChild(node, child => visit(child), context);
         }
         return (node => {
-            try {
-                return visit(node);
-            }
-            catch (_a) {
-                return node;
-            }
+            return visit(node);
         });
     }
     function isInStrictMode(node) {
-        const first = node.getChildAt(0);
+        const first = node[0];
         if (!first)
             return false;
         if (ts.isExpressionStatement(first)) {
-            if (ts.isStringLiteral(first.expression)) {
+            if (ts.isStringLiteralLike(first.expression)) {
                 if (first.expression.text === 'use strict')
                     return true;
             }
@@ -1428,16 +1357,93 @@ ${(req.origins || []).join('\n')}`);
         return false;
     }
 
-    function transformAST(src) {
+    function systemjsNameNoLeakTransformer(context) {
+        let touched = false;
+        let systemJSCall;
+        function visit(node) {
+            if (touched)
+                return node;
+            if (ts.isSourceFile(node)) {
+                systemJSCall = node.statements.map(getSystemJSRegisterCallArguments).filter(x => x)[0];
+                if (!systemJSCall)
+                    throw new TypeError('Invalid transform');
+                return ts.updateSourceFileNode(node, [createFunction(node.statements.map(visit))]);
+            }
+            else if (node === systemJSCall && ts.isCallExpression(node)) {
+                touched = true;
+                return ts.updateCall(node, ts.createIdentifier('arguments[0].register'), void 0, node.arguments);
+            }
+            return ts.visitEachChild(node, child => visit(child), context);
+        }
+        return (node => {
+            const r = visit(node);
+            if (!touched)
+                throw new TypeError('Invalid transform');
+            return r;
+        });
+    }
+    /**
+     * Return `(function () { [statements] })`
+     */
+    function createFunction(statements) {
+        return ts.createExpressionStatement(ts.createParen(ts.createFunctionExpression(void 0, void 0, void 0, void 0, void 0, void 0, ts.createBlock(statements))));
+    }
+    function getSystemJSRegisterCallArguments(x) {
+        if (!ts.isExpressionStatement(x))
+            return;
+        const expr = x.expression;
+        if (!ts.isCallExpression(expr))
+            return;
+        const callee = expr.expression;
+        if (!ts.isPropertyAccessExpression(callee))
+            return;
+        const { expression: left, name: right } = callee;
+        if (!ts.isIdentifier(left) || !ts.isIdentifier(right))
+            return;
+        if (left.text !== 'System' || right.text !== 'register')
+            return;
+        return expr;
+    }
+
+    const scriptCache = new Map();
+    const moduleCache = new Map();
+    /**
+     * For scripts, we treat it as a module with no static import/export.
+     */
+    function transformAST(src, kind, path) {
+        const cache = kind === 'module' ? moduleCache : scriptCache;
+        if (cache.has(src))
+            return cache.get(src);
+        // TODO: throw for static import/export
+        const scriptBefore = undefined;
+        const scriptAfter = [thisTransformation, systemjsNameNoLeakTransformer];
+        const moduleBefore = undefined;
+        const moduleAfter = [systemjsNameNoLeakTransformer];
+        function getSourcePath() {
+            const _ = path.split('/');
+            const filename = _.pop();
+            const sourceRoot = _.join('/');
+            return { fileName: filename, sourceRoot };
+        }
+        const { fileName, sourceRoot } = getSourcePath();
         const out = ts.transpileModule(src, {
             transformers: {
-                after: [thisTransformation],
+                before: kind === 'script' ? scriptBefore : moduleBefore,
+                after: kind === 'script' ? scriptAfter : moduleAfter,
             },
             reportDiagnostics: true,
             compilerOptions: {
-                target: ts.ScriptTarget.ES2017,
+                // ? we're assuming the developer has ran the transformer so we are not going to run any downgrade for them
+                target: ts.ScriptTarget.ESNext,
+                // ? Also use System in script type therefore the dynamic import will work
+                module: ts.ModuleKind.System,
+                // ? A comment in React dev will make a false positive on realms checker
                 removeComments: true,
+                inlineSourceMap: true,
+                inlineSources: true,
+                sourceRoot,
             },
+            fileName,
         });
         const error = [];
         for (const err of out.diagnostics || []) {
@@ -1466,24 +1472,629 @@ ${(req.origins || []).join('\n')}`);
         }
         if (error[0])
             throw error[0];
+        cache.set(src, out.outputText);
         return out.outputText;
     }
 
-    /**
-     * This file partly implements XRayVision in Firefox's WebExtension standard
-     * by create a two-way JS sandbox but shared DOM environment.
-     *
-     * class WebExtensionContentScriptEnvironment will return a new JS environment
-     * that has a "browser" variable inside of it and a clone of the current DOM environment
-     * to prevent the main thread hack on prototype to access the content of ContentScripts.
-     *
-     * ## Checklist:
-     * - [o] ContentScript cannot access main thread
-     * - [?] Main thread cannot access ContentScript
-     * - [o] ContentScript can access main thread's DOM
-     * - [ ] ContentScript modification on DOM prototype is not discoverable by main thread
-     * - [ ] Main thread modification on DOM prototype is not discoverable by ContentScript
-     */
+    var commonjsGlobal = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
+
+    function unwrapExports (x) {
+    	return x && x.__esModule && Object.prototype.hasOwnProperty.call(x, 'default') ? x['default'] : x;
+    }
+
+    function createCommonjsModule(fn, module) {
+    	return module = { exports: {} }, fn(module, module.exports), module.exports;
+    }
+
+    var s = createCommonjsModule(function (module) {
+    /*
+    * SJS 6.2.3
+    * Minimal SystemJS Build
+    */
+    (function () {
+      const hasSelf = typeof self !== 'undefined';
+
+      const hasDocument = typeof document !== 'undefined';
+
+      const envGlobal = hasSelf ? self : commonjsGlobal;
+
+      let baseUrl;
+
+      if (hasDocument) {
+        const baseEl = document.querySelector('base[href]');
+        if (baseEl)
+          baseUrl = baseEl.href;
+      }
+
+      if (!baseUrl && typeof location !== 'undefined') {
+        baseUrl = location.href.split('#')[0].split('?')[0];
+        const lastSepIndex = baseUrl.lastIndexOf('/');
+        if (lastSepIndex !== -1)
+          baseUrl = baseUrl.slice(0, lastSepIndex + 1);
+      }
+
+      const backslashRegEx = /\\/g;
+      function resolveIfNotPlainOrUrl (relUrl, parentUrl) {
+        if (relUrl.indexOf('\\') !== -1)
+          relUrl = relUrl.replace(backslashRegEx, '/');
+        // protocol-relative
+        if (relUrl[0] === '/' && relUrl[1] === '/') {
+          return parentUrl.slice(0, parentUrl.indexOf(':') + 1) + relUrl;
+        }
+        // relative-url
+        else if (relUrl[0] === '.' && (relUrl[1] === '/' || relUrl[1] === '.' && (relUrl[2] === '/' || relUrl.length === 2 && (relUrl += '/')) ||
+            relUrl.length === 1  && (relUrl += '/')) ||
+            relUrl[0] === '/') {
+          const parentProtocol = parentUrl.slice(0, parentUrl.indexOf(':') + 1);
+          // Disabled, but these cases will give inconsistent results for deep backtracking
+          //if (parentUrl[parentProtocol.length] !== '/')
+          //  throw Error('Cannot resolve');
+          // read pathname from parent URL
+          // pathname taken to be part after leading "/"
+          let pathname;
+          if (parentUrl[parentProtocol.length + 1] === '/') {
+            // resolving to a :// so we need to read out the auth and host
+            if (parentProtocol !== 'file:') {
+              pathname = parentUrl.slice(parentProtocol.length + 2);
+              pathname = pathname.slice(pathname.indexOf('/') + 1);
+            }
+            else {
+              pathname = parentUrl.slice(8);
+            }
+          }
+          else {
+            // resolving to :/ so pathname is the /... part
+            pathname = parentUrl.slice(parentProtocol.length + (parentUrl[parentProtocol.length] === '/'));
+          }
+
+          if (relUrl[0] === '/')
+            return parentUrl.slice(0, parentUrl.length - pathname.length - 1) + relUrl;
+
+          // join together and split for removal of .. and . segments
+          // looping the string instead of anything fancy for perf reasons
+          // '../../../../../z' resolved to 'x/y' is just 'z'
+          const segmented = pathname.slice(0, pathname.lastIndexOf('/') + 1) + relUrl;
+
+          const output = [];
+          let segmentIndex = -1;
+          for (let i = 0; i < segmented.length; i++) {
+            // busy reading a segment - only terminate on '/'
+            if (segmentIndex !== -1) {
+              if (segmented[i] === '/') {
+                output.push(segmented.slice(segmentIndex, i + 1));
+                segmentIndex = -1;
+              }
+            }
+
+            // new segment - check if it is relative
+            else if (segmented[i] === '.') {
+              // ../ segment
+              if (segmented[i + 1] === '.' && (segmented[i + 2] === '/' || i + 2 === segmented.length)) {
+                output.pop();
+                i += 2;
+              }
+              // ./ segment
+              else if (segmented[i + 1] === '/' || i + 1 === segmented.length) {
+                i += 1;
+              }
+              else {
+                // the start of a new segment as below
+                segmentIndex = i;
+              }
+            }
+            // it is the start of a new segment
+            else {
+              segmentIndex = i;
+            }
+          }
+          // finish reading out the last segment
+          if (segmentIndex !== -1)
+            output.push(segmented.slice(segmentIndex));
+          return parentUrl.slice(0, parentUrl.length - pathname.length) + output.join('');
+        }
+      }
+
+      /*
+       * Import maps implementation
+       *
+       * To make lookups fast we pre-resolve the entire import map
+       * and then match based on backtracked hash lookups
+       *
+       */
+
+      function resolveUrl (relUrl, parentUrl) {
+        return resolveIfNotPlainOrUrl(relUrl, parentUrl) || (relUrl.indexOf(':') !== -1 ? relUrl : resolveIfNotPlainOrUrl('./' + relUrl, parentUrl));
+      }
+
+      /*
+       * SystemJS Core
+       * 
+       * Provides
+       * - System.import
+       * - System.register support for
+       *     live bindings, function hoisting through circular references,
+       *     reexports, dynamic import, import.meta.url, top-level await
+       * - System.getRegister to get the registration
+       * - Symbol.toStringTag support in Module objects
+       * - Hookable System.createContext to customize import.meta
+       * - System.onload(err, id, deps) handler for tracing / hot-reloading
+       * 
+       * Core comes with no System.prototype.resolve or
+       * System.prototype.instantiate implementations
+       */
+
+      const hasSymbol = typeof Symbol !== 'undefined';
+      const toStringTag = hasSymbol && Symbol.toStringTag;
+      const REGISTRY = hasSymbol ? Symbol() : '@';
+
+      function SystemJS () {
+        this[REGISTRY] = {};
+      }
+
+      const systemJSPrototype = SystemJS.prototype;
+
+      systemJSPrototype.prepareImport = function () {};
+
+      systemJSPrototype.import = function (id, parentUrl) {
+        const loader = this;
+        return Promise.resolve(loader.prepareImport())
+        .then(function() {
+          return loader.resolve(id, parentUrl);
+        })
+        .then(function (id) {
+          const load = getOrCreateLoad(loader, id);
+          return load.C || topLevelLoad(loader, load);
+        });
+      };
+
+      // Hookable createContext function -> allowing eg custom import meta
+      systemJSPrototype.createContext = function (parentId) {
+        return {
+          url: parentId
+        };
+      };
+
+      let lastRegister;
+      systemJSPrototype.register = function (deps, declare) {
+        lastRegister = [deps, declare];
+      };
+
+      /*
+       * getRegister provides the last anonymous System.register call
+       */
+      systemJSPrototype.getRegister = function () {
+        const _lastRegister = lastRegister;
+        lastRegister = undefined;
+        return _lastRegister;
+      };
+
+      function getOrCreateLoad (loader, id, firstParentUrl) {
+        let load = loader[REGISTRY][id];
+        if (load)
+          return load;
+
+        const importerSetters = [];
+        const ns = Object.create(null);
+        if (toStringTag)
+          Object.defineProperty(ns, toStringTag, { value: 'Module' });
+        
+        let instantiatePromise = Promise.resolve()
+        .then(function () {
+          return loader.instantiate(id, firstParentUrl);
+        })
+        .then(function (registration) {
+          if (!registration)
+            throw Error('Module ' + id + ' did not instantiate');
+          function _export (name, value) {
+            // note if we have hoisted exports (including reexports)
+            load.h = true;
+            let changed = false;
+            if (typeof name !== 'object') {
+              if (!(name in ns) || ns[name] !== value) {
+                ns[name] = value;
+                changed = true;
+              }
+            }
+            else {
+              for (let p in name) {
+                let value = name[p];
+                if (!(p in ns) || ns[p] !== value) {
+                  ns[p] = value;
+                  changed = true;
+                }
+              }
+
+              if (name.__esModule) {
+                ns.__esModule = name.__esModule;
+              }
+            }
+            if (changed)
+              for (let i = 0; i < importerSetters.length; i++)
+                importerSetters[i](ns);
+            return value;
+          }
+          const declared = registration[1](_export, registration[1].length === 2 ? {
+            import: function (importId) {
+              return loader.import(importId, id);
+            },
+            meta: loader.createContext(id)
+          } : undefined);
+          load.e = declared.execute || function () {};
+          return [registration[0], declared.setters || []];
+        });
+
+        const linkPromise = instantiatePromise
+        .then(function (instantiation) {
+          return Promise.all(instantiation[0].map(function (dep, i) {
+            const setter = instantiation[1][i];
+            return Promise.resolve(loader.resolve(dep, id))
+            .then(function (depId) {
+              const depLoad = getOrCreateLoad(loader, depId, id);
+              // depLoad.I may be undefined for already-evaluated
+              return Promise.resolve(depLoad.I)
+              .then(function () {
+                if (setter) {
+                  depLoad.i.push(setter);
+                  // only run early setters when there are hoisted exports of that module
+                  // the timing works here as pending hoisted export calls will trigger through importerSetters
+                  if (depLoad.h || !depLoad.I)
+                    setter(depLoad.n);
+                }
+                return depLoad;
+              });
+            })
+          }))
+          .then(function (depLoads) {
+            load.d = depLoads;
+          });
+        });
+
+        linkPromise.catch(function (err) {
+          load.e = null;
+          load.er = err;
+        });
+
+        // Capital letter = a promise function
+        return load = loader[REGISTRY][id] = {
+          id: id,
+          // importerSetters, the setters functions registered to this dependency
+          // we retain this to add more later
+          i: importerSetters,
+          // module namespace object
+          n: ns,
+
+          // instantiate
+          I: instantiatePromise,
+          // link
+          L: linkPromise,
+          // whether it has hoisted exports
+          h: false,
+
+          // On instantiate completion we have populated:
+          // dependency load records
+          d: undefined,
+          // execution function
+          // set to NULL immediately after execution (or on any failure) to indicate execution has happened
+          // in such a case, C should be used, and E, I, L will be emptied
+          e: undefined,
+
+          // On execution we have populated:
+          // the execution error if any
+          er: undefined,
+          // in the case of TLA, the execution promise
+          E: undefined,
+
+          // On execution, L, I, E cleared
+
+          // Promise for top-level completion
+          C: undefined
+        };
+      }
+
+      function instantiateAll (loader, load, loaded) {
+        if (!loaded[load.id]) {
+          loaded[load.id] = true;
+          // load.L may be undefined for already-instantiated
+          return Promise.resolve(load.L)
+          .then(function () {
+            return Promise.all(load.d.map(function (dep) {
+              return instantiateAll(loader, dep, loaded);
+            }));
+          })
+        }
+      }
+
+      function topLevelLoad (loader, load) {
+        return load.C = instantiateAll(loader, load, {})
+        .then(function () {
+          return postOrderExec(loader, load, {});
+        })
+        .then(function () {
+          return load.n;
+        });
+      }
+
+      // the closest we can get to call(undefined)
+      const nullContext = Object.freeze(Object.create(null));
+
+      // returns a promise if and only if a top-level await subgraph
+      // throws on sync errors
+      function postOrderExec (loader, load, seen) {
+        if (seen[load.id])
+          return;
+        seen[load.id] = true;
+
+        if (!load.e) {
+          if (load.er)
+            throw load.er;
+          if (load.E)
+            return load.E;
+          return;
+        }
+
+        // deps execute first, unless circular
+        let depLoadPromises;
+        load.d.forEach(function (depLoad) {
+          {
+            const depLoadPromise = postOrderExec(loader, depLoad, seen);
+            if (depLoadPromise)
+              (depLoadPromises = depLoadPromises || []).push(depLoadPromise);
+          }
+        });
+        if (depLoadPromises)
+          return Promise.all(depLoadPromises).then(doExec);
+
+        return doExec();
+
+        function doExec () {
+          try {
+            let execPromise = load.e.call(nullContext);
+            if (execPromise) {
+              execPromise = execPromise.then(function () {
+                  load.C = load.n;
+                  load.E = null;
+                });
+              return load.E = load.E || execPromise;
+            }
+            // (should be a promise, but a minify optimization to leave out Promise.resolve)
+            load.C = load.n;
+          }
+          catch (err) {
+            load.er = err;
+            throw err;
+          }
+          finally {
+            load.L = load.I = undefined;
+            load.e = null;
+          }
+        }
+      }
+
+      envGlobal.System = new SystemJS();
+
+      /*
+       * Supports loading System.register via script tag injection
+       */
+
+      const systemRegister = systemJSPrototype.register;
+      systemJSPrototype.register = function (deps, declare) {
+        systemRegister.call(this, deps, declare);
+      };
+
+      systemJSPrototype.createScript = function (url) {
+        const script = document.createElement('script');
+        script.charset = 'utf-8';
+        script.async = true;
+        script.crossOrigin = 'anonymous';
+        script.src = url;
+        return script;
+      };
+
+      let lastWindowErrorUrl, lastWindowError;
+      if (hasDocument)
+        window.addEventListener('error', function (evt) {
+          lastWindowErrorUrl = evt.filename;
+          lastWindowError = evt.error;
+        });
+
+      systemJSPrototype.instantiate = function (url, firstParentUrl) {
+        const loader = this;
+        return new Promise(function (resolve, reject) {
+          const script = systemJSPrototype.createScript(url);
+          script.addEventListener('error', function () {
+            reject(Error('Error loading ' + url + (firstParentUrl ? ' from ' + firstParentUrl : '')));
+          });
+          script.addEventListener('load', function () {
+            document.head.removeChild(script);
+            // Note that if an error occurs that isn't caught by this if statement,
+            // that getRegister will return null and a "did not instantiate" error will be thrown.
+            if (lastWindowErrorUrl === url) {
+              reject(lastWindowError);
+            }
+            else {
+              resolve(loader.getRegister());
+            }
+          });
+          document.head.appendChild(script);
+        });
+      };
+
+      if (hasDocument) {
+        window.addEventListener('DOMContentLoaded', loadScriptModules);
+        loadScriptModules();
+      }
+
+      function loadScriptModules() {
+        Array.prototype.forEach.call(
+          document.querySelectorAll('script[type=systemjs-module]'), function (script) {
+            if (script.src) {
+              System.import(script.src.slice(0, 7) === 'import:' ? script.src.slice(7) : resolveUrl(script.src, baseUrl));
+            }
+          });
+      }
+
+      /*
+       * Supports loading System.register in workers
+       */
+
+      if (hasSelf && typeof importScripts === 'function')
+        systemJSPrototype.instantiate = function (url) {
+          const loader = this;
+          return new Promise(function (resolve, reject) {
+            try {
+              importScripts(url);
+            }
+            catch (e) {
+              reject(e);
+            }
+            resolve(loader.getRegister());
+          });
+        };
+
+      systemJSPrototype.resolve = function (id, parentUrl) {
+        const resolved = resolveIfNotPlainOrUrl(id, parentUrl || baseUrl);
+        if (!resolved) {
+          if (id.indexOf(':') !== -1)
+            return Promise.resolve(id);
+          throw Error('Cannot resolve "' + id + (parentUrl ? '" from ' + parentUrl : '"'));
+        }
+        return Promise.resolve(resolved);
+      };
+
+    }());
+    });
+
+    unwrapExports(s);
+
+    const SystemJSConstructor = System.constructor;
+    Reflect.deleteProperty(globalThis, 'System');
+    class SystemJSRealm extends SystemJSConstructor {
+        constructor() {
+            super();
+            this[Symbol.toStringTag] = 'Realm';
+            this.temporaryModule = new Map();
+            this.lastModuleRegister = null;
+            //#endregion
+            //#region Realm
+            this.esRealm = Realm.makeRootRealm({
+                sloppyGlobals: true,
+                transforms: [
+                    {
+                        rewrite: ctx => {
+                            if (!this.inited)
+                                return ctx;
+                            ctx.src = transformAST(ctx.src, this.isNextModule ? 'module' : 'script', this.sourceSrc.get(ctx.src) || this.getEvalFileName());
+                            this.isNextModule = false;
+                            return ctx;
+                        },
+                    },
+                ],
+            });
+            this.id = 0;
+            /**
+             * Realms have it's own code to execute.
+             */
+            this.inited = false;
+            this.isNextModule = false;
+            this.sourceSrc = new Map();
+            this.inited = true;
+        }
+        //#region System
+        /** Create import.meta */
+        createContext(url) {
+            if (url.startsWith('script:'))
+                return this.global.eval('{ url: undefined }');
+            return this.global.JSON.parse(JSON.stringify({ url }));
+        }
+        createScript() {
+            throw new Error('Invalid call');
+        }
+        async prepareImport() { }
+        resolve(url, parentUrl) {
+            if (this.temporaryModule.has(url))
+                return url;
+            if (this.temporaryModule.has(parentUrl))
+                parentUrl = this.global.location.href;
+            return new URL(url, parentUrl).toJSON();
+        }
+        async instantiate(url, parentUrl) {
+            if (this.temporaryModule.has(url)) {
+                this.runExecutor(this.temporaryModule.get(url));
+                return this.getRegister();
+            }
+            // actually it will return a Promise
+            const resolved = await this.resolve(url, parentUrl);
+            const req = await this.fetch(resolved);
+            if (!req.ok)
+                throw new TypeError(`Failed to fetch dynamically imported module: ` + url);
+            const code = await req.text();
+            this.sourceSrc.set(code, resolved);
+            this.runExecutor(code);
+            this.sourceSrc.delete(url);
+            // ? The executor should call the register exactly once.
+            return this.getRegister();
+        }
+        getRegister() {
+            return this.lastModuleRegister;
+        }
+        register(deps, declare, _) {
+            if (!Array.isArray(deps))
+                throw new TypeError();
+            if (typeof declare !== 'function')
+                throw new TypeError();
+            this.lastModuleRegister = [deps, declare];
+        }
+        getEvalFileName() {
+            return `debugger://${this.global.browser.runtime.id}/VM${++this.id}`;
+        }
+        get global() {
+            return this.esRealm.global;
+        }
+        async evaluateScript(path, parentUrl) {
+            this.isNextModule = false;
+            await this.import(path, parentUrl);
+        }
+        async evaluateModule(path, parentUrl) {
+            this.isNextModule = true;
+            return this.import(path, parentUrl);
+        }
+        async evaluateInlineModule(sourceText) {
+            this.isNextModule = true;
+            return this.evaluateInline(sourceText);
+        }
+        async evaluateInlineScript(sourceText) {
+            this.isNextModule = false;
+            await this.evaluateInline(sourceText);
+        }
+        async evaluateInline(sourceText) {
+            var _a, _b;
+            const key = `script:` + Math.random().toString();
+            this.temporaryModule.set(key, sourceText);
+            try {
+                return await this.import(key);
+            }
+            finally {
+                this.temporaryModule.delete(key);
+                (_b = (_a = this).delete) === null || _b === void 0 ? void 0 : _b.call(_a, key);
+            }
+        }
+        runExecutor(sourceText) {
+            const executor = this.esRealm.evaluate(sourceText);
+            return executor(this);
+        }
+    }
+
+    function enhancedWorker(extensionID, originalWorker = window.Worker) {
+        if (!isDebug)
+            return originalWorker;
+        return new Proxy(originalWorker, {
+            construct(target, args, newTarget) {
+                args[0] = debugModeURLRewrite(extensionID, args[0]);
+                return Reflect.construct(target, args, newTarget);
+            },
+        });
+    }
+
     /**
      * Recursively get the prototype chain of an Object
      * @param o Object
@@ -1529,7 +2140,7 @@ ${(req.origins || []).join('\n')}`);
                 enumerable: true,
                 value: sandboxRoot,
             });
-            Object.assign(sandboxRoot, { globalThis: sandboxRoot });
+            Object.assign(sandboxRoot, { globalThis: sandboxRoot, self: sandboxRoot });
             const proto = getPrototypeChain(realWindow)
                 .map(Object.getOwnPropertyDescriptors)
                 .reduceRight((previous, current) => {
@@ -1546,40 +2157,34 @@ ${(req.origins || []).join('\n')}`);
     /**
      * Execution environment of ContentScript
      */
-    class WebExtensionContentScriptEnvironment {
+    class WebExtensionContentScriptEnvironment extends SystemJSRealm {
         /**
          * Create a new running extension for an content script.
          * @param extensionID The extension ID
          * @param manifest The manifest of the extension
          */
-        constructor(extensionID, manifest) {
+        constructor(extensionID, manifest, locationProxy) {
+            super();
             this.extensionID = extensionID;
             this.manifest = manifest;
-            this.realm = Realm.makeRootRealm({
-                sloppyGlobals: true,
-                transforms: [
-                    {
-                        rewrite: ctx => {
-                            ctx.src = transformAST(ctx.src);
-                            return ctx;
-                        },
-                    },
-                ],
-            });
-            this[Symbol.toStringTag] = 'Realm';
-            console.log('[WebExtension] Content Script JS environment created.');
+            this.locationProxy = locationProxy;
+            this.fetch = createFetch(this.extensionID);
+            console.log('[WebExtension] Hosted JS environment created.');
             PrepareWebAPIs(this.global);
-            const browser = BrowserFactory(this.extensionID, this.manifest);
+            const browser = BrowserFactory(this.extensionID, this.manifest, this.global.Object.prototype);
             Object.defineProperty(this.global, 'browser', {
                 // ? Mozilla's polyfill may overwrite this. Figure this out.
                 get: () => browser,
-                set: x => false,
+                set: () => false,
             });
-            this.global.browser = BrowserFactory(this.extensionID, this.manifest);
-            this.global.URL = enhanceURL(this.global.URL, this.extensionID);
-            this.global.fetch = createFetch(this.extensionID, window.fetch);
-            this.global.open = openEnhanced(this.extensionID);
-            this.global.close = closeEnhanced(this.extensionID);
+            this.global.browser = BrowserFactory(extensionID, manifest, this.global.Object.prototype);
+            this.global.URL = enhanceURL(this.global.URL, extensionID);
+            this.global.fetch = createFetch(extensionID);
+            this.global.open = openEnhanced(extensionID);
+            this.global.close = closeEnhanced(extensionID);
+            this.global.Worker = enhancedWorker(extensionID);
+            if (locationProxy)
+                this.global.location = locationProxy;
             function globalThisFix() {
                 var originalFunction = Function;
                 function newFunction(...args) {
@@ -1593,17 +2198,7 @@ ${(req.origins || []).join('\n')}`);
                 // @ts-ignore
                 globalThis.Function = newFunction;
             }
-            this.evaluate(globalThisFix.toString() + '\n' + globalThisFix.name + '()');
-        }
-        get global() {
-            return this.realm.global;
-        }
-        /**
-         * Evaluate a string in the content script environment
-         * @param sourceText Source text
-         */
-        evaluate(sourceText) {
-            return this.realm.evaluate(sourceText);
+            this.esRealm.evaluate(globalThisFix.toString() + '\n' + globalThisFix.name + '()');
         }
     }
     /**
@@ -1689,27 +2284,16 @@ ${(req.origins || []).join('\n')}`);
             set(path) {
                 console.debug('script src=', path);
                 const preloaded = getResource(extensionID, preloadedResources, path);
+                const kind = this.type === 'module' ? 'module' : 'script';
                 if (preloaded)
-                    RunInProtocolScope(extensionID, manifest, preloaded, currentPage);
+                    RunInProtocolScope(extensionID, manifest, { source: preloaded, path }, currentPage, kind);
                 else
                     getResourceAsync(extensionID, preloadedResources, path)
                         .then(code => code || Promise.reject('Loading resource failed'))
-                        .then(code => RunInProtocolScope(extensionID, manifest, code, currentPage))
+                        .then(source => RunInProtocolScope(extensionID, manifest, { source, path }, currentPage, kind))
                         .catch(e => console.error(`Failed when loading resource`, path, e));
                 this.dataset.src = path;
                 return true;
-            },
-        });
-    }
-
-    function rewriteWorker(extensionID) {
-        if (!isDebug)
-            return;
-        const originalWorker = window.Worker;
-        window.Worker = new Proxy(originalWorker, {
-            construct(target, args, newTarget) {
-                args[0] = debugModeURLRewrite(extensionID, args[0]);
-                return Reflect.construct(target, args, newTarget);
             },
         });
     }
@@ -1783,6 +2367,7 @@ ${(req.origins || []).join('\n')}`);
                 case Environment.debugModeManagedPage:
                     if (!isDebug)
                         throw new TypeError('Invalid state');
+                    createContentScriptEnvironment(manifest, extensionID, preloadedResources, debugModeURL);
                     LoadContentScript(manifest, extensionID, preloadedResources, debugModeURL);
                     break;
                 case Environment.protocolPage:
@@ -1805,6 +2390,8 @@ ${(req.origins || []).join('\n')}`);
             }
         }
         catch (e) {
+            if (isDebug)
+                throw e;
             console.error(e);
         }
         if (environment === Environment.backgroundScript) {
@@ -1890,7 +2477,7 @@ It's running in the background page mode`;
                 const preloaded = await getResourceAsync(extensionID, preloadedResources, path);
                 if (preloaded) {
                     // ? Run it in global scope.
-                    RunInProtocolScope(extensionID, manifest, preloaded, currentPage);
+                    await RunInProtocolScope(extensionID, manifest, { source: preloaded, path }, currentPage, 'script');
                 }
                 else {
                     console.error(`[WebExtension] Background scripts not found for ${manifest.name}: ${path}`);
@@ -1907,7 +2494,11 @@ It's running in the background page mode`;
         const scripts = await Promise.all(Array.from(dom.querySelectorAll('script')).map(async (script) => {
             const path = new URL(script.src).pathname;
             script.remove();
-            return [path, await getResourceAsync(extensionID, preloadedResources, path)];
+            return [
+                path,
+                await getResourceAsync(extensionID, preloadedResources, path),
+                script.type === 'module' ? 'module' : 'script',
+            ];
         }));
         for (const c of document.head.children)
             c.remove();
@@ -1917,89 +2508,68 @@ It's running in the background page mode`;
             c.remove();
         for (const c of dom.body.children)
             document.body.appendChild(c);
-        for (const [path, script] of scripts) {
+        for (const [path, script, kind] of scripts) {
             if (script)
-                RunInProtocolScope(extensionID, manifest, script, new URL(page, 'holoflows-extension://' + extensionID + '/').toJSON());
+                await RunInProtocolScope(extensionID, manifest, { source: script, path }, new URL(page, 'holoflows-extension://' + extensionID + '/').toJSON(), kind);
             else
                 console.error('Resource', path, 'not found');
         }
     }
     function prepareExtensionProtocolEnvironment(extensionID, manifest) {
-        rewriteWorker(extensionID);
         Object.assign(window, {
-            browser: BrowserFactory(extensionID, manifest),
-            fetch: createFetch(extensionID, window.fetch),
+            browser: BrowserFactory(extensionID, manifest, Object.prototype),
+            fetch: createFetch(extensionID),
             URL: enhanceURL(URL, extensionID),
             open: openEnhanced(extensionID),
             close: closeEnhanced(extensionID),
+            Worker: enhancedWorker(extensionID),
         });
     }
-    function RunInProtocolScope(extensionID, manifest, source, currentPage) {
+    /**
+     * Run code in holoflows-extension://extensionID/path
+     * @param extensionID Extension ID
+     * @param manifest Manifest
+     * @param code Source code
+     * @param currentPage Current page URL
+     */
+    async function RunInProtocolScope(extensionID, manifest, code, currentPage, kind) {
+        const esModule = kind === 'module';
         if (location.protocol === 'holoflows-extension:') {
-            const likeESModule = source.match('import') || source.match('export ');
             const script = document.createElement('script');
-            script.type = likeESModule ? 'module' : 'text/javascript';
-            script.innerHTML = source;
+            script.type = esModule ? 'module' : 'text/javascript';
+            if (code.path)
+                script.src = code.path;
+            else
+                script.innerHTML = code.source;
             script.defer = true;
             document.body.appendChild(script);
             return;
         }
         if (!isDebug)
             throw new TypeError('Run in the wrong scope');
-        if (source.indexOf('browser')) {
-            const indirectEval = Math.random() > -1 ? eval : () => { };
-            const f = indirectEval(`(function(_){with(_){${source}}})`);
-            const _ = (x) => (target, ...any) => Reflect.apply(Reflect[x], null, [window, ...any]);
-            const safeGetOwnPropertyDescriptor = (obj, key) => {
-                const orig = Reflect.getOwnPropertyDescriptor(obj, key);
-                if (!orig)
-                    return undefined;
-                return Object.assign(Object.assign({}, orig), { configurable: true });
-            };
-            const { env, src } = parseDebugModeURL(extensionID, manifest);
-            const locationProxy = createLocationProxy(extensionID, manifest, currentPage || src);
-            const globalProxyTrap = new Proxy({
-                get(target, key) {
-                    if (key === 'window')
-                        return globalProxy;
-                    if (key === 'globalThis')
-                        return globalProxy;
-                    if (key === 'location')
-                        return locationProxy;
-                    const obj = window[key];
-                    if (typeof obj === 'function') {
-                        const desc2 = Object.getOwnPropertyDescriptors(obj);
-                        function f(...args) {
-                            if (new.target)
-                                return Reflect.construct(obj, args, new.target);
-                            return Reflect.apply(obj, window, args);
-                        }
-                        Object.defineProperties(f, desc2);
-                        Object.setPrototypeOf(f, Object.getPrototypeOf(obj));
-                        return f;
-                    }
-                    return obj;
-                },
-                getOwnPropertyDescriptor: safeGetOwnPropertyDescriptor,
-            }, {
-                get(target, key) {
-                    if (target[key])
-                        return target[key];
-                    return _(key);
-                },
-            });
-            const globalProxy = new Proxy({}, globalProxyTrap);
-            f(globalProxy);
+        const { src } = parseDebugModeURL(extensionID, manifest);
+        const locationProxy = createLocationProxy(extensionID, manifest, currentPage || src);
+        // ? Transform ESM into SystemJS to run in debug mode.
+        const _ = Reflect.get(globalThis, 'env') ||
+            (console.log('Debug by globalThis.env'),
+                new WebExtensionContentScriptEnvironment(extensionID, manifest, locationProxy));
+        Object.assign(globalThis, { env: _ });
+        if (code.path) {
+            if (esModule)
+                await _.evaluateModule(code.path, currentPage);
+            else
+                await _.evaluateScript(code.path, currentPage);
         }
         else {
-            eval(source);
+            if (esModule)
+                await _.evaluateInlineModule(code.source);
+            else
+                await _.evaluateInlineScript(code.source);
         }
     }
     function createContentScriptEnvironment(manifest, extensionID, preloadedResources, debugModePretendedURL) {
         if (!registeredWebExtension.has(extensionID)) {
-            const environment = new WebExtensionContentScriptEnvironment(extensionID, manifest);
-            if (debugModePretendedURL)
-                environment.global.location = createLocationProxy(extensionID, manifest, debugModePretendedURL);
+            const environment = new WebExtensionContentScriptEnvironment(extensionID, manifest, debugModePretendedURL ? createLocationProxy(extensionID, manifest, debugModePretendedURL) : undefined);
             const ext = {
                 manifest,
                 environment,
@@ -2047,7 +2617,7 @@ document.write(html);">Remove script tags and go</button>
         for (const path of content.js || []) {
             const preloaded = await getResourceAsync(extensionID, preloadedResources, path);
             if (preloaded) {
-                environment.evaluate(preloaded);
+                await environment.evaluateInlineScript(preloaded);
             }
             else {
                 console.error(`[WebExtension] Content scripts not found for ${manifest.name}: ${path}`);
@@ -2090,7 +2660,7 @@ document.write(html);">Remove script tags and go</button>
             this.broadcast.postMessage(data);
         }
     }
-    const origFetch = fetch;
+    const origFetch$1 = fetch;
     if (isDebug) {
         const mockHost = AsyncCall({
             onMessage: ThisSideImplementation.onMessage,
@@ -2103,6 +2673,9 @@ document.write(html);">Remove script tags and go</button>
         const myTabID = Math.random();
         setTimeout(() => {
             const obj = parseDebugModeURL('', {});
+            // webNavigation won't sent holoflows-extension pages.
+            if (obj.src.startsWith('holoflows-'))
+                return;
             mockHost.onCommitted({ tabId: myTabID, url: obj.src });
         }, 2000);
         const host = {
@@ -2139,7 +2712,7 @@ document.write(html);">Remove script tags and go</button>
             'browser.tabs.remove': log(void 0),
             'browser.tabs.update': log({}),
             async fetch(extensionID, r) {
-                const h = await origFetch(debugModeURLRewrite(extensionID, r.url)).then(x => x.text());
+                const h = await origFetch$1(debugModeURLRewrite(extensionID, r.url)).then(x => x.text());
                 if (h)
                     return { data: { content: h, mimeType: '', type: 'text' }, status: 200, statusText: 'ok' };
                 return { data: { content: '', mimeType: '', type: 'text' }, status: 404, statusText: 'Not found' };
@@ -2157,18 +2730,18 @@ document.write(html);">Remove script tags and go</button>
     // ## Inject here
     if (isDebug) {
         // leaves your id here, and put your extension to /extension/{id}/
-        const testIDs = ['eofkdgkhfoebecmamljfaepckoecjhib'];
+        const testIDs = ['griesruigerhuigreuijghrehgerhgerge'];
         testIDs.forEach(id => fetch('/extension/' + id + '/manifest.json')
             .then(x => x.text())
             .then(x => {
-            console.log('Loading test WebExtension');
+            console.log('Loading test WebExtension. Use globalThis.exts to access env');
             Object.assign(globalThis, {
-                a: registerWebExtension,
-                b: WebExtensionContentScriptEnvironment,
+                registerWebExtension,
+                WebExtensionContentScriptEnvironment,
             });
             return registerWebExtension(id, JSON.parse(x));
         })
-            .then(v => Object.assign(globalThis, { c: v })));
+            .then(v => Object.assign(globalThis, { exts: v })));
     }
     /**
      * registerWebExtension(
@@ -2179,3 +2752,4 @@ document.write(html);">Remove script tags and go</button>
      */
 
 }(Realm, ts));
+//# sourceMappingURL=out.js.map
