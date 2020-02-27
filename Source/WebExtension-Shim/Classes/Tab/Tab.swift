@@ -99,7 +99,7 @@ public class Tab: NSObject {
         }
 
         self.webView = WKWebView(frame: CGRect(x: 0, y: 0, width: 100, height: 100), configuration: configuration.webViewConfiguration)
-        self.isActive = configuration.createOptions?.active ?? true     // set active status. default true)
+        self.isActive = configuration.createOptions?.active ?? true     // set active status. default true
 
         // Setup Alamofire session
         self.session = {

@@ -27,6 +27,9 @@ extension TabsDelegate {
 public class Tabs: NSObject {
 
     public private(set) var storage: [Tab] = []
+    
+    /// store active tab order. The last is top-most.
+    public internal(set) var activeTabStack = WeakArray<Tab>([])
 
     weak var browserCore: BrowserCore?
 

@@ -22,9 +22,16 @@ extension Tab {
             }
 
             let tab = tabs.create(options: create.options)
+            
+            if tab.isActive {
+                tabs.activeTabStack.append(tab)
+            }
+            
             let result: Result<HoloflowsRPC.Response<Tab.Meta>, RPC.Error> = .success(HoloflowsRPC.Response(result: tab.meta, id: id))
             HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
-            delegate?.tab(tab, shouldActive: create.options.active ?? true)     // default true to respect WebExtension API
+            
+            // delegate active behavior
+            delegate?.tab(tab, shouldActive: tab.isActive)
 
         case let .failure(error):
             consolePrint(error.localizedDescription)
@@ -37,8 +44,13 @@ extension Tab {
         let messageResult: Result<WebExtension.Browser.Tabs.Remove, RPC.Error> = HoloflowsRPC.parseRPC(messageBody: messageBody)
         switch messageResult {
         case let .success(remove):
-            if let _ = tabs?.remove(ids: [remove.tabId]) {
+            if let removedTabs = tabs?.remove(ids: [remove.tabId]) {
                 let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .success(.init(result: "", id: id))
+                
+                for removedTab in removedTabs {
+                    tabs?.activeTabStack.removeAll(where: { removedTab == $0 })
+                }
+                
                 HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
 
             } else {
@@ -60,9 +72,11 @@ extension Tab {
         case let .success(query):
             let tabMetas: [Tab.Meta]
             if let filterActive = query.queryInfo?["active"].bool, filterActive {
-                let meta = self.tabs?.storage.last(where: { $0.isActive })?.meta
+                // Return the top-most tab when set "active" query
+                let meta = self.tabs?.activeTabStack.unboxItems.last?.meta
                 tabMetas = meta.flatMap { [$0] } ?? []
             } else {
+                // Return tabs in create order
                 tabMetas = self.tabs?.storage.map { $0.meta } ?? []
             }
             let result: Result<HoloflowsRPC.Response<[Tab.Meta]> , RPC.Error> = .success(.init(result: tabMetas, id: id))
@@ -81,14 +95,23 @@ extension Tab {
         case let .success(update):
             let tab = self.tabs?.storage.first(where: { $0.id == update.tabId })
 
-            guard let targetTab = tab,
-            let url = URL(string: update.updateProperties.url) else {
+            guard let targetTab = tab else {
                 let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .failure(RPC.Error.invalidParams)
                 HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
                 return
             }
+            
+            if let urlString = update.updateProperties.url, let url = URL(string: urlString) {
+                targetTab.webView.load(URLRequest(url: url))
+            }
+            
+            if let active = update.updateProperties.active, active == true {
+                // Pop target to stack top
+                tabs?.activeTabStack.removeAll(where: { targetTab == $0 })
+                tabs?.activeTabStack.append(targetTab)
+                targetTab.delegate?.tab(targetTab, shouldActive: true)
+            }
 
-            targetTab.webView.load(URLRequest(url: url))
             let result: Result<HoloflowsRPC.Response<Tab.Meta> , RPC.Error> = .success(.init(result: targetTab.meta, id: id))
             HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
 
