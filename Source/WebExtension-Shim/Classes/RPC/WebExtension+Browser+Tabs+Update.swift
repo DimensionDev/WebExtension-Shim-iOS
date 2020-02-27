@@ -8,6 +8,7 @@
 import Foundation
 import SwiftyJSON
 
+// MDN: https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/tabs/update
 extension WebExtension.Browser.Tabs {
 
     public struct Update: WebExtension.ClientRequest {
@@ -24,10 +25,12 @@ extension WebExtension.Browser.Tabs {
         }
 
         public struct UpdateProperties: Codable {
-            public let url: String
+            public let url: String?
+            public let active: Bool?
 
-            public init(url: String) {
+            public init(url: String?, active: Bool?) {
                 self.url = url
+                self.active = active
             }
         }
     }
