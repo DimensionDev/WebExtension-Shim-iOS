@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name             = 'WebExtension-Shim'
-  s.version          = '0.4.1'
+  s.version          = '0.4.2'
   s.summary          = 'WebExtension-Shim on iOS.'
 
 
