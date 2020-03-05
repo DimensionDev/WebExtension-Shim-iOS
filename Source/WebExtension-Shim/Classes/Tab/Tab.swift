@@ -1,6 +1,6 @@
 //
-//  Tab.swift
-//  HoloflowsKit
+//  Maskbook.swift
+//  Maskbook
 //
 //  Created by Cirno MainasuK on 2019-6-10.
 //
@@ -15,8 +15,8 @@ import os
 
 // MARK: - TabDelegate
 public protocol TabDelegate: class {
-    func uiDelegate(for tab: Tab) -> WKUIDelegate?
-    func navigationDelegate(for tab: Tab) -> WKNavigationDelegate?
+    func uiDelegateShim(for tab: Tab) -> WKUIDelegateShim?
+    func navigationDelegateShim(for tab: Tab) -> WKNavigationDelegateShim?
     func customScriptMessageHandlerNames(for tab: Tab) -> [String]
     func tab(_ tab: Tab, userContentController: WKUserContentController, didReceive message: WKScriptMessage)
     func tab(_ tab: Tab, localStorageManagerForExtension id: String) -> LocalStorageManager
@@ -58,16 +58,18 @@ public struct TabConfiguration {
     public let plugin: Plugin?
     public let createOptions: WebExtension.Browser.Tabs.Create.Options?
     public let webViewConfiguration: WKWebViewConfiguration
-    public let tabDelegate: TabDelegate?
-    public let tabDownloadDelegate: TabDownloadsDelegate?
+    public let tabDelegate: (Tab) -> TabDelegate?
+    public let tabDownloadDelegate: (Tab) -> TabDownloadsDelegate?
 
-    public weak var tabs: Tabs? = nil
+    public weak var browser: Browser?
 }
 
 // MARK: - Tab
 public class Tab: NSObject {
 
-    weak var tabs: Tabs?
+    weak var browser: Browser?
+    weak var delegate: TabDelegate?
+    weak var downloadsDelegate: TabDownloadsDelegate?
 
     let session: SessionManager
 
@@ -78,19 +80,25 @@ public class Tab: NSObject {
     let plugin: Plugin?
     let userContentController = WKUserContentController()
 
-    var uiDelegateProxy: WebViewProxy<WKUIDelegate>?
-    var navigationDelegateProxy: WebViewProxy<WKNavigationDelegate>?
+    weak var uiDelegateShim: WKUIDelegateShim? {
+        didSet {
+            webView.uiDelegate = uiDelegateShim ?? WKUIDelegateShim(tab: self)
+        }
+    }
+    weak var navigationDelegateShim: WKNavigationDelegateShim? {
+        didSet {
+            webView.navigationDelegate = navigationDelegateShim ?? WKNavigationDelegateShim(tab: self)
+        }
+    }
+    
+    // User space script message names
     var scriptMessageHandlerNames: [String] = []
 
-    weak var delegate: TabDelegate?
-    weak var downloadsDelegate: TabDownloadsDelegate?
 
     public init(configuration: TabConfiguration) {
+        self.browser = configuration.browser
         self.id = configuration.id
         self.plugin = configuration.plugin
-        self.delegate = configuration.tabDelegate
-        self.downloadsDelegate = configuration.tabDownloadDelegate
-        self.tabs = configuration.tabs
 
         // Setup WKWebView
         configuration.webViewConfiguration.userContentController = self.userContentController
@@ -103,7 +111,7 @@ public class Tab: NSObject {
 
         // Setup Alamofire session
         self.session = {
-            let userAgent = configuration.tabs?.userAgent ?? "Mozilla/5.0 (iPhone; CPU iPhone OS 12_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148"
+            let userAgent = configuration.browser?.userAgent ?? "Mozilla/5.0 (iPhone; CPU iPhone OS 12_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148"
 
             let sessionConfiguration = URLSessionConfiguration.ephemeral
             sessionConfiguration.httpAdditionalHeaders = ["User-Agent" : userAgent]
@@ -113,14 +121,13 @@ public class Tab: NSObject {
        }()
 
         super.init()
-
-        // dispatch self to delegate proxy
-        uiDelegateProxy = WebViewProxy(self)
-        navigationDelegateProxy = WebViewProxy(self)
+        
+        self.delegate = configuration.tabDelegate(self)
+        self.downloadsDelegate = configuration.tabDownloadDelegate(self)
 
         webView.setNeedsLayout()
-        webView.uiDelegate = uiDelegateProxy as? WKUIDelegate
-        webView.navigationDelegate = navigationDelegateProxy as? WKNavigationDelegate
+        webView.uiDelegate = self.delegate?.uiDelegateShim(for: self)
+        webView.navigationDelegate = self.delegate?.navigationDelegateShim(for: self)
         webView.allowsLinkPreview = false
 
         // register Holoflows RPC event
@@ -232,94 +239,6 @@ extension Tab: WKScriptMessageHandler {
          */
         }          
     }   // end func userContentController
-
-}
-
-// MARK: - WKUIDelegate
-extension Tab: WKUIDelegate {
-
-    public func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration, for navigationAction: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
-        if navigationAction.targetFrame == nil, let url = navigationAction.request.url,
-        let scheme = url.scheme, (scheme == "http" || scheme == "https") {
-            let safariViewController = SFSafariViewController(url: url)
-            UIApplication.shared.keyWindow?.rootViewController?.present(safariViewController, animated: true, completion: nil)
-        }
-        return nil
-    }
-
-    public func webView(_ webView: WKWebView, runJavaScriptAlertPanelWithMessage message: String, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping () -> Void) {
-        // do nothing
-    }
-
-    public func webView(_ webView: WKWebView, runJavaScriptConfirmPanelWithMessage message: String, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping (Bool) -> Void) {
-        // do nothing
-    }
-
-    public func webView(_ webView: WKWebView, runJavaScriptTextInputPanelWithPrompt prompt: String, defaultText: String?, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping (String?) -> Void) {
-        // do nothing
-    }
-
-    public func webViewDidClose(_ webView: WKWebView) {
-        consolePrint(webView)
-    }
-
-    // Disable link preview
-
-}
-
-// MARK: - WKNavigationDelegate
-extension Tab: WKNavigationDelegate {
-
-    public func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
-        consolePrint(webView.url)
-
-        // Create new tab when direct to local scheme. Make UserScript inject .atDocumentStart
-        if let previousScheme = webView.backForwardList.backItem?.url.scheme,
-        let currentURL = webView.url, let currentScheme = webView.url?.scheme,
-        previousScheme != currentScheme {
-            tabs?.create(options: WebExtension.Browser.Tabs.Create.Options(active: isActive, url: currentURL.absoluteString ))
-            tabs?.remove(id: id)
-            return
-        }
-
-        // background page will handle didCommit message
-    }
-
-    public func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
-        // do nothing
-    }
-
-    public func webView(_ webView: WKWebView, didReceiveServerRedirectForProvisionalNavigation navigation: WKNavigation!) {
-        // do nothing
-    }
-
-    public func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
-        // do nothing
-    }
-
-    public func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
-        // do nothing
-    }
-
-    public func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-        // do nothing
-    }
-
-    public func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
-        // do nothing
-    }
-
-    public func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
-        decisionHandler(WKNavigationActionPolicy(rawValue: WKNavigationActionPolicy.allow.rawValue + 2)!)
-    }
-    
-    @available(iOS 13.0, *)
-    public func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, preferences: WKWebpagePreferences, decisionHandler: @escaping (WKNavigationActionPolicy, WKWebpagePreferences) -> Void) {
-        preferences.preferredContentMode = .mobile
-        let policy = WKNavigationActionPolicy(rawValue: WKNavigationActionPolicy.allow.rawValue + 2)!
-        
-        decisionHandler(policy, preferences)
-    }
 
 }
 
