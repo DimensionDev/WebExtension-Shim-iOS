@@ -15,7 +15,7 @@ extension Tab {
         let messageResult: Result<WebExtension.Browser.Tabs.Create, RPC.Error> = HoloflowsRPC.parseRPC(messageBody: messageBody)
         switch messageResult {
         case let .success(create):
-            guard let tabs = tabs else {
+            guard let tabs = self.browser?.tabs else {
                 let result: Result<HoloflowsRPC.Response<Tab.Meta>, RPC.Error> = .failure(RPC.Error.serverError)
                 HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
                 return
@@ -44,11 +44,11 @@ extension Tab {
         let messageResult: Result<WebExtension.Browser.Tabs.Remove, RPC.Error> = HoloflowsRPC.parseRPC(messageBody: messageBody)
         switch messageResult {
         case let .success(remove):
-            if let removedTabs = tabs?.remove(ids: [remove.tabId]) {
+            if let removedTabs = self.browser?.tabs.remove(ids: [remove.tabId]) {
                 let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .success(.init(result: "", id: id))
                 
                 for removedTab in removedTabs {
-                    tabs?.activeTabStack.removeAll(where: { removedTab == $0 })
+                    browser?.tabs.activeTabStack.removeAll(where: { removedTab == $0 })
                 }
                 
                 HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
@@ -63,7 +63,6 @@ extension Tab {
             let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .failure(error)
             HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
         }
-        consolePrint(tabs?.storage)
     }
 
     open func browserTabsQuery(id: String, messageBody: String) {
@@ -73,11 +72,11 @@ extension Tab {
             let tabMetas: [Tab.Meta]
             if let filterActive = query.queryInfo?["active"].bool, filterActive {
                 // Return the top-most tab when set "active" query
-                let meta = self.tabs?.activeTabStack.unboxItems.last?.meta
+                let meta = self.browser?.tabs.activeTabStack.unboxItems.last?.meta
                 tabMetas = meta.flatMap { [$0] } ?? []
             } else {
                 // Return tabs in create order
-                tabMetas = self.tabs?.storage.map { $0.meta } ?? []
+                tabMetas = self.browser?.tabs.storage.map { $0.meta } ?? []
             }
             let result: Result<HoloflowsRPC.Response<[Tab.Meta]> , RPC.Error> = .success(.init(result: tabMetas, id: id))
             HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
@@ -93,7 +92,7 @@ extension Tab {
         let messageResult: Result<WebExtension.Browser.Tabs.Update, RPC.Error> = HoloflowsRPC.parseRPC(messageBody: messageBody)
         switch messageResult {
         case let .success(update):
-            let tab = self.tabs?.storage.first(where: { $0.id == update.tabId })
+            let tab = self.browser?.tabs.storage.first(where: { $0.id == update.tabId })
 
             guard let targetTab = tab else {
                 let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .failure(RPC.Error.invalidParams)
@@ -107,8 +106,8 @@ extension Tab {
             
             if let active = update.updateProperties.active, active == true {
                 // Pop target to stack top
-                tabs?.activeTabStack.removeAll(where: { targetTab == $0 })
-                tabs?.activeTabStack.append(targetTab)
+                browser?.tabs.activeTabStack.removeAll(where: { targetTab == $0 })
+                browser?.tabs.activeTabStack.append(targetTab)
                 targetTab.delegate?.tab(targetTab, shouldActive: true)
             }
 
@@ -131,7 +130,7 @@ extension Tab {
             if executeScript.tabID == -1, self.id == -1 {
                 // do nothing
             } else {
-                guard let tabs = tabs,
+                guard let tabs = browser?.tabs,
                 let target = tabs.storage.first(where: { $0.id == (executeScript.tabID ?? self.id) }) else {
                     let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .failure(RPC.Error.internalError)
                     HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())

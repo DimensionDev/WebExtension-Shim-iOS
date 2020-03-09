@@ -8,4 +8,4 @@
 import Foundation
 import WebKit
 
-public protocol BrowserCore: TabsDelegate, TabDelegate, TabDownloadsDelegate { }
+// public protocol BrowserCore: TabsDelegate { }

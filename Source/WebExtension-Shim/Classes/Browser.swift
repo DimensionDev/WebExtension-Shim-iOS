@@ -5,38 +5,35 @@
 //  Created by Cirno MainasuK on 2019-6-10.
 //
 
+import os
 import Foundation
 import WebKit
 import SwiftyJSON
 import ConsolePrint
 
+public protocol BrowserDelegate: class {
+    func pluginResourceURLScheme() -> [String]
+    func browser(_ browser: Browser, pluginForScriptType scriptType: Plugin.ScriptType) -> Plugin
+    func browser(_ browser: Browser, webViewConfigurationForOptions options: WebExtension.Browser.Tabs.Create.Options?) -> WKWebViewConfiguration
+    func browser(_ browser: Browser, tabDelegateForTab tab: Tab) -> TabDelegate?
+    func browser(_ browser: Browser, tabDownloadDelegateFor tab: Tab) -> TabDownloadsDelegate?
+}
+
 public class Browser: NSObject {
 
-    public let tabs: Tabs
-    weak var core: BrowserCore?
-
-    public init(core: BrowserCore? = nil) {
-        let browserCore = core ?? EmptyBrowserCore()
-        self.core = browserCore
-        self.tabs = Tabs(browserCore: browserCore)
+    weak var delegate: BrowserDelegate?
+    
+    public private(set) var tabs: Tabs!
+    public internal(set) var userAgent: String?
+    
+    public init(delegate: BrowserDelegate) {
+        self.delegate = delegate
+        super.init()
+        self.tabs = Tabs(browser: self)
     }
 
     deinit {
-        core = nil
-    }
-
-}
-
-fileprivate class EmptyBrowserCore: BrowserCore {
-
-    let coreID = UUID()
-
-    func plugin(forScriptType type: Plugin.ScriptType) -> Plugin {
-        return Plugin(id: coreID.uuidString, manifest: JSON.null, environment: type, resources: JSON.null)
-    }
-
-    func tab(_ tab: Tab, localStorageManagerForExtension id: String) -> LocalStorageManager {
-        return LocalStorageManager(realm: RealmService(name: id).realm)
+        os_log("%{public}s[%{public}ld], %{public}s: deinit", ((#file as NSString).lastPathComponent), #line, #function)
     }
 
 }
