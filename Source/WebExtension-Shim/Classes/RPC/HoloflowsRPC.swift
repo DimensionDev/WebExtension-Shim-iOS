@@ -81,21 +81,28 @@ extension HoloflowsRPC {
 extension HoloflowsRPC {
 
     public static func dispathRequest<T: RPC.Request & Encodable>(webView: WKWebView, name: String = ScriptEvent.holoflowsjsonrpc.rawValue, id: String, request: T, completionHandler: CompletionHandler?) {
-        guard let script = dispatchScript(name: name, id: id, request: request) else {
-            assertionFailure()
-            return
+        DispatchQueue.global().async {
+            guard let script = dispatchScript(name: name, id: id, request: request) else {
+                assertionFailure()
+                return
+            }
+            
+            DispatchQueue.main.async {
+                webView.evaluateJavaScript(script, completionHandler: completionHandler?.completionHandler(id: id))
+                os_log("^ %{public}s[%{public}ld], %{public}s: webView: %{public}s, script: %{public}s", ((#file as NSString).lastPathComponent), #line, #function, webView.url?.absoluteString ?? "", script)
+            }
         }
-        webView.evaluateJavaScript(script, completionHandler: completionHandler?.completionHandler(id: id))
-        consolePrint("webView: \(webView.url?.absoluteString ?? ""), script: \(script)")
-        os_log("^ %{public}s[%{public}ld], %{public}s: webView: %{public}s, script: %{public}s", ((#file as NSString).lastPathComponent), #line, #function, webView.url?.absoluteString ?? "", script)
-
     }
 
     public static func dispatchResponse<T: RPC.Response>(webView: WKWebView, name: String = ScriptEvent.holoflowsjsonrpc.rawValue, id: String, result: Result<T, RPC.Error>, completionHandler: CompletionHandler?) {
-        let script = dispatchScript(name: name, id: id, result: result)
-        webView.evaluateJavaScript(script, completionHandler: completionHandler?.completionHandler(id: id))
-        consolePrint("webView: \(webView.url?.absoluteString ?? ""), script: \(script.prefix(500))")
-        os_log("^ %{public}s[%{public}ld], %{public}s: webView: %{public}s, script: %{public}s", ((#file as NSString).lastPathComponent), #line, #function, webView.url?.absoluteString ?? "", script)
+        DispatchQueue.global().async {
+            let script = dispatchScript(name: name, id: id, result: result)
+
+            DispatchQueue.main.async {
+                webView.evaluateJavaScript(script, completionHandler: completionHandler?.completionHandler(id: id))
+                os_log("^ %{public}s[%{public}ld], %{public}s: webView: %{public}s, script: %{public}s", ((#file as NSString).lastPathComponent), #line, #function, webView.url?.absoluteString ?? "", script)
+            }
+        }
     }
     
 }

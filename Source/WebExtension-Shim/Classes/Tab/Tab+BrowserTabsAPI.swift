@@ -27,11 +27,6 @@ extension Tab {
                 tabs.activeTabStack.append(tab)
             }
             
-            let result: Result<HoloflowsRPC.Response<Tab.Meta>, RPC.Error> = .success(HoloflowsRPC.Response(result: tab.meta, id: id))
-            HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
-            
-            // delegate active behavior
-            delegate?.tab(tab, shouldActive: tab.isActive)
 
         case let .failure(error):
             consolePrint(error.localizedDescription)
