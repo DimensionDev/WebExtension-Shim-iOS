@@ -194,49 +194,45 @@ extension Tab: WKScriptMessageHandler {
             return
         }
 
-        let messageName = message.name
-        let messageBody = message.body
-        
-        DispatchQueue.global().async {
-            guard let eventType = ScriptEvent(rawValue: messageName) else {
-                assertionFailure()
-                return
-            }
-            let messageBody = JSON(rawValue: messageBody)?.rawString() ?? ""
-            os_log("^ %{public}s[%{public}ld], %{public}s: [%{public}s|%{public}s]: %{public}s", ((#file as NSString).lastPathComponent), #line, #function, String(describing: self.id), eventType.rawValue, messageBody)
-            
-            guard let (method, id) = try? HoloflowsRPC.parseRPCMeta(messageBody: messageBody) else {
-                //assertionFailure()
-                os_log("^ %{public}s[%{public}ld], %{public}s: invalid RPC message: %{public}s|%{public}s", ((#file as NSString).lastPathComponent), #line, #function, String(describing: self.id), messageBody)
-                return
-            }
-            
-            DispatchQueue.main.async {
-                guard let api = WebExtension.API(method: method) else {
-                    let result: Result<HoloflowsRPC.Response<WebExtension._Echo>, RPC.Error> = .failure(RPCError.invalidRequest)
-                    HoloflowsRPC.dispatchResponse(webView: self.webView, id: id, result: result, completionHandler: self.completionHandler())
-                    return
-                }
-                
-                switch api {
-                case ._echo:                                self.echo(id: id, messageBody: messageBody)
-                case .sendMessage:                          self.sendMessage(id: id, messageBody: messageBody)
-                case .fetch:                                self.fetch(id: id, messageBody: messageBody)
-                case .urlCreateObjectURL:                   self.URLCreateObjectURL(id: id, messageBody: messageBody)
-                case .browserDownloadsDownload:             self.browserDownloadsDownload(id: id, messageBody: messageBody)
-                case .browserRuntimeGetURL:                 self.browserRuntimeGetURL(id: id, messageBody: messageBody)
-                case .browserTabsExecuteScript:             self.browserTabsExecuteScript(id: id, messageBody: messageBody)
-                case .browserTabsCreate:                    self.browserTabsCreate(id: id, messageBody: messageBody)
-                case .browserTabsRemove:                    self.browserTabsRemove(id: id, messageBody: messageBody)
-                case .browserTabsQuery:                     self.browserTabsQuery(id: id, messageBody: messageBody)
-                case .browserTabsUpdate:                    self.browserTabsUpdate(id: id, messageBody: messageBody)
-                case .browserStorageLocalGet:               self.browserStorageLocalGet(id: id, messageBody: messageBody)
-                case .browserStorageLocalSet:               self.browserStorageLocalSet(id: id, messageBody: messageBody)
-                case .browserStorageLocalRemove:            self.browserStorageLocalRemove(id: id, messageBody: messageBody)
-                case .browserStorageLocalClear:             self.browserStorageLocalClear(id: id, messageBody: messageBody)
-                }
-            }   // end DisptchQueue.main.async
-        }   // end DispatchQueue.global.async
+        guard let eventType = ScriptEvent(rawValue: message.name) else {
+            assertionFailure()
+            return
+        }
+        let messageBody = JSON(rawValue: message.body)?.rawString() ?? ""
+        consolePrint("[\(eventType.rawValue)]: \(messageBody.prefix(300))")
+        os_log("^ %{public}s[%{public}ld], %{public}s: [%{public}s|%{public}s]: %{public}s", ((#file as NSString).lastPathComponent), #line, #function, String(describing: id), eventType.rawValue, messageBody)
+
+        guard let (method, id) = try? HoloflowsRPC.parseRPCMeta(messageBody: messageBody) else {
+            //assertionFailure()
+            consolePrint(messageBody)
+            os_log("^ %{public}s[%{public}ld], %{public}s: invalid RPC message: %{public}s|%{public}s", ((#file as NSString).lastPathComponent), #line, #function, String(describing: self.id), messageBody)
+            return
+        }
+
+        guard let api = WebExtension.API(method: method) else {
+            let result: Result<HoloflowsRPC.Response<WebExtension._Echo>, RPC.Error> = .failure(RPCError.invalidRequest)
+            HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
+            consolePrint("invalid request")
+            return
+        }
+
+        switch api {
+        case ._echo:                                echo(id: id, messageBody: messageBody)
+        case .sendMessage:                          sendMessage(id: id, messageBody: messageBody)
+        case .fetch:                                fetch(id: id, messageBody: messageBody)
+        case .urlCreateObjectURL:                   URLCreateObjectURL(id: id, messageBody: messageBody)
+        case .browserDownloadsDownload:             browserDownloadsDownload(id: id, messageBody: messageBody)
+        case .browserRuntimeGetURL:                 browserRuntimeGetURL(id: id, messageBody: messageBody)
+        case .browserTabsExecuteScript:             browserTabsExecuteScript(id: id, messageBody: messageBody)
+        case .browserTabsCreate:                    browserTabsCreate(id: id, messageBody: messageBody)
+        case .browserTabsRemove:                    browserTabsRemove(id: id, messageBody: messageBody)
+        case .browserTabsQuery:                     browserTabsQuery(id: id, messageBody: messageBody)
+        case .browserTabsUpdate:                    browserTabsUpdate(id: id, messageBody: messageBody)
+        case .browserStorageLocalGet:               browserStorageLocalGet(id: id, messageBody: messageBody)
+        case .browserStorageLocalSet:               browserStorageLocalSet(id: id, messageBody: messageBody)
+        case .browserStorageLocalRemove:            browserStorageLocalRemove(id: id, messageBody: messageBody)
+        case .browserStorageLocalClear:             browserStorageLocalClear(id: id, messageBody: messageBody)
+        }          
     }   // end func userContentController
 
 }
