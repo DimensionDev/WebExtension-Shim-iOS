@@ -25,7 +25,8 @@ extension Tab {
                 let onMessage = WebExtension.OnMessage(fromMessageSender: sender, sendMessage: sendMessage)
                 let request = HoloflowsRPC.ServerRequest(params: onMessage, id: id)
                 if let tabID = sendMessage.tabId {
-                    DispatchQueue.main.async {
+                    DispatchQueue.main.async { [weak self] in
+                        guard let `self` = self else { return }
                         if let targetTab = self.browser?.tabs.storage.first(where: { $0.id == tabID }) {
                             HoloflowsRPC.dispathRequest(webView: targetTab.webView, id: id, request: request, completionHandler: self.completionHandler())
                         } else {
@@ -34,7 +35,8 @@ extension Tab {
                         }
                     }
                 } else {
-                    DispatchQueue.main.async {
+                    DispatchQueue.main.async { [weak self] in
+                        guard let `self` = self else { return }
                         if let extensionTab = self.browser?.tabs.backgroundTab {
                             HoloflowsRPC.dispathRequest(webView: extensionTab.webView, id: id, request: request, completionHandler: self.completionHandler())
                         }
@@ -49,7 +51,8 @@ extension Tab {
                 }
                 
             case let .failure(error):
-                DispatchQueue.main.async {
+                DispatchQueue.main.async { [weak self] in
+                    guard let `self` = self else { return }
                     let result: Result<HoloflowsRPC.Response<WebExtension._Echo>, RPC.Error> = .failure(error)
                     HoloflowsRPC.dispatchResponse(webView: self.webView, id: id, result: result, completionHandler: self.completionHandler())
                 }
