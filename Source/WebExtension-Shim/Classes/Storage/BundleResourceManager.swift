@@ -26,12 +26,18 @@ public class BundleResourceManager: NSObject, PluginResourceProvider {
 extension BundleResourceManager {
 
     public func data(from url: URL, handler: @escaping (Result<(Data, URLResponse), Swift.Error>) -> Void) {
-        let fileExtension = url.pathExtension
-        let filename = url.deletingPathExtension().lastPathComponent
-
-        guard let path = bundle.path(forResource: filename, ofType: fileExtension) else {
-            handler(.failure(Error.fileNotFound))
-            return
+        let pathComponents: [String] = {
+            var components = url.pathComponents
+            if components.first == "/" {
+                components.removeFirst()
+            }
+            return components
+        }()
+        let urlComponents = URLComponents(string: pathComponents.joined(separator: "/"))
+        guard let filePath = urlComponents?.path,
+            let path = bundle.url(forResource: filePath, withExtension: nil)?.path else {
+                handler(.failure(Error.fileNotFound))
+                return
         }
         consolePrint(path)
 
