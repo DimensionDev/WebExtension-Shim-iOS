@@ -32,7 +32,8 @@ extension Tab {
                     }
 
                     switch result {
-                    case let .success(data, response):
+                    case let .success(success):
+                        let (data, response) = success
 
                         let fetchResponse: WebExtension.Fetch.Response
                         if let dataString = String(data: data, encoding: .utf8) {

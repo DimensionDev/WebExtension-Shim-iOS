@@ -11,7 +11,6 @@
 		57D6A65ACC7514BC6A43F4CC /* Pods_Tests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7BD8512EC7F288ABA984D17B /* Pods_Tests.framework */; };
 		607FACEC1AFB9204008FA782 /* Tests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 607FACEB1AFB9204008FA782 /* Tests.swift */; };
 		DBC21AE822F28F3900BB5A64 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBC21ADF22F28F3900BB5A64 /* ViewController.swift */; };
-		DBC21AE922F28F3900BB5A64 /* ExampleBrowserCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBC21AE022F28F3900BB5A64 /* ExampleBrowserCore.swift */; };
 		DBC21AEA22F28F3900BB5A64 /* LaunchScreen.xib in Resources */ = {isa = PBXBuildFile; fileRef = DBC21AE122F28F3900BB5A64 /* LaunchScreen.xib */; };
 		DBC21AEB22F28F3900BB5A64 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = DBC21AE322F28F3900BB5A64 /* Main.storyboard */; };
 		DBC21AEC22F28F3900BB5A64 /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = DBC21AE522F28F3900BB5A64 /* Images.xcassets */; };
@@ -45,7 +44,6 @@
 		A921DD134E6D65EC0D456B6F /* README.md */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = net.daringfireball.markdown; name = README.md; path = ../README.md; sourceTree = "<group>"; };
 		D32C612D0291F9AF66C60D44 /* Pods-HoloflowsKit_Example.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-HoloflowsKit_Example.debug.xcconfig"; path = "Target Support Files/Pods-HoloflowsKit_Example/Pods-HoloflowsKit_Example.debug.xcconfig"; sourceTree = "<group>"; };
 		DBC21ADF22F28F3900BB5A64 /* ViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
-		DBC21AE022F28F3900BB5A64 /* ExampleBrowserCore.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ExampleBrowserCore.swift; sourceTree = "<group>"; };
 		DBC21AE222F28F3900BB5A64 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/LaunchScreen.xib; sourceTree = "<group>"; };
 		DBC21AE422F28F3900BB5A64 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
 		DBC21AE522F28F3900BB5A64 /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Images.xcassets; sourceTree = "<group>"; };
@@ -151,7 +149,6 @@
 			isa = PBXGroup;
 			children = (
 				DBC21ADF22F28F3900BB5A64 /* ViewController.swift */,
-				DBC21AE022F28F3900BB5A64 /* ExampleBrowserCore.swift */,
 				DBC21AE122F28F3900BB5A64 /* LaunchScreen.xib */,
 				DBC21AE322F28F3900BB5A64 /* Main.storyboard */,
 				DBC21AE522F28F3900BB5A64 /* Images.xcassets */,
@@ -227,10 +224,9 @@
 			};
 			buildConfigurationList = 607FACCB1AFB9204008FA782 /* Build configuration list for PBXProject "Example" */;
 			compatibilityVersion = "Xcode 3.2";
-			developmentRegion = English;
+			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
-				English,
 				en,
 				Base,
 			);
@@ -348,7 +344,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				DBC21AED22F28F3900BB5A64 /* AppDelegate.swift in Sources */,
-				DBC21AE922F28F3900BB5A64 /* ExampleBrowserCore.swift in Sources */,
 				DBC21AE822F28F3900BB5A64 /* ViewController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

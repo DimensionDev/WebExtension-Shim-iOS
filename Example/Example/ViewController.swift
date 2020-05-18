@@ -10,10 +10,11 @@ import UIKit
 import WebExtension_Shim
 import WebKit
 import ConsolePrint
+import SwiftyJSON
 
 class ViewController: UIViewController {
 
-    lazy var browser = Browser(core: ExampleBrowserCore())
+    lazy var browser = Browser(delegate: self)
 
 }
 
@@ -61,4 +62,44 @@ extension ViewController {
         present(alertController, animated: true, completion: nil)
     }
 
+}
+
+extension ViewController: BrowserDelegate {
+    
+    func pluginResourceURLScheme() -> [String] {
+        return ["webextension"]
+    }
+    
+    func browser(_ browser: Browser, pluginForScriptType scriptType: Plugin.ScriptType) -> Plugin {
+        return Plugin(id: UUID().uuidString, manifest: JSON(), environment: scriptType, resources: JSON())
+    }
+    
+    func browser(_ browser: Browser, webViewConfigurationForOptions options: WebExtension.Browser.Tabs.Create.Options?) -> WKWebViewConfiguration {
+        return WKWebViewConfiguration()
+    }
+    
+    func browser(_ browser: Browser, tabDelegateForTab tab: Tab) -> TabDelegate? {
+        return self
+    }
+    
+    func browser(_ browser: Browser, tabDownloadDelegateFor tab: Tab) -> TabDownloadsDelegate? {
+        return self
+    }
+}
+
+extension ViewController: TabDelegate {
+    
+    func uiDelegateShim(for tab: Tab) -> WKUIDelegateShim? {
+        return nil
+    }
+    
+    func navigationDelegateShim(for tab: Tab) -> WKNavigationDelegateShim? {
+        return nil
+    }
+    
+}
+
+extension ViewController: TabDownloadsDelegate {
+    
+    
 }
