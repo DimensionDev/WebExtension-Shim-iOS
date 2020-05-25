@@ -11,11 +11,11 @@ import SwiftyJSON
 
 class MessageExchangeTests: XCTestCase {
 
-    var browser = Browser()
+    var browser = Browser(delegate: EmptyBrowserDelegate())
 
     override func setUp() {
         super.setUp()
-        browser = Browser()
+        browser = Browser(delegate: EmptyBrowserDelegate())
     }
 
 }

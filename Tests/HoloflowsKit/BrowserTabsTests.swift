@@ -6,18 +6,63 @@
 //
 
 import XCTest
+import WebKit
 import WebExtension_Shim
 import SwiftyJSON
 
 class BrowserTabsTests: XCTestCase {
 
-    var browser = Browser()
+    lazy var browser = Browser(delegate: self)
 
     override func setUp() {
         super.setUp()
-        browser = Browser()
+        browser = Browser(delegate: self)
     }
 
+}
+
+extension BrowserTabsTests: BrowserDelegate {
+    
+    func pluginResourceURLScheme() -> [String] {
+        return []
+    }
+    
+    func browser(_ browser: Browser, pluginForScriptType scriptType: Plugin.ScriptType) -> Plugin {
+        return Plugin(id: UUID().uuidString, manifest: JSON.null, environment: scriptType, resources: JSON.null)
+    }
+    
+    func browser(_ browser: Browser, webViewConfigurationForOptions options: WebExtension.Browser.Tabs.Create.Options?) -> WKWebViewConfiguration {
+        return WKWebViewConfiguration()
+    }
+    
+    func browser(_ browser: Browser, tabDelegateForTab tab: Tab) -> TabDelegate? {
+        return self
+    }
+    
+    func browser(_ browser: Browser, tabDownloadDelegateFor tab: Tab) -> TabDownloadsDelegate? {
+        return nil
+    }
+    
+}
+
+extension BrowserTabsTests: TabDelegate {
+    
+    func uiDelegateShim(for tab: Tab) -> WKUIDelegateShim? {
+        return nil
+    }
+    
+    func navigationDelegateShim(for tab: Tab) -> WKNavigationDelegateShim? {
+        return nil
+    }
+    
+    func tab(_ tab: Tab, localStorageManagerForExtension id: String) -> LocalStorageManager {
+        return LocalStorageManager(realm: RealmService(name: id).realm)
+    }
+    
+    func tab(_ tab: Tab, pluginResourceProviderForURL url: URL) -> PluginResourceProvider? {
+        return nil
+    }
+    
 }
 
 extension BrowserTabsTests {
@@ -71,14 +116,14 @@ extension BrowserTabsTests {
         TestHelper.prepareTest(tab: tab, forTestCase: self)
         XCTAssertEqual(browser.tabs.storage.count, 1)
         let _ = browser.tabs.create(options: .init(active: false, url: "https://www.apple.com"))
-
+        XCTAssertEqual(browser.tabs.storage.count, 2)
         // add listener
         let queryID = UUID().uuidString
         let addListenerScript = """
         var array = [];
         document.addEventListener('\(ScriptEvent.holoflowsjsonrpc.rawValue)', event => {
             if (event.detail.id != '\(queryID)') { return; }
-
+            
             array = event.detail.result;
         });
         """
@@ -101,6 +146,10 @@ extension BrowserTabsTests {
             XCTAssertNil(error)
             let array = JSON(rawValue: any ?? Data())?.arrayValue ?? []
             XCTAssertEqual(array.count, 2)
+            guard array.count == 2 else {
+                XCTFail()
+                return
+            }
             XCTAssertEqual(array[0]["id"], 1)
             XCTAssertEqual(array[0]["url"], "about:blank")
             XCTAssertEqual(array[1]["id"], 2)
@@ -146,6 +195,10 @@ extension BrowserTabsTests {
             XCTAssertNil(error)
             let array = JSON(rawValue: any ?? Data())?.arrayValue ?? []
             XCTAssertEqual(array.count, 3)
+            guard array.count == 3 else {
+                XCTFail()
+                return
+            }
             XCTAssertEqual(array[0]["id"], 1)
             XCTAssertEqual(array[0]["url"], "about:blank")
             XCTAssertEqual(array[1]["id"], 2)
@@ -162,7 +215,7 @@ extension BrowserTabsTests {
         TestHelper.waitCallback(3.0, forTestCase: self)
         XCTAssertEqual(tab.webView.url?.absoluteString, "https://www.apple.com/")
 
-        let updateProperties = WebExtension.Browser.Tabs.Update.UpdateProperties(url: "https://example.org/")
+        let updateProperties = WebExtension.Browser.Tabs.Update.UpdateProperties(url: "https://example.org/", active: false)
         let update = WebExtension.Browser.Tabs.Update(extensionID: "HoloflowsKit-UnitTests", tabId: tab.id, updateProperties: updateProperties)
         let updateRequest = HoloflowsRPC.Request(params: update, id: UUID().uuidString)
         let updateScript = TestHelper.webKit(messageBody: updateRequest)

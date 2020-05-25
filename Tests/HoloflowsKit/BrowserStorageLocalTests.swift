@@ -6,32 +6,61 @@
 //
 
 import XCTest
+import WebKit
 import WebExtension_Shim
 import SwiftyJSON
 import ConsolePrint
 
 class BrowserStorageLocalTests: XCTestCase {
 
-    lazy var browser = Browser(core: self)
+    lazy var browser = Browser(delegate: self)
     let blobResourceManager = BlobResourceManager(realm: RealmService.default.realm)
 
     override func setUp() {
         super.setUp()
-        browser = Browser(core: self)
+        browser = Browser(delegate: self)
     }
 
 }
 
-extension BrowserStorageLocalTests: BrowserCore {
-
-    func plugin(forScriptType type: Plugin.ScriptType) -> Plugin {
-        return Plugin(id: UUID().uuidString, manifest: JSON.null, environment: type, resources: JSON.null)
+extension BrowserStorageLocalTests: BrowserDelegate {
+    
+    func pluginResourceURLScheme() -> [String] {
+        return []
     }
+    
+    func browser(_ browser: Browser, pluginForScriptType scriptType: Plugin.ScriptType) -> Plugin {
+        return Plugin(id: UUID().uuidString, manifest: JSON.null, environment: scriptType, resources: JSON.null)
+    }
+    
+    func browser(_ browser: Browser, webViewConfigurationForOptions options: WebExtension.Browser.Tabs.Create.Options?) -> WKWebViewConfiguration {
+        return WKWebViewConfiguration()
+    }
+    
+    func browser(_ browser: Browser, tabDelegateForTab tab: Tab) -> TabDelegate? {
+        return self
+    }
+    
+    func browser(_ browser: Browser, tabDownloadDelegateFor tab: Tab) -> TabDownloadsDelegate? {
+        return nil
+    }
+    
+}
 
+extension BrowserStorageLocalTests: TabDelegate {
+    
+    func uiDelegateShim(for tab: Tab) -> WKUIDelegateShim? {
+        return nil
+    }
+    
+    func navigationDelegateShim(for tab: Tab) -> WKNavigationDelegateShim? {
+        return nil
+    }
+    
     func tab(_ tab: Tab, localStorageManagerForExtension id: String) -> LocalStorageManager {
         return LocalStorageManager(realm: RealmService(name: id).realm)
     }
-
+    
     func tab(_ tab: Tab, pluginResourceProviderForURL url: URL) -> PluginResourceProvider? {
         switch url.scheme {
         case "holoflows-blob":
@@ -40,7 +69,7 @@ extension BrowserStorageLocalTests: BrowserCore {
             return nil
         }
     }
-
+    
 }
 
 extension BrowserStorageLocalTests {

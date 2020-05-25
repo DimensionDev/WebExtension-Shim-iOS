@@ -13,13 +13,37 @@ import ConsolePrint
 
 class BrowserRuntimeTests: XCTestCase {
 
-    var browser = Browser()
+    var browser = Browser(delegate: EmptyBrowserDelegate())
 
     override func setUp() {
         super.setUp()
-        browser = Browser()
+        browser = Browser(delegate: EmptyBrowserDelegate())
     }
 
+}
+
+extension BrowserRuntimeTests: BrowserDelegate {
+    
+    func pluginResourceURLScheme() -> [String] {
+        return []
+    }
+    
+    func browser(_ browser: Browser, pluginForScriptType scriptType: Plugin.ScriptType) -> Plugin {
+        return Plugin(id: UUID().uuidString, manifest: JSON.null, environment: scriptType, resources: JSON.null)
+    }
+    
+    func browser(_ browser: Browser, webViewConfigurationForOptions options: WebExtension.Browser.Tabs.Create.Options?) -> WKWebViewConfiguration {
+        return WKWebViewConfiguration()
+    }
+    
+    func browser(_ browser: Browser, tabDelegateForTab tab: Tab) -> TabDelegate? {
+        return nil
+    }
+    
+    func browser(_ browser: Browser, tabDownloadDelegateFor tab: Tab) -> TabDownloadsDelegate? {
+        return nil
+    }
+    
 }
 
 extension BrowserRuntimeTests {
