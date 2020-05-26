@@ -35,7 +35,8 @@ extension Tab {
                         return
                     }
                     switch result {
-                    case let .success(data, response):
+                    case let .success(success):
+                        let (data, response) = success
                         let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .success(HoloflowsRPC.Response(result: "", id: id))
                         HoloflowsRPC.dispatchResponse(webView: self.webView, id: id, result: result, completionHandler: self.completionHandler())
 

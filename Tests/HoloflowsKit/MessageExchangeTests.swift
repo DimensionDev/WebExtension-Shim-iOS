@@ -11,11 +11,11 @@ import SwiftyJSON
 
 class MessageExchangeTests: XCTestCase {
 
-    var browser = Browser()
+    var browser = Browser(delegate: EmptyBrowserDelegate())
 
     override func setUp() {
         super.setUp()
-        browser = Browser()
+        browser = Browser(delegate: EmptyBrowserDelegate())
     }
 
 }
@@ -81,6 +81,9 @@ extension MessageExchangeTests {
             // do nothing
         }
         wait(for: [sendMessageExpectation], timeout: 3.0)
+        
+        // needs wait native callback finish
+        TestHelper.waitCallback(3.0, forTestCase: self)
 
         // check message
         let checkMessageScript = """
