@@ -45,6 +45,7 @@ extension WebExtension {
 
     public enum API: CaseIterable {
         case _echo
+        case eval
         case sendMessage
         case fetch
         case urlCreateObjectURL
@@ -76,6 +77,7 @@ extension WebExtension {
         public var method: String {
             switch self {
             case ._echo:                            return WebExtension._Echo.method
+            case .eval:                             return WebExtension.Eval.method
             case .sendMessage:                      return WebExtension.SendMessage.method
             case .fetch:                            return WebExtension.Fetch.method
             case .urlCreateObjectURL:               return WebExtension.URL.CreateObjectURL.method
