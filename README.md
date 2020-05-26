@@ -31,10 +31,10 @@ pod 'WebExtension-Shim'
 git push
 
 pod trunk me
-pod lib lint --allow-warnings --no-clean --verbose --fail-fast
-pod spec lint --allow-warnings --no-clean --verbose --fail-fast
+pod lib lint --private --no-clean --verbose --fail-fast
+pod spec lint --private --no-clean --verbose --fail-fast
 
-pod repo push sujitech ./WebExtension-Shim.podspec --verbose --allow-warnings
+pod repo push sujitech ./WebExtension-Shim.podspec --verbose --private
 ```
 
 ## License
