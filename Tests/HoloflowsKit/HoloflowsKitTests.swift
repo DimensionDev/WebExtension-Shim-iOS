@@ -14,7 +14,18 @@ enum TestHelper {
 
     static func prepareTest(tab: Tab, forTestCase testCase: XCTestCase) {
         if tab.webView.url == nil {
-            tab.webView.loadHTMLString("", baseURL: nil)
+            let html = """
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Stub Page</title>
+            </head>
+            <body>
+
+            </body>
+            </html>
+            """
+            tab.webView.loadHTMLString(html, baseURL: nil)
         }
 
         // wait for browser script inject
@@ -50,11 +61,11 @@ enum TestHelper {
         let scriptExpectation = testCase.expectation(description: "evaluate java script")
 
         if verbose {
-            consolePrint("eval: \(script.prefix(200))")
+            consolePrint("\n% \(script.prefix(1000))")
         }
         webView.evaluateJavaScript(script) { (any, error) in
             if verbose {
-                consolePrint("\(String(describing: any).prefix(200)) \(error?.localizedDescription ?? "")")
+                consolePrint("get eval result: \(String(describing: any).prefix(200)) \(error?.localizedDescription ?? "")")
             }
             completionHandler(any, error)
             scriptExpectation.fulfill()
@@ -83,12 +94,13 @@ enum TestHelper {
     }
 
     static func echoScript(messageHandler scriptEvent: ScriptEvent = ScriptEvent.holoflowsjsonrpc, val: String) -> String {
+        let extensionID = "HoloflowsKitTest"
         return """
         window.webkit.messageHandlers['\(scriptEvent.rawValue)'].postMessage(JSON.stringify({
             jsonrpc: "2.0",
             method: "_echo",
             id: "\(UUID().uuidString)",
-            params: \(val)
+            params: ["\(extensionID)", \(val)]
         }));
         """
     }

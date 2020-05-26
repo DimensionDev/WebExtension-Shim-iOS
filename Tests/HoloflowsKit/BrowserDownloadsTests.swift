@@ -107,6 +107,9 @@ extension BrowserDownloadsTests {
             // do nothing
         }
         wait(for: [createObjectURLExpectation], timeout: 3.0)
+        
+        // needs wait native callback finish
+        TestHelper.waitCallback(3.0, forTestCase: self)
 
         // get url
         var url = ""

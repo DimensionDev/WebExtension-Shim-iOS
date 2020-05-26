@@ -81,6 +81,9 @@ extension MessageExchangeTests {
             // do nothing
         }
         wait(for: [sendMessageExpectation], timeout: 3.0)
+        
+        // needs wait native callback finish
+        TestHelper.waitCallback(3.0, forTestCase: self)
 
         // check message
         let checkMessageScript = """

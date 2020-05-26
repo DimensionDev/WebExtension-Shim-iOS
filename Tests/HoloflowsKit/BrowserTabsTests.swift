@@ -120,11 +120,14 @@ extension BrowserTabsTests {
         // add listener
         let queryID = UUID().uuidString
         let addListenerScript = """
-        var array = [];
+        let myArray = [];
         document.addEventListener('\(ScriptEvent.holoflowsjsonrpc.rawValue)', event => {
-            if (event.detail.id != '\(queryID)') { return; }
+            if (event.detail.id != '\(queryID)') {
+                return;
+            }
             
-            array = event.detail.result;
+            myArray = event.detail.result;
+            \(TestHelper.echoScript(val: "myArray"))
         });
         """
         let addListenerExpectation = TestHelper.expectEvaluateJavaScript(in: tab.webView, script: addListenerScript, forTestCase: self) { (any, error) in
@@ -140,9 +143,12 @@ extension BrowserTabsTests {
             // do noting
         }
         wait(for: [queryExpectation], timeout: 3.0)
+        
+        // needs wait native query callback finish
+        TestHelper.waitCallback(3.0, forTestCase: self)
 
         // check
-        let checkExpectation = TestHelper.expectEvaluateJavaScript(in: tab.webView, script: "array;", forTestCase: self) { any, error in
+        let checkExpectation = TestHelper.expectEvaluateJavaScript(in: tab.webView, script: "myArray", forTestCase: self) { any, error in
             XCTAssertNil(error)
             let array = JSON(rawValue: any ?? Data())?.arrayValue ?? []
             XCTAssertEqual(array.count, 2)
@@ -189,6 +195,9 @@ extension BrowserTabsTests {
             // do noting
         }
         wait(for: [queryExpectation], timeout: 3.0)
+        
+        // needs wait native query callback finish
+        TestHelper.waitCallback(3.0, forTestCase: self)
 
         // check
         let checkExpectation = TestHelper.expectEvaluateJavaScript(in: tab.webView, script: "array;", forTestCase: self) { any, error in

@@ -6,6 +6,7 @@
 //
 
 import XCTest
+import SwiftyJSON
 import WebExtension_Shim
 
 class WKScriptMessageHandlerTests: XCTestCase {
@@ -25,7 +26,7 @@ extension WKScriptMessageHandlerTests {
         let tab = browser.tabs.create(options: nil)
         TestHelper.prepareTest(tab: tab, forTestCase: self)
 
-        let messageBody = HoloflowsRPC.Request<WebExtension._Echo>(params: WebExtension._Echo(payload: Date().description), id: UUID().uuidString)
+        let messageBody = HoloflowsRPC.Request<WebExtension._Echo>(params: WebExtension._Echo(params: JSON(Date().description)), id: UUID().uuidString)
         let echoScript = TestHelper.webKit(messageBody: messageBody)
         let echoExpectation = TestHelper.expectEvaluateJavaScript(in: tab.webView, script: echoScript, forTestCase: self) { (any, error) in
             // do nothing

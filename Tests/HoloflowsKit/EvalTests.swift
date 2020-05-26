@@ -43,6 +43,8 @@ extension EvalTests {
         }
         wait(for: [calculateExpectation], timeout: 3.0)
         
+        // needs wait native callback finish
+        TestHelper.waitCallback(3.0, forTestCase: self)
         
         let resultCheckExpectation = TestHelper.expectEvaluateJavaScript(in: tab.webView, script: "result;", forTestCase: self) { (any, error) in
             XCTAssertEqual(any as? Int, 402)
