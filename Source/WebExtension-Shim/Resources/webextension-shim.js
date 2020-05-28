@@ -1,8 +1,7 @@
-(function (Realm, ts) {
+(function (ts) {
     'use strict';
 
-    Realm = Realm && Realm.hasOwnProperty('default') ? Realm['default'] : Realm;
-    ts = ts && ts.hasOwnProperty('default') ? ts['default'] : ts;
+    ts = ts && Object.prototype.hasOwnProperty.call(ts, 'default') ? ts['default'] : ts;
 
     /**
      * Check if the current location matches. Used in manifest.json parser
@@ -908,29 +907,32 @@
         messageChannel: internalRPCChannel,
     });
 
-    class SamePageDebugChannel {
-        constructor(actor) {
-            this.actor = actor;
-            this.listener = [];
-            SamePageDebugChannel[actor].addEventListener('targetEventChannel', e => {
-                const detail = e.detail;
-                for (const f of this.listener) {
-                    try {
-                        f(detail);
+    let SamePageDebugChannel = /** @class */ (() => {
+        class SamePageDebugChannel {
+            constructor(actor) {
+                this.actor = actor;
+                this.listener = [];
+                SamePageDebugChannel[actor].addEventListener('targetEventChannel', e => {
+                    const detail = e.detail;
+                    for (const f of this.listener) {
+                        try {
+                            f(detail);
+                        }
+                        catch { }
                     }
-                    catch { }
-                }
-            });
+                });
+            }
+            on(_, cb) {
+                this.listener.push(cb);
+            }
+            emit(_, data) {
+                SamePageDebugChannel[this.actor === 'client' ? 'server' : 'client'].dispatchEvent(new CustomEvent('targetEventChannel', { detail: data }));
+            }
         }
-        on(_, cb) {
-            this.listener.push(cb);
-        }
-        emit(_, data) {
-            SamePageDebugChannel[this.actor === 'client' ? 'server' : 'client'].dispatchEvent(new CustomEvent('targetEventChannel', { detail: data }));
-        }
-    }
-    SamePageDebugChannel.server = document.createElement('a');
-    SamePageDebugChannel.client = document.createElement('a');
+        SamePageDebugChannel.server = document.createElement('a');
+        SamePageDebugChannel.client = document.createElement('a');
+        return SamePageDebugChannel;
+    })();
 
     /**
      * how webextension-shim communicate with native code.
@@ -939,7 +941,7 @@
     class iOSWebkitChannel {
         constructor() {
             this.listener = [];
-            document.addEventListener(key, e => {
+            document.addEventListener(key, (e) => {
                 const detail = e.detail;
                 for (const f of this.listener) {
                     try {
@@ -1485,9 +1487,27 @@ ${(req.origins || []).join('\n')}`);
         return false;
     }
 
+    /**
+     * Transform any code to "return" it's last expression value
+     * @param context
+     */
+    function lastExprValue(context) {
+        function visit(node) {
+            if (ts.isSourceFile(node)) {
+                const [last, ...rest] = [...node.statements].reverse();
+                if (ts.isExpressionStatement(last)) {
+                    return ts.updateSourceFileNode(node, [ts.createReturn(last.expression), ...rest].reverse());
+                }
+                return node;
+            }
+            return ts.visitEachChild(node, visit, context);
+        }
+        return visit;
+    }
+
     const scriptTransformCache = new Map();
     const moduleTransformCache = new Map();
-    const PrebuiltVersion = 0;
+    const PrebuiltVersion = 1;
     /**
      * For scripts, we treat it as a module with no static import/export.
      */
@@ -1497,9 +1517,13 @@ ${(req.origins || []).join('\n')}`);
             return cache.get(src);
         const hasDynamicImport = checkDynamicImport(src);
         const scriptBefore = undefined;
-        const scriptAfter = [thisTransformation, hasDynamicImport ? systemjsNameNoLeakTransformer : undefined].filter(x => x);
+        const scriptAfter = [
+            thisTransformation,
+            hasDynamicImport ? systemjsNameNoLeakTransformer : undefined,
+            lastExprValue,
+        ].filter((x) => x);
         const moduleBefore = undefined;
-        const moduleAfter = [systemjsNameNoLeakTransformer];
+        const moduleAfter = [systemjsNameNoLeakTransformer, lastExprValue].filter((x) => x);
         function getSourcePath() {
             const _ = path.split('/');
             const filename = _.pop();
@@ -1521,9 +1545,7 @@ ${(req.origins || []).join('\n')}`);
                 module: hasDynamicImport || kind === 'module' ? ts.ModuleKind.System : ts.ModuleKind.ESNext,
                 // ? A comment in React dev will make a false positive on realms checker
                 removeComments: true,
-                inlineSourceMap: true,
-                inlineSources: true,
-                sourceRoot,
+                sourceMap: false,
             },
             fileName,
         });
@@ -1547,7 +1569,7 @@ ${(req.origins || []).join('\n')}`);
                     getLineWithNo(endLineNum + 1),
                     getLineWithNo(endLineNum + 2),
                     getLineWithNo(endLineNum + 3),
-                ].filter(x => x);
+                ].filter((x) => x);
                 errText += `\n${aroundLines.join('\n')}\n`;
             }
             error.push(new SyntaxError(errText));
@@ -1564,38 +1586,52 @@ ${(req.origins || []).join('\n')}`);
     	return x && x.__esModule && Object.prototype.hasOwnProperty.call(x, 'default') ? x['default'] : x;
     }
 
-    function createCommonjsModule(fn, module) {
-    	return module = { exports: {} }, fn(module, module.exports), module.exports;
+    function createCommonjsModule(fn, basedir, module) {
+    	return module = {
+    	  path: basedir,
+    	  exports: {},
+    	  require: function (path, base) {
+          return commonjsRequire(path, (base === undefined || base === null) ? module.path : base);
+        }
+    	}, fn(module, module.exports), module.exports;
+    }
+
+    function commonjsRequire () {
+    	throw new Error('Dynamic requires are not currently supported by @rollup/plugin-commonjs');
     }
 
     var s = createCommonjsModule(function (module) {
     /*
-    * SJS 6.2.3
+    * SJS 6.3.2
     * Minimal SystemJS Build
     */
     (function () {
-      const hasSelf = typeof self !== 'undefined';
+      function errMsg(errCode, msg) {
+        return (msg || "") + " (SystemJS https://git.io/JvFET#" + errCode + ")";
+      }
 
-      const hasDocument = typeof document !== 'undefined';
+      var hasSymbol = typeof Symbol !== 'undefined';
+      var hasSelf = typeof self !== 'undefined';
+      var hasDocument = typeof document !== 'undefined';
 
-      const envGlobal = hasSelf ? self : commonjsGlobal;
+      var envGlobal = hasSelf ? self : commonjsGlobal;
 
-      let baseUrl;
+      var baseUrl;
 
       if (hasDocument) {
-        const baseEl = document.querySelector('base[href]');
+        var baseEl = document.querySelector('base[href]');
         if (baseEl)
           baseUrl = baseEl.href;
       }
 
       if (!baseUrl && typeof location !== 'undefined') {
         baseUrl = location.href.split('#')[0].split('?')[0];
-        const lastSepIndex = baseUrl.lastIndexOf('/');
+        var lastSepIndex = baseUrl.lastIndexOf('/');
         if (lastSepIndex !== -1)
           baseUrl = baseUrl.slice(0, lastSepIndex + 1);
       }
 
-      const backslashRegEx = /\\/g;
+      var backslashRegEx = /\\/g;
       function resolveIfNotPlainOrUrl (relUrl, parentUrl) {
         if (relUrl.indexOf('\\') !== -1)
           relUrl = relUrl.replace(backslashRegEx, '/');
@@ -1607,13 +1643,13 @@ ${(req.origins || []).join('\n')}`);
         else if (relUrl[0] === '.' && (relUrl[1] === '/' || relUrl[1] === '.' && (relUrl[2] === '/' || relUrl.length === 2 && (relUrl += '/')) ||
             relUrl.length === 1  && (relUrl += '/')) ||
             relUrl[0] === '/') {
-          const parentProtocol = parentUrl.slice(0, parentUrl.indexOf(':') + 1);
+          var parentProtocol = parentUrl.slice(0, parentUrl.indexOf(':') + 1);
           // Disabled, but these cases will give inconsistent results for deep backtracking
           //if (parentUrl[parentProtocol.length] !== '/')
           //  throw Error('Cannot resolve');
           // read pathname from parent URL
           // pathname taken to be part after leading "/"
-          let pathname;
+          var pathname;
           if (parentUrl[parentProtocol.length + 1] === '/') {
             // resolving to a :// so we need to read out the auth and host
             if (parentProtocol !== 'file:') {
@@ -1635,11 +1671,11 @@ ${(req.origins || []).join('\n')}`);
           // join together and split for removal of .. and . segments
           // looping the string instead of anything fancy for perf reasons
           // '../../../../../z' resolved to 'x/y' is just 'z'
-          const segmented = pathname.slice(0, pathname.lastIndexOf('/') + 1) + relUrl;
+          var segmented = pathname.slice(0, pathname.lastIndexOf('/') + 1) + relUrl;
 
-          const output = [];
-          let segmentIndex = -1;
-          for (let i = 0; i < segmented.length; i++) {
+          var output = [];
+          var segmentIndex = -1;
+          for (var i = 0; i < segmented.length; i++) {
             // busy reading a segment - only terminate on '/'
             if (segmentIndex !== -1) {
               if (segmented[i] === '/') {
@@ -1688,6 +1724,83 @@ ${(req.origins || []).join('\n')}`);
         return resolveIfNotPlainOrUrl(relUrl, parentUrl) || (relUrl.indexOf(':') !== -1 ? relUrl : resolveIfNotPlainOrUrl('./' + relUrl, parentUrl));
       }
 
+      function objectAssign (to, from) {
+        for (var p in from)
+          to[p] = from[p];
+        return to;
+      }
+
+      function resolveAndComposePackages (packages, outPackages, baseUrl, parentMap, parentUrl) {
+        for (var p in packages) {
+          var resolvedLhs = resolveIfNotPlainOrUrl(p, baseUrl) || p;
+          var rhs = packages[p];
+          // package fallbacks not currently supported
+          if (typeof rhs !== 'string')
+            continue;
+          var mapped = resolveImportMap(parentMap, resolveIfNotPlainOrUrl(rhs, baseUrl) || rhs, parentUrl);
+          if (!mapped) {
+            targetWarning('W1', p, rhs);
+          }
+          else
+            outPackages[resolvedLhs] = mapped;
+        }
+      }
+
+      function resolveAndComposeImportMap (json, baseUrl, parentMap) {
+        var outMap = { imports: objectAssign({}, parentMap.imports), scopes: objectAssign({}, parentMap.scopes) };
+
+        if (json.imports)
+          resolveAndComposePackages(json.imports, outMap.imports, baseUrl, parentMap, null);
+
+        if (json.scopes)
+          for (var s in json.scopes) {
+            var resolvedScope = resolveUrl(s, baseUrl);
+            resolveAndComposePackages(json.scopes[s], outMap.scopes[resolvedScope] || (outMap.scopes[resolvedScope] = {}), baseUrl, parentMap, resolvedScope);
+          }
+
+        return outMap;
+      }
+
+      function getMatch (path, matchObj) {
+        if (matchObj[path])
+          return path;
+        var sepIndex = path.length;
+        do {
+          var segment = path.slice(0, sepIndex + 1);
+          if (segment in matchObj)
+            return segment;
+        } while ((sepIndex = path.lastIndexOf('/', sepIndex - 1)) !== -1)
+      }
+
+      function applyPackages (id, packages) {
+        var pkgName = getMatch(id, packages);
+        if (pkgName) {
+          var pkg = packages[pkgName];
+          if (pkg === null) return;
+          if (id.length > pkgName.length && pkg[pkg.length - 1] !== '/') {
+            targetWarning('W2', pkgName, pkg);
+          }
+          else
+            return pkg + id.slice(pkgName.length);
+        }
+      }
+
+      function targetWarning (code, match, target, msg) {
+        console.warn(errMsg(code,  [target, match].join(', ') ));
+      }
+
+      function resolveImportMap (importMap, resolvedOrPlain, parentUrl) {
+        var scopes = importMap.scopes;
+        var scopeUrl = parentUrl && getMatch(parentUrl, scopes);
+        while (scopeUrl) {
+          var packageResolution = applyPackages(resolvedOrPlain, scopes[scopeUrl]);
+          if (packageResolution)
+            return packageResolution;
+          scopeUrl = getMatch(scopeUrl.slice(0, scopeUrl.lastIndexOf('/')), scopes);
+        }
+        return applyPackages(resolvedOrPlain, importMap.imports) || resolvedOrPlain.indexOf(':') !== -1 && resolvedOrPlain;
+      }
+
       /*
        * SystemJS Core
        * 
@@ -1705,26 +1818,23 @@ ${(req.origins || []).join('\n')}`);
        * System.prototype.instantiate implementations
        */
 
-      const hasSymbol = typeof Symbol !== 'undefined';
-      const toStringTag = hasSymbol && Symbol.toStringTag;
-      const REGISTRY = hasSymbol ? Symbol() : '@';
+      var toStringTag = hasSymbol && Symbol.toStringTag;
+      var REGISTRY = hasSymbol ? Symbol() : '@';
 
       function SystemJS () {
         this[REGISTRY] = {};
       }
 
-      const systemJSPrototype = SystemJS.prototype;
-
-      systemJSPrototype.prepareImport = function () {};
+      var systemJSPrototype = SystemJS.prototype;
 
       systemJSPrototype.import = function (id, parentUrl) {
-        const loader = this;
+        var loader = this;
         return Promise.resolve(loader.prepareImport())
         .then(function() {
           return loader.resolve(id, parentUrl);
         })
         .then(function (id) {
-          const load = getOrCreateLoad(loader, id);
+          var load = getOrCreateLoad(loader, id);
           return load.C || topLevelLoad(loader, load);
         });
       };
@@ -1735,8 +1845,16 @@ ${(req.origins || []).join('\n')}`);
           url: parentId
         };
       };
+      function loadToId (load) {
+        return load.id;
+      }
+      function triggerOnload (loader, load, err) {
+        loader.onload(err, load.id, load.d && load.d.map(loadToId));
+        if (err)
+          throw err;
+      }
 
-      let lastRegister;
+      var lastRegister;
       systemJSPrototype.register = function (deps, declare) {
         lastRegister = [deps, declare];
       };
@@ -1745,32 +1863,32 @@ ${(req.origins || []).join('\n')}`);
        * getRegister provides the last anonymous System.register call
        */
       systemJSPrototype.getRegister = function () {
-        const _lastRegister = lastRegister;
+        var _lastRegister = lastRegister;
         lastRegister = undefined;
         return _lastRegister;
       };
 
       function getOrCreateLoad (loader, id, firstParentUrl) {
-        let load = loader[REGISTRY][id];
+        var load = loader[REGISTRY][id];
         if (load)
           return load;
 
-        const importerSetters = [];
-        const ns = Object.create(null);
+        var importerSetters = [];
+        var ns = Object.create(null);
         if (toStringTag)
           Object.defineProperty(ns, toStringTag, { value: 'Module' });
         
-        let instantiatePromise = Promise.resolve()
+        var instantiatePromise = Promise.resolve()
         .then(function () {
           return loader.instantiate(id, firstParentUrl);
         })
         .then(function (registration) {
           if (!registration)
-            throw Error('Module ' + id + ' did not instantiate');
+            throw Error(errMsg(2,  id ));
           function _export (name, value) {
             // note if we have hoisted exports (including reexports)
             load.h = true;
-            let changed = false;
+            var changed = false;
             if (typeof name !== 'object') {
               if (!(name in ns) || ns[name] !== value) {
                 ns[name] = value;
@@ -1778,8 +1896,8 @@ ${(req.origins || []).join('\n')}`);
               }
             }
             else {
-              for (let p in name) {
-                let value = name[p];
+              for (var p in name) {
+                var value = name[p];
                 if (!(p in ns) || ns[p] !== value) {
                   ns[p] = value;
                   changed = true;
@@ -1791,11 +1909,11 @@ ${(req.origins || []).join('\n')}`);
               }
             }
             if (changed)
-              for (let i = 0; i < importerSetters.length; i++)
+              for (var i = 0; i < importerSetters.length; i++)
                 importerSetters[i](ns);
             return value;
           }
-          const declared = registration[1](_export, registration[1].length === 2 ? {
+          var declared = registration[1](_export, registration[1].length === 2 ? {
             import: function (importId) {
               return loader.import(importId, id);
             },
@@ -1805,13 +1923,13 @@ ${(req.origins || []).join('\n')}`);
           return [registration[0], declared.setters || []];
         });
 
-        const linkPromise = instantiatePromise
+        var linkPromise = instantiatePromise
         .then(function (instantiation) {
           return Promise.all(instantiation[0].map(function (dep, i) {
-            const setter = instantiation[1][i];
+            var setter = instantiation[1][i];
             return Promise.resolve(loader.resolve(dep, id))
             .then(function (depId) {
-              const depLoad = getOrCreateLoad(loader, depId, id);
+              var depLoad = getOrCreateLoad(loader, depId, id);
               // depLoad.I may be undefined for already-evaluated
               return Promise.resolve(depLoad.I)
               .then(function () {
@@ -1897,7 +2015,7 @@ ${(req.origins || []).join('\n')}`);
       }
 
       // the closest we can get to call(undefined)
-      const nullContext = Object.freeze(Object.create(null));
+      var nullContext = Object.freeze(Object.create(null));
 
       // returns a promise if and only if a top-level await subgraph
       // throws on sync errors
@@ -1915,10 +2033,17 @@ ${(req.origins || []).join('\n')}`);
         }
 
         // deps execute first, unless circular
-        let depLoadPromises;
+        var depLoadPromises;
         load.d.forEach(function (depLoad) {
-          {
-            const depLoadPromise = postOrderExec(loader, depLoad, seen);
+          if (false) {
+            try {
+              var depLoadPromise;
+            }
+            catch (err) {
+            }
+          }
+          else {
+            var depLoadPromise = postOrderExec(loader, depLoad, seen);
             if (depLoadPromise)
               (depLoadPromises = depLoadPromises || []).push(depLoadPromise);
           }
@@ -1930,9 +2055,18 @@ ${(req.origins || []).join('\n')}`);
 
         function doExec () {
           try {
-            let execPromise = load.e.call(nullContext);
+            var execPromise = load.e.call(nullContext);
             if (execPromise) {
-              execPromise = execPromise.then(function () {
+              if (!true)
+                execPromise = execPromise.then(function () {
+                  load.C = load.n;
+                  load.E = null; // indicates completion
+                  triggerOnload(loader, load, null);
+                }, function (err) {
+                  triggerOnload(loader, load, err);
+                });
+              else
+                execPromise = execPromise.then(function () {
                   load.C = load.n;
                   load.E = null;
                 });
@@ -1940,6 +2074,7 @@ ${(req.origins || []).join('\n')}`);
             }
             // (should be a promise, but a minify optimization to leave out Promise.resolve)
             load.C = load.n;
+            if (!true) triggerOnload(loader, load, null);
           }
           catch (err) {
             load.er = err;
@@ -1955,16 +2090,76 @@ ${(req.origins || []).join('\n')}`);
       envGlobal.System = new SystemJS();
 
       /*
+       * Import map support for SystemJS
+       * 
+       * <script type="systemjs-importmap">{}</script>
+       * OR
+       * <script type="systemjs-importmap" src=package.json></script>
+       * 
+       * Only those import maps available at the time of SystemJS initialization will be loaded
+       * and they will be loaded in DOM order.
+       * 
+       * There is no support for dynamic import maps injection currently.
+       */
+
+      var IMPORT_MAP = hasSymbol ? Symbol() : '#';
+      var IMPORT_MAP_PROMISE = hasSymbol ? Symbol() : '$';
+
+      iterateDocumentImportMaps(function (script) {
+        script._t = fetch(script.src).then(function (res) {
+          return res.text();
+        });
+      }, '[src]');
+
+      systemJSPrototype.prepareImport = function () {
+        var loader = this;
+        if (!loader[IMPORT_MAP_PROMISE]) {
+          loader[IMPORT_MAP] = { imports: {}, scopes: {} };
+          loader[IMPORT_MAP_PROMISE] = Promise.resolve();
+          iterateDocumentImportMaps(function (script) {
+            loader[IMPORT_MAP_PROMISE] = loader[IMPORT_MAP_PROMISE].then(function () {
+              return (script._t || script.src && fetch(script.src).then(function (res) { return res.text(); }) || Promise.resolve(script.innerHTML))
+              .then(function (text) {
+                try {
+                  return JSON.parse(text);
+                } catch (err) {
+                  throw Error( errMsg(1) );
+                }
+              })
+              .then(function (newMap) {
+                loader[IMPORT_MAP] = resolveAndComposeImportMap(newMap, script.src || baseUrl, loader[IMPORT_MAP]);
+              });
+            });
+          }, '');
+        }
+        return loader[IMPORT_MAP_PROMISE];
+      };
+
+      systemJSPrototype.resolve = function (id, parentUrl) {
+        parentUrl = parentUrl || !true  || baseUrl;
+        return resolveImportMap(this[IMPORT_MAP], resolveIfNotPlainOrUrl(id, parentUrl) || id, parentUrl) || throwUnresolved(id, parentUrl);
+      };
+
+      function throwUnresolved (id, parentUrl) {
+        throw Error(errMsg(8,  [id, parentUrl].join(', ') ));
+      }
+
+      function iterateDocumentImportMaps(cb, extraSelector) {
+        if (hasDocument)
+          [].forEach.call(document.querySelectorAll('script[type="systemjs-importmap"]' + extraSelector), cb);
+      }
+
+      /*
        * Supports loading System.register via script tag injection
        */
 
-      const systemRegister = systemJSPrototype.register;
+      var systemRegister = systemJSPrototype.register;
       systemJSPrototype.register = function (deps, declare) {
         systemRegister.call(this, deps, declare);
       };
 
       systemJSPrototype.createScript = function (url) {
-        const script = document.createElement('script');
+        var script = document.createElement('script');
         script.charset = 'utf-8';
         script.async = true;
         script.crossOrigin = 'anonymous';
@@ -1972,19 +2167,13 @@ ${(req.origins || []).join('\n')}`);
         return script;
       };
 
-      let lastWindowErrorUrl, lastWindowError;
-      if (hasDocument)
-        window.addEventListener('error', function (evt) {
-          lastWindowErrorUrl = evt.filename;
-          lastWindowError = evt.error;
-        });
-
+      var lastWindowErrorUrl, lastWindowError;
       systemJSPrototype.instantiate = function (url, firstParentUrl) {
-        const loader = this;
+        var loader = this;
         return new Promise(function (resolve, reject) {
-          const script = systemJSPrototype.createScript(url);
+          var script = systemJSPrototype.createScript(url);
           script.addEventListener('error', function () {
-            reject(Error('Error loading ' + url + (firstParentUrl ? ' from ' + firstParentUrl : '')));
+            reject(Error(errMsg(3,  [url, firstParentUrl].join(', ') )));
           });
           script.addEventListener('load', function () {
             document.head.removeChild(script);
@@ -2002,12 +2191,18 @@ ${(req.origins || []).join('\n')}`);
       };
 
       if (hasDocument) {
+        window.addEventListener('error', function (evt) {
+          lastWindowErrorUrl = evt.filename;
+          lastWindowError = evt.error;
+        });
+
         window.addEventListener('DOMContentLoaded', loadScriptModules);
         loadScriptModules();
       }
 
+
       function loadScriptModules() {
-        Array.prototype.forEach.call(
+        [].forEach.call(
           document.querySelectorAll('script[type=systemjs-module]'), function (script) {
             if (script.src) {
               System.import(script.src.slice(0, 7) === 'import:' ? script.src.slice(7) : resolveUrl(script.src, baseUrl));
@@ -2021,101 +2216,155 @@ ${(req.origins || []).join('\n')}`);
 
       if (hasSelf && typeof importScripts === 'function')
         systemJSPrototype.instantiate = function (url) {
-          const loader = this;
-          return new Promise(function (resolve, reject) {
-            try {
-              importScripts(url);
-            }
-            catch (e) {
-              reject(e);
-            }
-            resolve(loader.getRegister());
+          var loader = this;
+          return Promise.resolve().then(function () {
+            importScripts(url);
+            return loader.getRegister();
           });
         };
-
-      systemJSPrototype.resolve = function (id, parentUrl) {
-        const resolved = resolveIfNotPlainOrUrl(id, parentUrl || baseUrl);
-        if (!resolved) {
-          if (id.indexOf(':') !== -1)
-            return Promise.resolve(id);
-          throw Error('Cannot resolve "' + id + (parentUrl ? '" from ' + parentUrl : '"'));
-        }
-        return Promise.resolve(resolved);
-      };
 
     }());
     });
 
     unwrapExports(s);
 
+    function codegen() {
+        (() => {
+            var _a;
+            const { get, set } = Reflect;
+            const currentExtensionGlobal = Symbol.for('GLOBAL_SCOPE');
+            const global = get(globalThis, currentExtensionGlobal);
+            const proxy = new Proxy({ __proto__: null }, {
+                get(shadow, prop) {
+                    if (typeof prop === 'symbol') {
+                        return undefined;
+                    }
+                    return get(global, prop);
+                },
+                set: (shadow, prop, value) => set(global, prop, value),
+                has: () => true,
+                getPrototypeOf: () => null,
+            });
+            // @ts-ignore
+            const value = (function () {
+                if (arguments[0]) {
+                    return function () {
+                        // @ts-ignore
+                        throw '';
+                    }.call(undefined);
+                }
+                // @ts-ignore
+            })(proxy);
+            (_a = get(globalThis, Symbol.for('CALLBACK_HERE'))) === null || _a === void 0 ? void 0 : _a(value);
+        })();
+    }
+    function gen_static_eval(code, globalScopeSymbol, callbackSymbol) {
+        let x = codegen.toString();
+        x = replace(x, 'if (arguments[0])', 'with (arguments[0])');
+        x = replace(x, 'GLOBAL_SCOPE', globalScopeSymbol.description);
+        x = replace(x, 'CALLBACK_HERE', callbackSymbol.description);
+        x = replace(x, `throw ''`, code + '\n') + ';' + codegen.name.toString() + '()';
+        return x;
+    }
+    function replace(x, y, z) {
+        const pos = x.indexOf(y);
+        return x.slice(0, pos) + z + x.slice(pos + y.length);
+    }
+
+    var __classPrivateFieldGet = (undefined && undefined.__classPrivateFieldGet) || function (receiver, privateMap) {
+        if (!privateMap.has(receiver)) {
+            throw new TypeError("attempted to get private field on non-instance");
+        }
+        return privateMap.get(receiver);
+    };
+    var __classPrivateFieldSet = (undefined && undefined.__classPrivateFieldSet) || function (receiver, privateMap, value) {
+        if (!privateMap.has(receiver)) {
+            throw new TypeError("attempted to set private field on non-instance");
+        }
+        privateMap.set(receiver, value);
+        return value;
+    };
+    var _globalScopeSymbol, _inlineModule, _runtimeTransformer, _id, _getEvalFileName;
     const SystemJSConstructor = System.constructor;
     Reflect.deleteProperty(globalThis, 'System');
+    const { set } = Reflect;
     class SystemJSRealm extends SystemJSConstructor {
         constructor() {
-            super(...arguments);
+            super();
             this[Symbol.toStringTag] = 'Realm';
+            this.globalThis = { __proto__: null };
+            _globalScopeSymbol.set(this, Symbol.for(Math.random().toString())
+            //#region System
+            /** Create import.meta */
+            );
             /**
              * This is a map for inline module.
              * Key: script:random_number
              * Value: module text
              */
-            this.inlineModule = new Map();
+            _inlineModule.set(this, new Map());
             this.lastModuleRegister = null;
             //#endregion
             //#region Realm
-            this.runtimeTransformer = (kind, fileName) => ({
-                rewrite: (ctx) => {
-                    ctx.src = transformAST(ctx.src, kind, fileName);
-                    return ctx;
+            _runtimeTransformer.set(this, (kind, fileName, prebuilt) => (src) => prebuilt ? src : transformAST(src, kind, fileName));
+            this.esRealm = {
+                evaluate: async (sourceText, transformer) => {
+                    const id = Symbol.for(Math.random().toString());
+                    const evaluateDone = new Promise((resolve) => set(globalThis, id, (x) => resolve(x)));
+                    transformer === null || transformer === void 0 ? void 0 : transformer.forEach((f) => (sourceText = f(sourceText)));
+                    await FrameworkRPC.eval('', gen_static_eval(sourceText, __classPrivateFieldGet(this, _globalScopeSymbol), id));
+                    return evaluateDone;
                 },
-            });
-            this.esRealm = Realm.makeRootRealm({
-                sloppyGlobals: true,
-                transforms: [],
-            });
-            this.id = 0;
-            //#endregion
+            };
+            _id.set(this, 0);
+            _getEvalFileName.set(this, () => `debugger://${this.globalThis.browser.runtime.id}/VM${__classPrivateFieldSet(this, _id, +__classPrivateFieldGet(this, _id) + 1)}`
+            /**
+             * This function is used to execute script that with dynamic import
+             * @param executor The SystemJS format executor returned by the eval call
+             * @param scriptURL The script itself URL
+             */
+            );
+            set(globalThis, __classPrivateFieldGet(this, _globalScopeSymbol), this.globalThis);
         }
         //#region System
         /** Create import.meta */
         createContext(url) {
             if (url.startsWith('script:'))
-                return this.global.eval('({ url: undefined })');
-            return this.global.JSON.parse(JSON.stringify({ url }));
+                return this.globalThis.JSON.parse(JSON.stringify({ url: null }));
+            return this.globalThis.JSON.parse(JSON.stringify({ url }));
         }
         createScript() {
             throw new Error('Invalid call');
         }
         async prepareImport() { }
         resolve(url, parentUrl) {
-            if (this.inlineModule.has(url))
+            if (__classPrivateFieldGet(this, _inlineModule).has(url))
                 return url;
-            if (this.inlineModule.has(parentUrl))
-                parentUrl = this.global.location.href;
+            if (__classPrivateFieldGet(this, _inlineModule).has(parentUrl))
+                parentUrl = this.globalThis.location.href;
             return new URL(url, parentUrl).toJSON();
         }
         async instantiate(url) {
-            const evalSourceText = (sourceText, src, prebuilt) => {
-                const opt = prebuilt ? {} : { transforms: [this.runtimeTransformer('module', src)] };
-                const result = this.esRealm.evaluate(sourceText, {}, opt);
+            const evalSourceText = async (sourceText, src, prebuilt) => {
+                const result = await this.esRealm.evaluate(sourceText, [__classPrivateFieldGet(this, _runtimeTransformer).call(this, 'module', src, prebuilt)]);
                 const executor = result;
                 executor(this);
             };
-            if (this.inlineModule.has(url)) {
-                const sourceText = this.inlineModule.get(url);
-                evalSourceText(sourceText, url, false);
+            if (__classPrivateFieldGet(this, _inlineModule).has(url)) {
+                const sourceText = __classPrivateFieldGet(this, _inlineModule).get(url);
+                await evalSourceText(sourceText, url, false);
                 return this.getRegister();
             }
             const prebuilt = await this.fetchPrebuilt('module', url);
             if (prebuilt) {
                 const { content } = prebuilt;
-                evalSourceText(content, url, true);
+                await evalSourceText(content, url, true);
             }
             else {
                 const code = await this.fetchSourceText(url);
                 if (!code)
                     throw new TypeError(`Failed to fetch dynamically imported module: ` + url);
-                evalSourceText(code, url, false);
+                await evalSourceText(code, url, false);
                 // ? The executor should call the register exactly once.
             }
             return this.getRegister();
@@ -2130,12 +2379,6 @@ ${(req.origins || []).join('\n')}`);
                 throw new TypeError();
             this.lastModuleRegister = [deps, declare];
         }
-        getEvalFileName() {
-            return `debugger://${this.global.browser.runtime.id}/VM${++this.id}`;
-        }
-        get global() {
-            return this.esRealm.global;
-        }
         /**
          * This function is used to execute script that with dynamic import
          * @param executor The SystemJS format executor returned by the eval call
@@ -2147,7 +2390,7 @@ ${(req.origins || []).join('\n')}`);
                 throw new SyntaxError(`Unexpected token 'export'`);
             };
             const context = {
-                import: (id, self) => this.import(id, (self !== null && self !== void 0 ? self : scriptURL)),
+                import: (id, self) => this.import(id, self !== null && self !== void 0 ? self : scriptURL),
                 get meta() {
                     throw new SyntaxError(`Cannot use 'import.meta' outside a module`);
                 },
@@ -2159,7 +2402,7 @@ ${(req.origins || []).join('\n')}`);
             const prebuilt = await this.fetchPrebuilt('script', scriptURL);
             if (prebuilt) {
                 const { asSystemJS, content } = prebuilt;
-                const executeResult = this.esRealm.evaluate(content);
+                const executeResult = (await this.esRealm.evaluate(content));
                 if (!asSystemJS)
                     return executeResult; // script mode
                 return this.invokeScriptKindSystemJSModule(executeResult, scriptURL);
@@ -2177,15 +2420,15 @@ ${(req.origins || []).join('\n')}`);
          * @param sourceText Source text
          */
         async evaluateInlineModule(sourceText) {
-            var _a, _b;
+            var _a;
             const key = `script:` + Math.random().toString();
-            this.inlineModule.set(key, sourceText);
+            __classPrivateFieldGet(this, _inlineModule).set(key, sourceText);
             try {
                 return await this.import(key);
             }
             finally {
-                this.inlineModule.delete(key);
-                (_b = (_a = this).delete) === null || _b === void 0 ? void 0 : _b.call(_a, key);
+                __classPrivateFieldGet(this, _inlineModule).delete(key);
+                (_a = this.delete) === null || _a === void 0 ? void 0 : _a.call(this, key);
             }
         }
         /**
@@ -2196,21 +2439,22 @@ ${(req.origins || []).join('\n')}`);
          * @param sourceText Source code
          * @param scriptURL Script URL (optional)
          */
-        evaluateInlineScript(sourceText, scriptURL = this.getEvalFileName()) {
+        async evaluateInlineScript(sourceText, scriptURL = __classPrivateFieldGet(this, _getEvalFileName).call(this)) {
             const hasCache = scriptTransformCache.has(sourceText);
             const cache = scriptTransformCache.get(sourceText);
-            const transformer = { transforms: [this.runtimeTransformer('script', scriptURL)] };
+            const transformer = [__classPrivateFieldGet(this, _runtimeTransformer).call(this, 'script', scriptURL, false)];
             if (!checkDynamicImport(sourceText)) {
                 if (hasCache)
                     return this.esRealm.evaluate(cache);
-                return this.esRealm.evaluate(sourceText, {}, transformer);
+                return this.esRealm.evaluate(sourceText, transformer);
             }
             const executor = (hasCache
-                ? this.esRealm.evaluate(cache)
-                : this.esRealm.evaluate(sourceText, {}, transformer));
+                ? await this.esRealm.evaluate(cache)
+                : await this.esRealm.evaluate(sourceText, transformer));
             return this.invokeScriptKindSystemJSModule(executor, scriptURL);
         }
     }
+    _globalScopeSymbol = new WeakMap(), _inlineModule = new WeakMap(), _runtimeTransformer = new WeakMap(), _id = new WeakMap(), _getEvalFileName = new WeakMap();
 
     function enhancedWorker(extensionID, originalWorker = window.Worker) {
         if (!isDebug)
@@ -2232,23 +2476,23 @@ ${(req.origins || []).join('\n')}`);
      * @param traps Traps
      */
     function cloneObjectWithInternalSlot(original, realm, traps) {
-        var _a, _b, _c, _d;
-        const ownDescriptor = (_a = traps.designatedOwnDescriptors, (_a !== null && _a !== void 0 ? _a : Object.getOwnPropertyDescriptors(original)));
+        var _a, _b, _c;
+        const ownDescriptor = (_a = traps.designatedOwnDescriptors) !== null && _a !== void 0 ? _a : Object.getOwnPropertyDescriptors(original);
         const prototypeChain = getPrototypeChain(original);
         if (!cachedPropertyDescriptor.has(realm))
             cachedPropertyDescriptor.set(realm, new Map());
         const cacheMap = cachedPropertyDescriptor.get(realm);
         const newProto = prototypeChain.reduceRight((previous, current) => {
-            var _a, _b, _c;
+            var _a, _b;
             if (cacheMap.has(current))
                 return cacheMap.get(current);
             const desc = Object.getOwnPropertyDescriptors(current);
-            const obj = Object.create(previous, PatchThisOfDescriptors((_c = (_b = (_a = traps).descriptorsModifier) === null || _b === void 0 ? void 0 : _b.call(_a, current, desc), (_c !== null && _c !== void 0 ? _c : desc)), original));
+            const obj = Object.create(previous, PatchThisOfDescriptors((_b = (_a = traps.descriptorsModifier) === null || _a === void 0 ? void 0 : _a.call(traps, current, desc)) !== null && _b !== void 0 ? _b : desc, original));
             cacheMap.set(current, obj);
             return obj;
         }, {});
         const next = traps.nextObject || Object.create(null);
-        Object.defineProperties(next, PatchThisOfDescriptors((_d = (_c = (_b = traps).descriptorsModifier) === null || _c === void 0 ? void 0 : _c.call(_b, next, ownDescriptor), (_d !== null && _d !== void 0 ? _d : ownDescriptor)), original));
+        Object.defineProperties(next, PatchThisOfDescriptors((_c = (_b = traps.descriptorsModifier) === null || _b === void 0 ? void 0 : _b.call(traps, next, ownDescriptor)) !== null && _c !== void 0 ? _c : ownDescriptor, original));
         Object.setPrototypeOf(next, newProto);
         return next;
     }
@@ -2271,36 +2515,38 @@ ${(req.origins || []).join('\n')}`);
      *
      * To prevent `this` binding lost, we need to rebind it.
      *
-     * @param desc PropertyDescriptor
+     * @param descriptor PropertyDescriptor
      * @param native The native object
      */
-    function PatchThisOfDescriptorToNative(desc, native) {
-        const { get, set, value } = desc;
+    function PatchThisOfDescriptorToNative(descriptor, native) {
+        const { get, set, value } = descriptor;
         if (get)
-            desc.get = () => get.apply(native);
+            descriptor.get = () => get.apply(native);
         if (set)
-            desc.set = (val) => set.apply(native, val);
+            descriptor.set = (val) => set.apply(native, val);
         if (value && typeof value === 'function') {
-            const desc2 = Object.getOwnPropertyDescriptors(value);
-            desc.value = function () {
-                if (new.target)
-                    return Reflect.construct(value, arguments, new.target);
-                return Reflect.apply(value, native, arguments);
-            };
-            delete desc2.arguments;
-            delete desc2.caller;
-            delete desc2.callee;
-            Object.defineProperties(desc.value, desc2);
-            try {
-                // ? For unknown reason this fail for some objects on Safari.
-                value.prototype && Object.setPrototypeOf(desc.value, value.prototype);
-            }
-            catch { }
+            const nextDescriptor = Object.getOwnPropertyDescriptors(value);
+            const f = {
+                [value.name]: function () {
+                    if (new.target)
+                        return Reflect.construct(value, arguments, new.target);
+                    return Reflect.apply(value, native, arguments);
+                },
+            }[value.name];
+            descriptor.value = f;
+            // Hmm give it a better view.
+            f.toString = ((f) => () => `function ${f}() { [native code] }`)(value.name);
+            delete nextDescriptor.arguments;
+            delete nextDescriptor.caller;
+            delete nextDescriptor.callee;
+            Object.defineProperties(f, nextDescriptor);
+            Object.setPrototypeOf(f, value.__proto__);
         }
     }
     function PatchThisOfDescriptors(desc, native) {
         const _ = Object.entries(desc).map(([x, y]) => [x, { ...y }]);
-        _.forEach(x => PatchThisOfDescriptorToNative(x[1], native));
+        Object.getOwnPropertySymbols(desc).forEach((x) => _.push([x, { ...desc[x] }]));
+        _.forEach((x) => PatchThisOfDescriptorToNative(x[1], native));
         return Object.fromEntries(_);
     }
 
@@ -2314,7 +2560,7 @@ ${(req.origins || []).join('\n')}`);
      *
      * ## Checklist:
      * - [o] ContentScript cannot access main thread
-     * - [?] Main thread cannot access ContentScript
+     * - [ ] Main thread cannot access ContentScript
      * - [o] ContentScript can access main thread's DOM
      * - [ ] ContentScript modification on DOM prototype is not discoverable by main thread
      * - [ ] Main thread modification on DOM prototype is not discoverable by ContentScript
@@ -2325,33 +2571,35 @@ ${(req.origins || []).join('\n')}`);
     const PrepareWebAPIs = (() => {
         // ? replace Function with polluted version by Realms
         // ! this leaks the sandbox!
-        Object.defineProperty(Object.getPrototypeOf(() => { }), 'constructor', {
-            value: globalThis.Function,
-        });
+        // We're no longer using realms now.
+        // Object.defineProperty(
+        //     Object.getPrototypeOf(() => {}),
+        //     'constructor',
+        //     {
+        //         value: globalThis.Function,
+        //     },
+        // )
         const realWindow = window;
         const webAPIs = Object.getOwnPropertyDescriptors(window);
-        Reflect.deleteProperty(webAPIs, 'globalThis');
-        Reflect.deleteProperty(webAPIs, 'self');
-        Reflect.deleteProperty(webAPIs, 'global');
         return (sandboxRoot, locationProxy) => {
-            const sandboxDocument = cloneObjectWithInternalSlot(document, sandboxRoot, {
-                descriptorsModifier(obj, desc) {
-                    if ('defaultView' in desc)
-                        desc.defaultView.get = () => sandboxRoot;
-                    return desc;
-                },
-            });
+            // ?
+            // const sandboxDocument = cloneObjectWithInternalSlot(document, sandboxRoot, {
+            //     descriptorsModifier(obj, desc) {
+            //         if ('defaultView' in desc) desc.defaultView.get = () => sandboxRoot
+            //         return desc
+            //     },
+            // })
             const clonedWebAPIs = {
                 ...webAPIs,
-                window: { configurable: false, writable: false, enumerable: true, value: sandboxRoot },
-                document: { configurable: false, enumerable: true, get: () => sandboxDocument },
             };
+            for (const key in clonedWebAPIs)
+                if (clonedWebAPIs[key].value === globalThis)
+                    clonedWebAPIs[key].value = sandboxRoot;
             if (locationProxy)
                 clonedWebAPIs.location.value = locationProxy;
             for (const key in clonedWebAPIs)
                 if (key in sandboxRoot)
                     delete clonedWebAPIs[key];
-            Object.assign(sandboxRoot, { globalThis: sandboxRoot, self: sandboxRoot });
             cloneObjectWithInternalSlot(realWindow, sandboxRoot, {
                 nextObject: sandboxRoot,
                 designatedOwnDescriptors: clonedWebAPIs,
@@ -2372,20 +2620,20 @@ ${(req.origins || []).join('\n')}`);
             this.extensionID = extensionID;
             this.manifest = manifest;
             console.log('[WebExtension] Managed Realm created.');
-            PrepareWebAPIs(this.global, locationProxy);
-            const browser = BrowserFactory(this.extensionID, this.manifest, this.global.Object.prototype);
-            Object.defineProperty(this.global, 'browser', {
+            PrepareWebAPIs(this.globalThis, locationProxy);
+            const browser = BrowserFactory(this.extensionID, this.manifest, this.globalThis.Object.prototype);
+            Object.defineProperty(this.globalThis, 'browser', {
                 // ? Mozilla's polyfill may overwrite this. Figure this out.
                 get: () => browser,
                 set: () => false,
             });
-            this.global.URL = enhanceURL(this.global.URL, extensionID);
-            this.global.fetch = createFetch(extensionID);
-            this.global.open = openEnhanced(extensionID);
-            this.global.close = closeEnhanced(extensionID);
-            this.global.Worker = enhancedWorker(extensionID);
+            this.globalThis.URL = enhanceURL(this.globalThis.URL, extensionID);
+            this.globalThis.fetch = createFetch(extensionID);
+            this.globalThis.open = openEnhanced(extensionID);
+            this.globalThis.close = closeEnhanced(extensionID);
+            this.globalThis.Worker = enhancedWorker(extensionID);
             if (locationProxy)
-                this.global.location = locationProxy;
+                this.globalThis.location = locationProxy;
             function globalThisFix() {
                 var originalFunction = Function;
                 function newFunction(...args) {
@@ -2751,7 +2999,7 @@ document.write(html);">Remove script tags and go</button>
             console.warn(`run_at not supported yet. Defined at manifest.content_scripts[${index}].run_at`);
     }
 
-    const log = rt => async (...args) => {
+    const log = (rt) => async (...args) => {
         console.log('Mocked Host', ...args);
         return rt;
     };
@@ -2759,7 +3007,7 @@ document.write(html);">Remove script tags and go</button>
         constructor() {
             this.broadcast = new BroadcastChannel('webext-polyfill-debug');
             this.listener = [];
-            this.broadcast.addEventListener('message', e => {
+            this.broadcast.addEventListener('message', (e) => {
                 if (e.origin !== location.origin)
                     console.warn(e.origin, location.origin);
                 const detail = e.data;
@@ -2809,7 +3057,7 @@ document.write(html);">Remove script tags and go</button>
             },
             'browser.storage.local.remove': log(void 0),
             async 'browser.storage.local.set'(extensionID, d) {
-                useInternalStorage(extensionID, o => (o.debugModeStorage = Object.assign({}, o.debugModeStorage, d)));
+                useInternalStorage(extensionID, (o) => (o.debugModeStorage = Object.assign({}, o.debugModeStorage, d)));
             },
             async 'browser.tabs.create'(extensionID, options) {
                 if (!options.url)
@@ -2820,7 +3068,7 @@ document.write(html);">Remove script tags and go</button>
                 param.set('url', options.url);
                 param.set('type', options.url.startsWith('holoflows-extension://') ? 'p' : 'm');
                 a.href = '/?' + param;
-                a.innerText = 'browser.tabs.create: ' + options.url;
+                a.innerText = 'browser.tabs.create: Please click to open it: ' + options.url;
                 a.target = '_blank';
                 a.style.color = 'white';
                 document.body.appendChild(a);
@@ -2839,6 +3087,17 @@ document.write(html);">Remove script tags and go</button>
                     };
                 return { data: { content: '', mimeType: '', type: 'text' }, status: 404, statusText: 'Not found' };
             },
+            async eval(eid, string) {
+                const x = eval;
+                try {
+                    x(string);
+                }
+                catch (e) {
+                    console.log(string);
+                    console.error(e);
+                    throw e;
+                }
+            },
         };
         AsyncCall(host, {
             key: '',
@@ -2847,15 +3106,15 @@ document.write(html);">Remove script tags and go</button>
         });
     }
 
-    console.log('Loading dependencies from external', Realm, ts);
+    console.log('Loading dependencies from external', ts);
     // ## Inject here
     if (isDebug) {
         // leaves your id here, and put your extension to /extension/{id}/
         const testIDs = ['eofkdgkhfoebecmamljfaepckoecjhib'];
         // const testIDs = ['griesruigerhuigreuijghrehgerhgerge']
-        testIDs.forEach(id => fetch('/extension/' + id + '/manifest.json')
-            .then(x => x.text())
-            .then(x => {
+        testIDs.forEach((id) => fetch('/extension/' + id + '/manifest.json')
+            .then((x) => x.text())
+            .then((x) => {
             console.log(`Loading test WebExtension ${id}. Use globalThis.exts to access env`);
             Object.assign(globalThis, {
                 registerWebExtension,
@@ -2863,14 +3122,13 @@ document.write(html);">Remove script tags and go</button>
             });
             return registerWebExtension(id, JSON.parse(x));
         })
-            .then(v => Object.assign(globalThis, { exts: v })));
+            .then((v) => Object.assign(globalThis, { exts: v })));
     }
     else {
         /** ? Can't delete a global variable */
         Object.assign(globalThis, {
             ts: undefined,
             TypeScript: undefined,
-            Realm: undefined,
         });
     }
     /**
@@ -2881,5 +3139,5 @@ document.write(html);">Remove script tags and go</button>
      * )
      */
 
-}(Realm, ts));
+}(ts));
 //# sourceMappingURL=out.js.map
