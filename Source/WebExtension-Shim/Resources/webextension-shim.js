@@ -2228,42 +2228,40 @@ ${(req.origins || []).join('\n')}`);
 
     unwrapExports(s);
 
-    function codegen() {
-        (() => {
-            var _a;
-            const { get, set } = Reflect;
-            const currentExtensionGlobal = Symbol.for('GLOBAL_SCOPE');
-            const global = get(globalThis, currentExtensionGlobal);
-            const proxy = new Proxy({ __proto__: null }, {
-                get(shadow, prop) {
-                    if (typeof prop === 'symbol') {
-                        return undefined;
-                    }
-                    return get(global, prop);
-                },
-                set: (shadow, prop, value) => set(global, prop, value),
-                has: () => true,
-                getPrototypeOf: () => null,
-            });
-            // @ts-ignore
-            const value = (function () {
-                if (arguments[0]) {
-                    return function () {
-                        // @ts-ignore
-                        throw '';
-                    }.call(undefined);
+    function static_eval_generated() {
+        var _a;
+        const { get, set } = Reflect;
+        const currentExtensionGlobal = Symbol.for('GLOBAL_SCOPE');
+        const global = get(globalThis, currentExtensionGlobal);
+        const proxy = new Proxy({ __proto__: null }, {
+            get(shadow, prop) {
+                if (typeof prop === 'symbol') {
+                    return undefined;
                 }
-                // @ts-ignore
-            })(proxy);
-            (_a = get(globalThis, Symbol.for('CALLBACK_HERE'))) === null || _a === void 0 ? void 0 : _a(value);
-        })();
+                return get(global, prop);
+            },
+            set: (shadow, prop, value) => set(global, prop, value),
+            has: () => true,
+            getPrototypeOf: () => null,
+        });
+        // @ts-ignore
+        const value = (function () {
+            if (arguments[0]) {
+                return function () {
+                    // @ts-ignore
+                    throw '';
+                }.call(undefined);
+            }
+            // @ts-ignore
+        })(proxy);
+        (_a = get(globalThis, Symbol.for('CALLBACK_HERE'))) === null || _a === void 0 ? void 0 : _a(value);
     }
-    function gen_static_eval(code, globalScopeSymbol, callbackSymbol) {
-        let x = codegen.toString();
+    function generateEvalString(code, globalScopeSymbol, callbackSymbol) {
+        let x = static_eval_generated.toString();
         x = replace(x, 'if (arguments[0])', 'with (arguments[0])');
         x = replace(x, 'GLOBAL_SCOPE', globalScopeSymbol.description);
         x = replace(x, 'CALLBACK_HERE', callbackSymbol.description);
-        x = replace(x, `throw ''`, code + '\n') + ';' + codegen.name.toString() + '()';
+        x = replace(x, `throw ''`, code + '\n') + ';' + static_eval_generated.name.toString() + '()';
         return x;
     }
     function replace(x, y, z) {
@@ -2284,19 +2282,71 @@ ${(req.origins || []).join('\n')}`);
         privateMap.set(receiver, value);
         return value;
     };
-    var _globalScopeSymbol, _inlineModule, _runtimeTransformer, _id, _getEvalFileName;
+    var _globalScopeSymbol, _globalThis, _inlineModule, _runtimeTransformer, _evaluate, _id, _getEvalFileName;
     const SystemJSConstructor = System.constructor;
     Reflect.deleteProperty(globalThis, 'System');
-    const { set } = Reflect;
+    const { set, construct, apply, deleteProperty } = Reflect;
+    const { warn, trace } = console;
+    const { eval: indirectEval } = globalThis;
+    const canUseEval = (() => {
+        try {
+            indirectEval('Math.random()');
+            return true;
+        }
+        catch {
+            return false;
+        }
+    })();
     class SystemJSRealm extends SystemJSConstructor {
+        // The import() function is implemented by SystemJS
+        //#endregion
         constructor() {
             super();
+            //#region Realm
             this[Symbol.toStringTag] = 'Realm';
-            this.globalThis = { __proto__: null };
-            _globalScopeSymbol.set(this, Symbol.for(Math.random().toString())
-            //#region System
-            /** Create import.meta */
-            );
+            _globalScopeSymbol.set(this, Symbol.for(Math.random().toString()));
+            _globalThis.set(this, {
+                __proto__: null,
+                /**
+                 * Due to tech limitation, the eval will always be
+                 * PerformEval(code,
+                 *      callerRealm = this SystemJSRealm,
+                 *      strictCaller = false,
+                 *      direct = false)
+                 */
+                eval: (code) => {
+                    // 18.2.1.1, step 2
+                    if (typeof code !== 'string')
+                        return code;
+                    trace(`[WebExtension] Try to eval`, code);
+                    if (!checkDynamicImport(code))
+                        // Might be a Promise if the host enable CSP.
+                        return __classPrivateFieldGet(this, _evaluate).call(this, code, [__classPrivateFieldGet(this, _runtimeTransformer).call(this, 'script', 'prebuilt', false)]);
+                    // Sadly, must return a Promise here.
+                    return this.evaluateInlineScript(code);
+                },
+                Function: new Proxy(Function, {
+                    construct: (target, argArray, newTarget) => {
+                        trace('[WebExtension] try to call new Function the following code:', ...argArray);
+                        if (argArray.length === 1 && argArray[0] === 'return this')
+                            return () => this.globalThis;
+                        // TODO: impl this
+                        throw new Error('Cannot run code dynamically');
+                        // return construct(target, argArray, newTarget)
+                    },
+                    apply: (target, thisArg, code) => {
+                        // Hack for babel regeneratorRuntime
+                        if (code.length === 1 && code[0] === 'return this')
+                            return () => this.globalThis;
+                        if (code.length === 2 && code[0] === 'r' && code[1] === 'regeneratorRuntime = r')
+                            // @ts-ignore
+                            return (r) => (this.globalThis.regeneratorRuntime = r);
+                        warn('[WebExtension]: try to construct Function by the following code:', ...code);
+                        throw new Error('Cannot run code dynamically');
+                        // return apply(target, thisArg, code)
+                    },
+                }),
+            });
             /**
              * This is a map for inline module.
              * Key: script:random_number
@@ -2307,15 +2357,22 @@ ${(req.origins || []).join('\n')}`);
             //#endregion
             //#region Realm
             _runtimeTransformer.set(this, (kind, fileName, prebuilt) => (src) => prebuilt ? src : transformAST(src, kind, fileName));
-            this.esRealm = {
-                evaluate: async (sourceText, transformer) => {
-                    const id = Symbol.for(Math.random().toString());
-                    const evaluateDone = new Promise((resolve) => set(globalThis, id, (x) => resolve(x)));
-                    transformer === null || transformer === void 0 ? void 0 : transformer.forEach((f) => (sourceText = f(sourceText)));
-                    await FrameworkRPC.eval('', gen_static_eval(sourceText, __classPrivateFieldGet(this, _globalScopeSymbol), id));
-                    return evaluateDone;
-                },
-            };
+            _evaluate.set(this, (sourceText, transformer) => {
+                const evalCallbackID = Symbol.for(Math.random().toString());
+                let rejection = (e) => { };
+                const evaluation = new Promise((resolve, reject) => set(globalThis, evalCallbackID, (x) => {
+                    resolve(x);
+                    rejection = reject;
+                }));
+                evaluation.finally(() => deleteProperty(globalThis, evalCallbackID));
+                transformer === null || transformer === void 0 ? void 0 : transformer.forEach((f) => (sourceText = f(sourceText)));
+                const evalString = generateEvalString(sourceText, __classPrivateFieldGet(this, _globalScopeSymbol), evalCallbackID);
+                if (canUseEval) {
+                    return indirectEval(evalString);
+                }
+                setTimeout(rejection, 2000);
+                return FrameworkRPC.eval('', evalString).then(() => evaluation, (e) => (rejection(e), evaluation));
+            });
             _id.set(this, 0);
             _getEvalFileName.set(this, () => `debugger://${this.globalThis.browser.runtime.id}/VM${__classPrivateFieldSet(this, _id, +__classPrivateFieldGet(this, _id) + 1)}`
             /**
@@ -2325,6 +2382,9 @@ ${(req.origins || []).join('\n')}`);
              */
             );
             set(globalThis, __classPrivateFieldGet(this, _globalScopeSymbol), this.globalThis);
+        }
+        get globalThis() {
+            return __classPrivateFieldGet(this, _globalThis);
         }
         //#region System
         /** Create import.meta */
@@ -2346,7 +2406,7 @@ ${(req.origins || []).join('\n')}`);
         }
         async instantiate(url) {
             const evalSourceText = async (sourceText, src, prebuilt) => {
-                const result = await this.esRealm.evaluate(sourceText, [__classPrivateFieldGet(this, _runtimeTransformer).call(this, 'module', src, prebuilt)]);
+                const result = await __classPrivateFieldGet(this, _evaluate).call(this, sourceText, [__classPrivateFieldGet(this, _runtimeTransformer).call(this, 'module', src, prebuilt)]);
                 const executor = result;
                 executor(this);
             };
@@ -2402,7 +2462,7 @@ ${(req.origins || []).join('\n')}`);
             const prebuilt = await this.fetchPrebuilt('script', scriptURL);
             if (prebuilt) {
                 const { asSystemJS, content } = prebuilt;
-                const executeResult = (await this.esRealm.evaluate(content));
+                const executeResult = (await __classPrivateFieldGet(this, _evaluate).call(this, content));
                 if (!asSystemJS)
                     return executeResult; // script mode
                 return this.invokeScriptKindSystemJSModule(executeResult, scriptURL);
@@ -2418,6 +2478,8 @@ ${(req.origins || []).join('\n')}`);
         /**
          * Evaluate a inline ECMAScript module
          * @param sourceText Source text
+         *
+         * @deprecated This method is not compatible with CSP and might be rejected by the host.
          */
         async evaluateInlineModule(sourceText) {
             var _a;
@@ -2438,6 +2500,8 @@ ${(req.origins || []).join('\n')}`);
          * But support dynamic import
          * @param sourceText Source code
          * @param scriptURL Script URL (optional)
+         *
+         * @deprecated This method is not compatible with CSP and might be rejected by the host.
          */
         async evaluateInlineScript(sourceText, scriptURL = __classPrivateFieldGet(this, _getEvalFileName).call(this)) {
             const hasCache = scriptTransformCache.has(sourceText);
@@ -2445,16 +2509,14 @@ ${(req.origins || []).join('\n')}`);
             const transformer = [__classPrivateFieldGet(this, _runtimeTransformer).call(this, 'script', scriptURL, false)];
             if (!checkDynamicImport(sourceText)) {
                 if (hasCache)
-                    return this.esRealm.evaluate(cache);
-                return this.esRealm.evaluate(sourceText, transformer);
+                    return __classPrivateFieldGet(this, _evaluate).call(this, cache);
+                return __classPrivateFieldGet(this, _evaluate).call(this, sourceText, transformer);
             }
-            const executor = (hasCache
-                ? await this.esRealm.evaluate(cache)
-                : await this.esRealm.evaluate(sourceText, transformer));
+            const executor = (hasCache ? await __classPrivateFieldGet(this, _evaluate).call(this, cache) : await __classPrivateFieldGet(this, _evaluate).call(this, sourceText, transformer));
             return this.invokeScriptKindSystemJSModule(executor, scriptURL);
         }
     }
-    _globalScopeSymbol = new WeakMap(), _inlineModule = new WeakMap(), _runtimeTransformer = new WeakMap(), _id = new WeakMap(), _getEvalFileName = new WeakMap();
+    _globalScopeSymbol = new WeakMap(), _globalThis = new WeakMap(), _inlineModule = new WeakMap(), _runtimeTransformer = new WeakMap(), _evaluate = new WeakMap(), _id = new WeakMap(), _getEvalFileName = new WeakMap();
 
     function enhancedWorker(extensionID, originalWorker = window.Worker) {
         if (!isDebug)
@@ -2606,6 +2668,7 @@ ${(req.origins || []).join('\n')}`);
             });
         };
     })();
+    const { log, warn: warn$1 } = console;
     /**
      * Execution environment of managed Realm (including content script in production and all env in runtime).
      */
@@ -2619,7 +2682,7 @@ ${(req.origins || []).join('\n')}`);
             super();
             this.extensionID = extensionID;
             this.manifest = manifest;
-            console.log('[WebExtension] Managed Realm created.');
+            log('[WebExtension] Managed Realm created.');
             PrepareWebAPIs(this.globalThis, locationProxy);
             const browser = BrowserFactory(this.extensionID, this.manifest, this.globalThis.Object.prototype);
             Object.defineProperty(this.globalThis, 'browser', {
@@ -2634,20 +2697,6 @@ ${(req.origins || []).join('\n')}`);
             this.globalThis.Worker = enhancedWorker(extensionID);
             if (locationProxy)
                 this.globalThis.location = locationProxy;
-            function globalThisFix() {
-                var originalFunction = Function;
-                function newFunction(...args) {
-                    const fn = new originalFunction(...args);
-                    return new Proxy(fn, {
-                        apply(a, b, c) {
-                            return Reflect.apply(a, b || globalThis, c);
-                        },
-                    });
-                }
-                // @ts-ignore
-                globalThis.Function = newFunction;
-            }
-            this.esRealm.evaluate(globalThisFix.toString() + '\n' + globalThisFix.name + '()');
         }
         async fetchPrebuilt(kind, url) {
             const res = await this.fetchSourceText(url + `.prebuilt-${PrebuiltVersion}-${kind}`);
@@ -2999,7 +3048,7 @@ document.write(html);">Remove script tags and go</button>
             console.warn(`run_at not supported yet. Defined at manifest.content_scripts[${index}].run_at`);
     }
 
-    const log = (rt) => async (...args) => {
+    const log$1 = (rt) => async (...args) => {
         console.log('Mocked Host', ...args);
         return rt;
     };
@@ -3045,17 +3094,17 @@ document.write(html);">Remove script tags and go</button>
             mockHost.onCommitted({ tabId: myTabID, url: obj.src });
         }, 2000);
         const host = {
-            'URL.createObjectURL': log(void 0),
-            'URL.revokeObjectURL': log(void 0),
-            'browser.downloads.download': log(void 0),
+            'URL.createObjectURL': log$1(void 0),
+            'URL.revokeObjectURL': log$1(void 0),
+            'browser.downloads.download': log$1(void 0),
             async sendMessage(e, t, tt, m, mm) {
                 mockHost.onMessage(e, t, m, mm, { id: new URLSearchParams(location.search).get('id') });
             },
-            'browser.storage.local.clear': log(void 0),
+            'browser.storage.local.clear': log$1(void 0),
             async 'browser.storage.local.get'(extensionID, k) {
                 return (await useInternalStorage(extensionID)).debugModeStorage || {};
             },
-            'browser.storage.local.remove': log(void 0),
+            'browser.storage.local.remove': log$1(void 0),
             async 'browser.storage.local.set'(extensionID, d) {
                 useInternalStorage(extensionID, (o) => (o.debugModeStorage = Object.assign({}, o.debugModeStorage, d)));
             },
@@ -3074,9 +3123,9 @@ document.write(html);">Remove script tags and go</button>
                 document.body.appendChild(a);
                 return { id: Math.random() };
             },
-            'browser.tabs.query': log([]),
-            'browser.tabs.remove': log(void 0),
-            'browser.tabs.update': log({}),
+            'browser.tabs.query': log$1([]),
+            'browser.tabs.remove': log$1(void 0),
+            'browser.tabs.update': log$1({}),
             async fetch(extensionID, r) {
                 const req = await origFetch$1(debugModeURLRewrite(extensionID, r.url));
                 if (req.ok)
