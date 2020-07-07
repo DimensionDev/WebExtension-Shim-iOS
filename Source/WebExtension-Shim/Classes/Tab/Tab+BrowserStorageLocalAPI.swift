@@ -5,6 +5,7 @@
 //  Created by Cirno MainasuK on 2019-6-14.
 //
 
+import os
 import Foundation
 import ConsolePrint
 import SwiftyJSON
@@ -21,13 +22,15 @@ extension Tab {
                 HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
                 return
             }
+
             let keys = get.keyValues ?? []
+            os_log("^ %{public}s[%{public}ld], %{public}s: local get keys: %{public}s", ((#file as NSString).lastPathComponent), #line, #function, keys.debugDescription)
             let entires = localStorageManager.get(keys: keys)
 
             let dict = entires.reduce(into: [String : JSON]()) { dict, localStorgae in
-                dict[localStorgae.key] = JSON(parseJSON: localStorgae.value)
+                dict[localStorgae.key] = (try? JSONDecoder().decode(JSON.self, from: localStorgae.value)) ?? JSON.null
             }
-
+            os_log("^ %{public}s[%{public}ld], %{public}s: local get results: %{public}s", ((#file as NSString).lastPathComponent), #line, #function, dict.debugDescription)
             let result: Result<HoloflowsRPC.Response<[String:JSON]>, RPC.Error> = .success(HoloflowsRPC.Response(result: dict, id: id))
             HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
 
@@ -51,7 +54,7 @@ extension Tab {
             let entries = set.entriesDict.map { (key, value) -> LocalStorage in
                 let entry = LocalStorage()
                 entry.key = key
-                entry.value = value.rawString() ?? ""
+                entry.value = (try? JSONEncoder().encode(value)) ?? Data()
                 return entry
             }
 
@@ -87,7 +90,7 @@ extension Tab {
                 let keys = remove.keyValues
                 let removed = try localStorageManager.remove(keys: keys)
                 let dict = removed.reduce(into: [String : JSON]()) { dict, localStorgae in
-                    dict[localStorgae.key] = JSON(parseJSON: localStorgae.value)
+                    dict[localStorgae.key] = (try? JSONDecoder().decode(JSON.self, from: localStorgae.value)) ?? JSON.null
                 }
 
                 let result: Result<HoloflowsRPC.Response<[String: JSON]>, RPC.Error> = .success(HoloflowsRPC.Response(result: dict, id: id))

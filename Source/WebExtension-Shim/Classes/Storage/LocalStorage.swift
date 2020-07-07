@@ -11,7 +11,7 @@ import SwiftyJSON
 
 public class LocalStorage: Object {
     @objc public dynamic var key: String = ""
-    @objc public dynamic var value: String = ""
+    @objc public dynamic var value: Data = Data()
 
     override public static func primaryKey() -> String? {
         return "key"
