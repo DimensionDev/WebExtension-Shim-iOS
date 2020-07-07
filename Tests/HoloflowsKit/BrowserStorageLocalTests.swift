@@ -224,17 +224,23 @@ extension BrowserStorageLocalTests {
         let kitten: LocalStorage = {
             let entry = LocalStorage()
             entry.key = "kitten"
-            entry.value = """
-            { name:"Moggy", tentacles: false, eyeCount: 2 }
-            """
+            
+            var json = JSON()
+            json["name"] = "Moggy"
+            json["tentacles"] = false
+            json["eyeCount"] = 2
+            entry.value = (try? JSONEncoder().encode(json)) ?? Data()
             return entry
         }()
         let monster: LocalStorage = {
             let entry = LocalStorage()
             entry.key = "monster"
-            entry.value = """
-            { name: "Kraken", tentacles: true, eyeCount: 10 }
-            """
+            
+            var json = JSON()
+            json["name"] = "Kraken"
+            json["tentacles"] = true
+            json["eyeCount"] = 10
+            entry.value = (try? JSONEncoder().encode(json)) ?? Data()
             return entry
         }()
 
