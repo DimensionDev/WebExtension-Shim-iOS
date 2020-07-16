@@ -907,29 +907,32 @@
         messageChannel: internalRPCChannel,
     });
 
-    class SamePageDebugChannel {
-        constructor(actor) {
-            this.actor = actor;
-            this.listener = [];
-            SamePageDebugChannel[actor].addEventListener('targetEventChannel', e => {
-                const detail = e.detail;
-                for (const f of this.listener) {
-                    try {
-                        f(detail);
+    let SamePageDebugChannel = /** @class */ (() => {
+        class SamePageDebugChannel {
+            constructor(actor) {
+                this.actor = actor;
+                this.listener = [];
+                SamePageDebugChannel[actor].addEventListener('targetEventChannel', e => {
+                    const detail = e.detail;
+                    for (const f of this.listener) {
+                        try {
+                            f(detail);
+                        }
+                        catch { }
                     }
-                    catch { }
-                }
-            });
+                });
+            }
+            on(_, cb) {
+                this.listener.push(cb);
+            }
+            emit(_, data) {
+                SamePageDebugChannel[this.actor === 'client' ? 'server' : 'client'].dispatchEvent(new CustomEvent('targetEventChannel', { detail: data }));
+            }
         }
-        on(_, cb) {
-            this.listener.push(cb);
-        }
-        emit(_, data) {
-            SamePageDebugChannel[this.actor === 'client' ? 'server' : 'client'].dispatchEvent(new CustomEvent('targetEventChannel', { detail: data }));
-        }
-    }
-    SamePageDebugChannel.server = document.createElement('a');
-    SamePageDebugChannel.client = document.createElement('a');
+        SamePageDebugChannel.server = document.createElement('a');
+        SamePageDebugChannel.client = document.createElement('a');
+        return SamePageDebugChannel;
+    })();
 
     /**
      * how webextension-shim communicate with native code.
@@ -1582,8 +1585,18 @@ ${(req.origins || []).join('\n')}`);
     	return x && x.__esModule && Object.prototype.hasOwnProperty.call(x, 'default') ? x['default'] : x;
     }
 
-    function createCommonjsModule(fn, module) {
-    	return module = { exports: {} }, fn(module, module.exports), module.exports;
+    function createCommonjsModule(fn, basedir, module) {
+    	return module = {
+    	  path: basedir,
+    	  exports: {},
+    	  require: function (path, base) {
+          return commonjsRequire(path, (base === undefined || base === null) ? module.path : base);
+        }
+    	}, fn(module, module.exports), module.exports;
+    }
+
+    function commonjsRequire () {
+    	throw new Error('Dynamic requires are not currently supported by @rollup/plugin-commonjs');
     }
 
     var s = createCommonjsModule(function (module) {
