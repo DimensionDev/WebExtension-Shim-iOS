@@ -1,7 +1,8 @@
-(function (ts) {
+(function (Realm, ts) {
     'use strict';
 
-    ts = ts && Object.prototype.hasOwnProperty.call(ts, 'default') ? ts['default'] : ts;
+    Realm = Realm && Realm.hasOwnProperty('default') ? Realm['default'] : Realm;
+    ts = ts && ts.hasOwnProperty('default') ? ts['default'] : ts;
 
     /**
      * Check if the current location matches. Used in manifest.json parser
@@ -907,32 +908,29 @@
         messageChannel: internalRPCChannel,
     });
 
-    let SamePageDebugChannel = /** @class */ (() => {
-        class SamePageDebugChannel {
-            constructor(actor) {
-                this.actor = actor;
-                this.listener = [];
-                SamePageDebugChannel[actor].addEventListener('targetEventChannel', e => {
-                    const detail = e.detail;
-                    for (const f of this.listener) {
-                        try {
-                            f(detail);
-                        }
-                        catch { }
+    class SamePageDebugChannel {
+        constructor(actor) {
+            this.actor = actor;
+            this.listener = [];
+            SamePageDebugChannel[actor].addEventListener('targetEventChannel', e => {
+                const detail = e.detail;
+                for (const f of this.listener) {
+                    try {
+                        f(detail);
                     }
-                });
-            }
-            on(_, cb) {
-                this.listener.push(cb);
-            }
-            emit(_, data) {
-                SamePageDebugChannel[this.actor === 'client' ? 'server' : 'client'].dispatchEvent(new CustomEvent('targetEventChannel', { detail: data }));
-            }
+                    catch { }
+                }
+            });
         }
-        SamePageDebugChannel.server = document.createElement('a');
-        SamePageDebugChannel.client = document.createElement('a');
-        return SamePageDebugChannel;
-    })();
+        on(_, cb) {
+            this.listener.push(cb);
+        }
+        emit(_, data) {
+            SamePageDebugChannel[this.actor === 'client' ? 'server' : 'client'].dispatchEvent(new CustomEvent('targetEventChannel', { detail: data }));
+        }
+    }
+    SamePageDebugChannel.server = document.createElement('a');
+    SamePageDebugChannel.client = document.createElement('a');
 
     /**
      * how webextension-shim communicate with native code.
@@ -941,7 +939,7 @@
     class iOSWebkitChannel {
         constructor() {
             this.listener = [];
-            document.addEventListener(key, (e) => {
+            document.addEventListener(key, e => {
                 const detail = e.detail;
                 for (const f of this.listener) {
                     try {
@@ -1487,27 +1485,9 @@ ${(req.origins || []).join('\n')}`);
         return false;
     }
 
-    /**
-     * Transform any code to "return" it's last expression value
-     * @param context
-     */
-    function lastExprValue(context) {
-        function visit(node) {
-            if (ts.isSourceFile(node)) {
-                const [last, ...rest] = [...node.statements].reverse();
-                if (ts.isExpressionStatement(last)) {
-                    return ts.updateSourceFileNode(node, [ts.createReturn(last.expression), ...rest].reverse());
-                }
-                return node;
-            }
-            return ts.visitEachChild(node, visit, context);
-        }
-        return visit;
-    }
-
     const scriptTransformCache = new Map();
     const moduleTransformCache = new Map();
-    const PrebuiltVersion = 1;
+    const PrebuiltVersion = 0;
     /**
      * For scripts, we treat it as a module with no static import/export.
      */
@@ -1517,12 +1497,9 @@ ${(req.origins || []).join('\n')}`);
             return cache.get(src);
         const hasDynamicImport = checkDynamicImport(src);
         const scriptBefore = undefined;
-        const scriptAfter = [
-            thisTransformation,
-            ...(hasDynamicImport ? [systemjsNameNoLeakTransformer, lastExprValue] : []),
-        ].filter((x) => x);
+        const scriptAfter = [thisTransformation, hasDynamicImport ? systemjsNameNoLeakTransformer : undefined].filter(x => x);
         const moduleBefore = undefined;
-        const moduleAfter = [systemjsNameNoLeakTransformer, lastExprValue].filter((x) => x);
+        const moduleAfter = [systemjsNameNoLeakTransformer];
         function getSourcePath() {
             const _ = path.split('/');
             const filename = _.pop();
@@ -1544,7 +1521,9 @@ ${(req.origins || []).join('\n')}`);
                 module: hasDynamicImport || kind === 'module' ? ts.ModuleKind.System : ts.ModuleKind.ESNext,
                 // ? A comment in React dev will make a false positive on realms checker
                 removeComments: true,
-                sourceMap: false,
+                inlineSourceMap: true,
+                inlineSources: true,
+                sourceRoot,
             },
             fileName,
         });
@@ -1568,7 +1547,7 @@ ${(req.origins || []).join('\n')}`);
                     getLineWithNo(endLineNum + 1),
                     getLineWithNo(endLineNum + 2),
                     getLineWithNo(endLineNum + 3),
-                ].filter((x) => x);
+                ].filter(x => x);
                 errText += `\n${aroundLines.join('\n')}\n`;
             }
             error.push(new SyntaxError(errText));
@@ -1585,52 +1564,38 @@ ${(req.origins || []).join('\n')}`);
     	return x && x.__esModule && Object.prototype.hasOwnProperty.call(x, 'default') ? x['default'] : x;
     }
 
-    function createCommonjsModule(fn, basedir, module) {
-    	return module = {
-    	  path: basedir,
-    	  exports: {},
-    	  require: function (path, base) {
-          return commonjsRequire(path, (base === undefined || base === null) ? module.path : base);
-        }
-    	}, fn(module, module.exports), module.exports;
-    }
-
-    function commonjsRequire () {
-    	throw new Error('Dynamic requires are not currently supported by @rollup/plugin-commonjs');
+    function createCommonjsModule(fn, module) {
+    	return module = { exports: {} }, fn(module, module.exports), module.exports;
     }
 
     var s = createCommonjsModule(function (module) {
     /*
-    * SJS 6.3.2
+    * SJS 6.2.3
     * Minimal SystemJS Build
     */
     (function () {
-      function errMsg(errCode, msg) {
-        return (msg || "") + " (SystemJS https://git.io/JvFET#" + errCode + ")";
-      }
+      const hasSelf = typeof self !== 'undefined';
 
-      var hasSymbol = typeof Symbol !== 'undefined';
-      var hasSelf = typeof self !== 'undefined';
-      var hasDocument = typeof document !== 'undefined';
+      const hasDocument = typeof document !== 'undefined';
 
-      var envGlobal = hasSelf ? self : commonjsGlobal;
+      const envGlobal = hasSelf ? self : commonjsGlobal;
 
-      var baseUrl;
+      let baseUrl;
 
       if (hasDocument) {
-        var baseEl = document.querySelector('base[href]');
+        const baseEl = document.querySelector('base[href]');
         if (baseEl)
           baseUrl = baseEl.href;
       }
 
       if (!baseUrl && typeof location !== 'undefined') {
         baseUrl = location.href.split('#')[0].split('?')[0];
-        var lastSepIndex = baseUrl.lastIndexOf('/');
+        const lastSepIndex = baseUrl.lastIndexOf('/');
         if (lastSepIndex !== -1)
           baseUrl = baseUrl.slice(0, lastSepIndex + 1);
       }
 
-      var backslashRegEx = /\\/g;
+      const backslashRegEx = /\\/g;
       function resolveIfNotPlainOrUrl (relUrl, parentUrl) {
         if (relUrl.indexOf('\\') !== -1)
           relUrl = relUrl.replace(backslashRegEx, '/');
@@ -1642,13 +1607,13 @@ ${(req.origins || []).join('\n')}`);
         else if (relUrl[0] === '.' && (relUrl[1] === '/' || relUrl[1] === '.' && (relUrl[2] === '/' || relUrl.length === 2 && (relUrl += '/')) ||
             relUrl.length === 1  && (relUrl += '/')) ||
             relUrl[0] === '/') {
-          var parentProtocol = parentUrl.slice(0, parentUrl.indexOf(':') + 1);
+          const parentProtocol = parentUrl.slice(0, parentUrl.indexOf(':') + 1);
           // Disabled, but these cases will give inconsistent results for deep backtracking
           //if (parentUrl[parentProtocol.length] !== '/')
           //  throw Error('Cannot resolve');
           // read pathname from parent URL
           // pathname taken to be part after leading "/"
-          var pathname;
+          let pathname;
           if (parentUrl[parentProtocol.length + 1] === '/') {
             // resolving to a :// so we need to read out the auth and host
             if (parentProtocol !== 'file:') {
@@ -1670,11 +1635,11 @@ ${(req.origins || []).join('\n')}`);
           // join together and split for removal of .. and . segments
           // looping the string instead of anything fancy for perf reasons
           // '../../../../../z' resolved to 'x/y' is just 'z'
-          var segmented = pathname.slice(0, pathname.lastIndexOf('/') + 1) + relUrl;
+          const segmented = pathname.slice(0, pathname.lastIndexOf('/') + 1) + relUrl;
 
-          var output = [];
-          var segmentIndex = -1;
-          for (var i = 0; i < segmented.length; i++) {
+          const output = [];
+          let segmentIndex = -1;
+          for (let i = 0; i < segmented.length; i++) {
             // busy reading a segment - only terminate on '/'
             if (segmentIndex !== -1) {
               if (segmented[i] === '/') {
@@ -1723,83 +1688,6 @@ ${(req.origins || []).join('\n')}`);
         return resolveIfNotPlainOrUrl(relUrl, parentUrl) || (relUrl.indexOf(':') !== -1 ? relUrl : resolveIfNotPlainOrUrl('./' + relUrl, parentUrl));
       }
 
-      function objectAssign (to, from) {
-        for (var p in from)
-          to[p] = from[p];
-        return to;
-      }
-
-      function resolveAndComposePackages (packages, outPackages, baseUrl, parentMap, parentUrl) {
-        for (var p in packages) {
-          var resolvedLhs = resolveIfNotPlainOrUrl(p, baseUrl) || p;
-          var rhs = packages[p];
-          // package fallbacks not currently supported
-          if (typeof rhs !== 'string')
-            continue;
-          var mapped = resolveImportMap(parentMap, resolveIfNotPlainOrUrl(rhs, baseUrl) || rhs, parentUrl);
-          if (!mapped) {
-            targetWarning('W1', p, rhs);
-          }
-          else
-            outPackages[resolvedLhs] = mapped;
-        }
-      }
-
-      function resolveAndComposeImportMap (json, baseUrl, parentMap) {
-        var outMap = { imports: objectAssign({}, parentMap.imports), scopes: objectAssign({}, parentMap.scopes) };
-
-        if (json.imports)
-          resolveAndComposePackages(json.imports, outMap.imports, baseUrl, parentMap, null);
-
-        if (json.scopes)
-          for (var s in json.scopes) {
-            var resolvedScope = resolveUrl(s, baseUrl);
-            resolveAndComposePackages(json.scopes[s], outMap.scopes[resolvedScope] || (outMap.scopes[resolvedScope] = {}), baseUrl, parentMap, resolvedScope);
-          }
-
-        return outMap;
-      }
-
-      function getMatch (path, matchObj) {
-        if (matchObj[path])
-          return path;
-        var sepIndex = path.length;
-        do {
-          var segment = path.slice(0, sepIndex + 1);
-          if (segment in matchObj)
-            return segment;
-        } while ((sepIndex = path.lastIndexOf('/', sepIndex - 1)) !== -1)
-      }
-
-      function applyPackages (id, packages) {
-        var pkgName = getMatch(id, packages);
-        if (pkgName) {
-          var pkg = packages[pkgName];
-          if (pkg === null) return;
-          if (id.length > pkgName.length && pkg[pkg.length - 1] !== '/') {
-            targetWarning('W2', pkgName, pkg);
-          }
-          else
-            return pkg + id.slice(pkgName.length);
-        }
-      }
-
-      function targetWarning (code, match, target, msg) {
-        console.warn(errMsg(code,  [target, match].join(', ') ));
-      }
-
-      function resolveImportMap (importMap, resolvedOrPlain, parentUrl) {
-        var scopes = importMap.scopes;
-        var scopeUrl = parentUrl && getMatch(parentUrl, scopes);
-        while (scopeUrl) {
-          var packageResolution = applyPackages(resolvedOrPlain, scopes[scopeUrl]);
-          if (packageResolution)
-            return packageResolution;
-          scopeUrl = getMatch(scopeUrl.slice(0, scopeUrl.lastIndexOf('/')), scopes);
-        }
-        return applyPackages(resolvedOrPlain, importMap.imports) || resolvedOrPlain.indexOf(':') !== -1 && resolvedOrPlain;
-      }
-
       /*
        * SystemJS Core
        * 
@@ -1817,23 +1705,26 @@ ${(req.origins || []).join('\n')}`);
        * System.prototype.instantiate implementations
        */
 
-      var toStringTag = hasSymbol && Symbol.toStringTag;
-      var REGISTRY = hasSymbol ? Symbol() : '@';
+      const hasSymbol = typeof Symbol !== 'undefined';
+      const toStringTag = hasSymbol && Symbol.toStringTag;
+      const REGISTRY = hasSymbol ? Symbol() : '@';
 
       function SystemJS () {
         this[REGISTRY] = {};
       }
 
-      var systemJSPrototype = SystemJS.prototype;
+      const systemJSPrototype = SystemJS.prototype;
+
+      systemJSPrototype.prepareImport = function () {};
 
       systemJSPrototype.import = function (id, parentUrl) {
-        var loader = this;
+        const loader = this;
         return Promise.resolve(loader.prepareImport())
         .then(function() {
           return loader.resolve(id, parentUrl);
         })
         .then(function (id) {
-          var load = getOrCreateLoad(loader, id);
+          const load = getOrCreateLoad(loader, id);
           return load.C || topLevelLoad(loader, load);
         });
       };
@@ -1844,16 +1735,8 @@ ${(req.origins || []).join('\n')}`);
           url: parentId
         };
       };
-      function loadToId (load) {
-        return load.id;
-      }
-      function triggerOnload (loader, load, err) {
-        loader.onload(err, load.id, load.d && load.d.map(loadToId));
-        if (err)
-          throw err;
-      }
 
-      var lastRegister;
+      let lastRegister;
       systemJSPrototype.register = function (deps, declare) {
         lastRegister = [deps, declare];
       };
@@ -1862,32 +1745,32 @@ ${(req.origins || []).join('\n')}`);
        * getRegister provides the last anonymous System.register call
        */
       systemJSPrototype.getRegister = function () {
-        var _lastRegister = lastRegister;
+        const _lastRegister = lastRegister;
         lastRegister = undefined;
         return _lastRegister;
       };
 
       function getOrCreateLoad (loader, id, firstParentUrl) {
-        var load = loader[REGISTRY][id];
+        let load = loader[REGISTRY][id];
         if (load)
           return load;
 
-        var importerSetters = [];
-        var ns = Object.create(null);
+        const importerSetters = [];
+        const ns = Object.create(null);
         if (toStringTag)
           Object.defineProperty(ns, toStringTag, { value: 'Module' });
         
-        var instantiatePromise = Promise.resolve()
+        let instantiatePromise = Promise.resolve()
         .then(function () {
           return loader.instantiate(id, firstParentUrl);
         })
         .then(function (registration) {
           if (!registration)
-            throw Error(errMsg(2,  id ));
+            throw Error('Module ' + id + ' did not instantiate');
           function _export (name, value) {
             // note if we have hoisted exports (including reexports)
             load.h = true;
-            var changed = false;
+            let changed = false;
             if (typeof name !== 'object') {
               if (!(name in ns) || ns[name] !== value) {
                 ns[name] = value;
@@ -1895,8 +1778,8 @@ ${(req.origins || []).join('\n')}`);
               }
             }
             else {
-              for (var p in name) {
-                var value = name[p];
+              for (let p in name) {
+                let value = name[p];
                 if (!(p in ns) || ns[p] !== value) {
                   ns[p] = value;
                   changed = true;
@@ -1908,11 +1791,11 @@ ${(req.origins || []).join('\n')}`);
               }
             }
             if (changed)
-              for (var i = 0; i < importerSetters.length; i++)
+              for (let i = 0; i < importerSetters.length; i++)
                 importerSetters[i](ns);
             return value;
           }
-          var declared = registration[1](_export, registration[1].length === 2 ? {
+          const declared = registration[1](_export, registration[1].length === 2 ? {
             import: function (importId) {
               return loader.import(importId, id);
             },
@@ -1922,13 +1805,13 @@ ${(req.origins || []).join('\n')}`);
           return [registration[0], declared.setters || []];
         });
 
-        var linkPromise = instantiatePromise
+        const linkPromise = instantiatePromise
         .then(function (instantiation) {
           return Promise.all(instantiation[0].map(function (dep, i) {
-            var setter = instantiation[1][i];
+            const setter = instantiation[1][i];
             return Promise.resolve(loader.resolve(dep, id))
             .then(function (depId) {
-              var depLoad = getOrCreateLoad(loader, depId, id);
+              const depLoad = getOrCreateLoad(loader, depId, id);
               // depLoad.I may be undefined for already-evaluated
               return Promise.resolve(depLoad.I)
               .then(function () {
@@ -2014,7 +1897,7 @@ ${(req.origins || []).join('\n')}`);
       }
 
       // the closest we can get to call(undefined)
-      var nullContext = Object.freeze(Object.create(null));
+      const nullContext = Object.freeze(Object.create(null));
 
       // returns a promise if and only if a top-level await subgraph
       // throws on sync errors
@@ -2032,17 +1915,10 @@ ${(req.origins || []).join('\n')}`);
         }
 
         // deps execute first, unless circular
-        var depLoadPromises;
+        let depLoadPromises;
         load.d.forEach(function (depLoad) {
-          if (false) {
-            try {
-              var depLoadPromise;
-            }
-            catch (err) {
-            }
-          }
-          else {
-            var depLoadPromise = postOrderExec(loader, depLoad, seen);
+          {
+            const depLoadPromise = postOrderExec(loader, depLoad, seen);
             if (depLoadPromise)
               (depLoadPromises = depLoadPromises || []).push(depLoadPromise);
           }
@@ -2054,18 +1930,9 @@ ${(req.origins || []).join('\n')}`);
 
         function doExec () {
           try {
-            var execPromise = load.e.call(nullContext);
+            let execPromise = load.e.call(nullContext);
             if (execPromise) {
-              if (!true)
-                execPromise = execPromise.then(function () {
-                  load.C = load.n;
-                  load.E = null; // indicates completion
-                  triggerOnload(loader, load, null);
-                }, function (err) {
-                  triggerOnload(loader, load, err);
-                });
-              else
-                execPromise = execPromise.then(function () {
+              execPromise = execPromise.then(function () {
                   load.C = load.n;
                   load.E = null;
                 });
@@ -2073,7 +1940,6 @@ ${(req.origins || []).join('\n')}`);
             }
             // (should be a promise, but a minify optimization to leave out Promise.resolve)
             load.C = load.n;
-            if (!true) triggerOnload(loader, load, null);
           }
           catch (err) {
             load.er = err;
@@ -2089,76 +1955,16 @@ ${(req.origins || []).join('\n')}`);
       envGlobal.System = new SystemJS();
 
       /*
-       * Import map support for SystemJS
-       * 
-       * <script type="systemjs-importmap">{}</script>
-       * OR
-       * <script type="systemjs-importmap" src=package.json></script>
-       * 
-       * Only those import maps available at the time of SystemJS initialization will be loaded
-       * and they will be loaded in DOM order.
-       * 
-       * There is no support for dynamic import maps injection currently.
-       */
-
-      var IMPORT_MAP = hasSymbol ? Symbol() : '#';
-      var IMPORT_MAP_PROMISE = hasSymbol ? Symbol() : '$';
-
-      iterateDocumentImportMaps(function (script) {
-        script._t = fetch(script.src).then(function (res) {
-          return res.text();
-        });
-      }, '[src]');
-
-      systemJSPrototype.prepareImport = function () {
-        var loader = this;
-        if (!loader[IMPORT_MAP_PROMISE]) {
-          loader[IMPORT_MAP] = { imports: {}, scopes: {} };
-          loader[IMPORT_MAP_PROMISE] = Promise.resolve();
-          iterateDocumentImportMaps(function (script) {
-            loader[IMPORT_MAP_PROMISE] = loader[IMPORT_MAP_PROMISE].then(function () {
-              return (script._t || script.src && fetch(script.src).then(function (res) { return res.text(); }) || Promise.resolve(script.innerHTML))
-              .then(function (text) {
-                try {
-                  return JSON.parse(text);
-                } catch (err) {
-                  throw Error( errMsg(1) );
-                }
-              })
-              .then(function (newMap) {
-                loader[IMPORT_MAP] = resolveAndComposeImportMap(newMap, script.src || baseUrl, loader[IMPORT_MAP]);
-              });
-            });
-          }, '');
-        }
-        return loader[IMPORT_MAP_PROMISE];
-      };
-
-      systemJSPrototype.resolve = function (id, parentUrl) {
-        parentUrl = parentUrl || !true  || baseUrl;
-        return resolveImportMap(this[IMPORT_MAP], resolveIfNotPlainOrUrl(id, parentUrl) || id, parentUrl) || throwUnresolved(id, parentUrl);
-      };
-
-      function throwUnresolved (id, parentUrl) {
-        throw Error(errMsg(8,  [id, parentUrl].join(', ') ));
-      }
-
-      function iterateDocumentImportMaps(cb, extraSelector) {
-        if (hasDocument)
-          [].forEach.call(document.querySelectorAll('script[type="systemjs-importmap"]' + extraSelector), cb);
-      }
-
-      /*
        * Supports loading System.register via script tag injection
        */
 
-      var systemRegister = systemJSPrototype.register;
+      const systemRegister = systemJSPrototype.register;
       systemJSPrototype.register = function (deps, declare) {
         systemRegister.call(this, deps, declare);
       };
 
       systemJSPrototype.createScript = function (url) {
-        var script = document.createElement('script');
+        const script = document.createElement('script');
         script.charset = 'utf-8';
         script.async = true;
         script.crossOrigin = 'anonymous';
@@ -2166,13 +1972,19 @@ ${(req.origins || []).join('\n')}`);
         return script;
       };
 
-      var lastWindowErrorUrl, lastWindowError;
+      let lastWindowErrorUrl, lastWindowError;
+      if (hasDocument)
+        window.addEventListener('error', function (evt) {
+          lastWindowErrorUrl = evt.filename;
+          lastWindowError = evt.error;
+        });
+
       systemJSPrototype.instantiate = function (url, firstParentUrl) {
-        var loader = this;
+        const loader = this;
         return new Promise(function (resolve, reject) {
-          var script = systemJSPrototype.createScript(url);
+          const script = systemJSPrototype.createScript(url);
           script.addEventListener('error', function () {
-            reject(Error(errMsg(3,  [url, firstParentUrl].join(', ') )));
+            reject(Error('Error loading ' + url + (firstParentUrl ? ' from ' + firstParentUrl : '')));
           });
           script.addEventListener('load', function () {
             document.head.removeChild(script);
@@ -2190,18 +2002,12 @@ ${(req.origins || []).join('\n')}`);
       };
 
       if (hasDocument) {
-        window.addEventListener('error', function (evt) {
-          lastWindowErrorUrl = evt.filename;
-          lastWindowError = evt.error;
-        });
-
         window.addEventListener('DOMContentLoaded', loadScriptModules);
         loadScriptModules();
       }
 
-
       function loadScriptModules() {
-        [].forEach.call(
+        Array.prototype.forEach.call(
           document.querySelectorAll('script[type=systemjs-module]'), function (script) {
             if (script.src) {
               System.import(script.src.slice(0, 7) === 'import:' ? script.src.slice(7) : resolveUrl(script.src, baseUrl));
@@ -2215,226 +2021,101 @@ ${(req.origins || []).join('\n')}`);
 
       if (hasSelf && typeof importScripts === 'function')
         systemJSPrototype.instantiate = function (url) {
-          var loader = this;
-          return Promise.resolve().then(function () {
-            importScripts(url);
-            return loader.getRegister();
+          const loader = this;
+          return new Promise(function (resolve, reject) {
+            try {
+              importScripts(url);
+            }
+            catch (e) {
+              reject(e);
+            }
+            resolve(loader.getRegister());
           });
         };
+
+      systemJSPrototype.resolve = function (id, parentUrl) {
+        const resolved = resolveIfNotPlainOrUrl(id, parentUrl || baseUrl);
+        if (!resolved) {
+          if (id.indexOf(':') !== -1)
+            return Promise.resolve(id);
+          throw Error('Cannot resolve "' + id + (parentUrl ? '" from ' + parentUrl : '"'));
+        }
+        return Promise.resolve(resolved);
+      };
 
     }());
     });
 
     unwrapExports(s);
 
-    function static_eval_generated() {
-        var _a;
-        // @ts-ignore
-        const value = (function () {
-            if (arguments[0]) {
-                return function () {
-                    throw '';
-                }.call(undefined);
-            }
-            // @ts-ignore
-        })(getProxy());
-        function getProxy() {
-            const { get, set } = Reflect;
-            const currentExtensionGlobal = Symbol.for('GLOBAL_SCOPE');
-            const global = get(globalThis, currentExtensionGlobal);
-            return new Proxy({ __proto__: null }, {
-                get(shadow, prop) {
-                    if (typeof prop === 'symbol') {
-                        return undefined;
-                    }
-                    return get(global, prop);
-                },
-                set: (shadow, prop, value) => set(global, prop, value),
-                has: () => true,
-                getPrototypeOf: () => null,
-            });
-        }
-        // Async eval completion
-        // @ts-ignore
-        (_a = globalThis[Symbol.for('CALLBACK_HERE')]) === null || _a === void 0 ? void 0 : _a.call(globalThis, value);
-        // sync eval completion
-        return value;
-    }
-    function generateEvalString(code, globalScopeSymbol, callbackSymbol) {
-        let x = static_eval_generated.toString();
-        x = replace(x, 'if (arguments[0])', 'with (arguments[0])');
-        x = replace(x, 'GLOBAL_SCOPE', globalScopeSymbol.description);
-        x = replace(x, 'CALLBACK_HERE', callbackSymbol.description);
-        x = replace(x, `throw ''`, code + '\n') + ';' + static_eval_generated.name.toString() + '()';
-        return x;
-    }
-    function replace(x, y, z) {
-        const pos = x.indexOf(y);
-        return x.slice(0, pos) + z + x.slice(pos + y.length);
-    }
-
-    var __classPrivateFieldGet = (undefined && undefined.__classPrivateFieldGet) || function (receiver, privateMap) {
-        if (!privateMap.has(receiver)) {
-            throw new TypeError("attempted to get private field on non-instance");
-        }
-        return privateMap.get(receiver);
-    };
-    var __classPrivateFieldSet = (undefined && undefined.__classPrivateFieldSet) || function (receiver, privateMap, value) {
-        if (!privateMap.has(receiver)) {
-            throw new TypeError("attempted to set private field on non-instance");
-        }
-        privateMap.set(receiver, value);
-        return value;
-    };
-    var _globalScopeSymbol, _globalThis, _inlineModule, _runtimeTransformer, _evaluate, _id, _getEvalFileName;
     const SystemJSConstructor = System.constructor;
     Reflect.deleteProperty(globalThis, 'System');
-    const { set, construct, apply, deleteProperty } = Reflect;
-    const { warn, trace } = console;
-    const { eval: indirectEval } = globalThis;
-    const canUseEval = (() => {
-        try {
-            indirectEval('Math.random()');
-            return true;
-        }
-        catch {
-            return false;
-        }
-    })();
-    let __debug_reproducible_id = 0;
-    function randSymbol(key) {
-        if (isDebug)
-            return Symbol.for(key + ++__debug_reproducible_id);
-        return Symbol.for(Math.random().toString(16));
-    }
     class SystemJSRealm extends SystemJSConstructor {
-        // The import() function is implemented by SystemJS
-        //#endregion
         constructor() {
-            super();
-            //#region Realm
+            super(...arguments);
             this[Symbol.toStringTag] = 'Realm';
-            _globalScopeSymbol.set(this, randSymbol('realm'));
-            _globalThis.set(this, {
-                __proto__: null,
-                /**
-                 * Due to tech limitation, the eval will always be
-                 * PerformEval(code,
-                 *      callerRealm = this SystemJSRealm,
-                 *      strictCaller = false,
-                 *      direct = false)
-                 */
-                eval: (code) => {
-                    // 18.2.1.1, step 2
-                    if (typeof code !== 'string')
-                        return code;
-                    trace(`[WebExtension] Try to eval`, code);
-                    if (!checkDynamicImport(code))
-                        // Might be a Promise if the host enable CSP.
-                        return __classPrivateFieldGet(this, _evaluate).call(this, code, [__classPrivateFieldGet(this, _runtimeTransformer).call(this, 'script', 'prebuilt', false)]);
-                    // Sadly, must return a Promise here.
-                    return this.evaluateInlineScript(code);
-                },
-                Function: new Proxy(Function, {
-                    construct: (target, argArray, newTarget) => {
-                        trace('[WebExtension] try to call new Function the following code:', ...argArray);
-                        if (argArray.length === 1 && argArray[0] === 'return this')
-                            return () => this.globalThis;
-                        // TODO: impl this
-                        throw new Error('Cannot run code dynamically');
-                        // return construct(target, argArray, newTarget)
-                    },
-                    apply: (target, thisArg, code) => {
-                        // Hack for babel regeneratorRuntime
-                        if (code.length === 1 && code[0] === 'return this')
-                            return () => this.globalThis;
-                        if (code.length === 2 && code[0] === 'r' && code[1] === 'regeneratorRuntime = r')
-                            // @ts-ignore
-                            return (r) => (this.globalThis.regeneratorRuntime = r);
-                        warn('[WebExtension]: try to construct Function by the following code:', ...code);
-                        throw new Error('Cannot run code dynamically');
-                        // return apply(target, thisArg, code)
-                    },
-                }),
-            });
             /**
              * This is a map for inline module.
              * Key: script:random_number
              * Value: module text
              */
-            _inlineModule.set(this, new Map());
+            this.inlineModule = new Map();
             this.lastModuleRegister = null;
             //#endregion
             //#region Realm
-            _runtimeTransformer.set(this, (kind, fileName, prebuilt) => (src) => prebuilt ? src : transformAST(src, kind, fileName));
-            _evaluate.set(this, (sourceText, transformer) => {
-                const evalCallbackID = randSymbol('callback');
-                let rejection = (e) => { };
-                const evaluation = new Promise((resolve, reject) => set(globalThis, evalCallbackID, (x) => {
-                    resolve(x);
-                    rejection = reject;
-                }));
-                evaluation.finally(() => deleteProperty(globalThis, evalCallbackID));
-                transformer === null || transformer === void 0 ? void 0 : transformer.forEach((f) => (sourceText = f(sourceText)));
-                const evalString = generateEvalString(sourceText, __classPrivateFieldGet(this, _globalScopeSymbol), evalCallbackID);
-                if (canUseEval) {
-                    return indirectEval(evalString);
-                }
-                setTimeout(rejection, 2000);
-                return FrameworkRPC.eval('', evalString).then(() => evaluation, (e) => (rejection(e), evaluation));
+            this.runtimeTransformer = (kind, fileName) => ({
+                rewrite: (ctx) => {
+                    ctx.src = transformAST(ctx.src, kind, fileName);
+                    return ctx;
+                },
             });
-            _id.set(this, 0);
-            _getEvalFileName.set(this, () => `debugger://${this.globalThis.browser.runtime.id}/VM${__classPrivateFieldSet(this, _id, +__classPrivateFieldGet(this, _id) + 1)}`
-            /**
-             * This function is used to execute script that with dynamic import
-             * @param executor The SystemJS format executor returned by the eval call
-             * @param scriptURL The script itself URL
-             */
-            );
-            set(globalThis, __classPrivateFieldGet(this, _globalScopeSymbol), this.globalThis);
-        }
-        get globalThis() {
-            return __classPrivateFieldGet(this, _globalThis);
+            this.esRealm = Realm.makeRootRealm({
+                sloppyGlobals: true,
+                transforms: [],
+            });
+            this.id = 0;
+            //#endregion
         }
         //#region System
         /** Create import.meta */
         createContext(url) {
             if (url.startsWith('script:'))
-                return this.globalThis.JSON.parse(JSON.stringify({ url: null }));
-            return this.globalThis.JSON.parse(JSON.stringify({ url }));
+                return this.global.eval('({ url: undefined })');
+            return this.global.JSON.parse(JSON.stringify({ url }));
         }
         createScript() {
             throw new Error('Invalid call');
         }
         async prepareImport() { }
         resolve(url, parentUrl) {
-            if (__classPrivateFieldGet(this, _inlineModule).has(url))
+            if (this.inlineModule.has(url))
                 return url;
-            if (__classPrivateFieldGet(this, _inlineModule).has(parentUrl))
-                parentUrl = this.globalThis.location.href;
+            if (this.inlineModule.has(parentUrl))
+                parentUrl = this.global.location.href;
             return new URL(url, parentUrl).toJSON();
         }
         async instantiate(url) {
-            const evalSourceText = async (sourceText, src, prebuilt) => {
-                const result = await __classPrivateFieldGet(this, _evaluate).call(this, sourceText, [__classPrivateFieldGet(this, _runtimeTransformer).call(this, 'module', src, prebuilt)]);
+            const evalSourceText = (sourceText, src, prebuilt) => {
+                const opt = prebuilt ? {} : { transforms: [this.runtimeTransformer('module', src)] };
+                const result = this.esRealm.evaluate(sourceText, {}, opt);
                 const executor = result;
                 executor(this);
             };
-            if (__classPrivateFieldGet(this, _inlineModule).has(url)) {
-                const sourceText = __classPrivateFieldGet(this, _inlineModule).get(url);
-                await evalSourceText(sourceText, url, false);
+            if (this.inlineModule.has(url)) {
+                const sourceText = this.inlineModule.get(url);
+                evalSourceText(sourceText, url, false);
                 return this.getRegister();
             }
             const prebuilt = await this.fetchPrebuilt('module', url);
             if (prebuilt) {
                 const { content } = prebuilt;
-                await evalSourceText(content, url, true);
+                evalSourceText(content, url, true);
             }
             else {
                 const code = await this.fetchSourceText(url);
                 if (!code)
                     throw new TypeError(`Failed to fetch dynamically imported module: ` + url);
-                await evalSourceText(code, url, false);
+                evalSourceText(code, url, false);
                 // ? The executor should call the register exactly once.
             }
             return this.getRegister();
@@ -2448,6 +2129,12 @@ ${(req.origins || []).join('\n')}`);
             if (typeof declare !== 'function')
                 throw new TypeError();
             this.lastModuleRegister = [deps, declare];
+        }
+        getEvalFileName() {
+            return `debugger://${this.global.browser.runtime.id}/VM${++this.id}`;
+        }
+        get global() {
+            return this.esRealm.global;
         }
         /**
          * This function is used to execute script that with dynamic import
@@ -2472,7 +2159,7 @@ ${(req.origins || []).join('\n')}`);
             const prebuilt = await this.fetchPrebuilt('script', scriptURL);
             if (prebuilt) {
                 const { asSystemJS, content } = prebuilt;
-                const executeResult = (await __classPrivateFieldGet(this, _evaluate).call(this, content));
+                const executeResult = this.esRealm.evaluate(content);
                 if (!asSystemJS)
                     return executeResult; // script mode
                 return this.invokeScriptKindSystemJSModule(executeResult, scriptURL);
@@ -2488,18 +2175,16 @@ ${(req.origins || []).join('\n')}`);
         /**
          * Evaluate a inline ECMAScript module
          * @param sourceText Source text
-         *
-         * @deprecated This method is not compatible with CSP and might be rejected by the host.
          */
         async evaluateInlineModule(sourceText) {
             var _a;
-            const key = `script:` + randSymbol('script-id').description;
-            __classPrivateFieldGet(this, _inlineModule).set(key, sourceText);
+            const key = `script:` + Math.random().toString();
+            this.inlineModule.set(key, sourceText);
             try {
                 return await this.import(key);
             }
             finally {
-                __classPrivateFieldGet(this, _inlineModule).delete(key);
+                this.inlineModule.delete(key);
                 (_a = this.delete) === null || _a === void 0 ? void 0 : _a.call(this, key);
             }
         }
@@ -2510,23 +2195,22 @@ ${(req.origins || []).join('\n')}`);
          * But support dynamic import
          * @param sourceText Source code
          * @param scriptURL Script URL (optional)
-         *
-         * @deprecated This method is not compatible with CSP and might be rejected by the host.
          */
-        async evaluateInlineScript(sourceText, scriptURL = __classPrivateFieldGet(this, _getEvalFileName).call(this)) {
+        evaluateInlineScript(sourceText, scriptURL = this.getEvalFileName()) {
             const hasCache = scriptTransformCache.has(sourceText);
             const cache = scriptTransformCache.get(sourceText);
-            const transformer = [__classPrivateFieldGet(this, _runtimeTransformer).call(this, 'script', scriptURL, false)];
+            const transformer = { transforms: [this.runtimeTransformer('script', scriptURL)] };
             if (!checkDynamicImport(sourceText)) {
                 if (hasCache)
-                    return __classPrivateFieldGet(this, _evaluate).call(this, cache);
-                return __classPrivateFieldGet(this, _evaluate).call(this, sourceText, transformer);
+                    return this.esRealm.evaluate(cache);
+                return this.esRealm.evaluate(sourceText, {}, transformer);
             }
-            const executor = (hasCache ? await __classPrivateFieldGet(this, _evaluate).call(this, cache) : await __classPrivateFieldGet(this, _evaluate).call(this, sourceText, transformer));
+            const executor = (hasCache
+                ? this.esRealm.evaluate(cache)
+                : this.esRealm.evaluate(sourceText, {}, transformer));
             return this.invokeScriptKindSystemJSModule(executor, scriptURL);
         }
     }
-    _globalScopeSymbol = new WeakMap(), _globalThis = new WeakMap(), _inlineModule = new WeakMap(), _runtimeTransformer = new WeakMap(), _evaluate = new WeakMap(), _id = new WeakMap(), _getEvalFileName = new WeakMap();
 
     function enhancedWorker(extensionID, originalWorker = window.Worker) {
         if (!isDebug)
@@ -2587,38 +2271,36 @@ ${(req.origins || []).join('\n')}`);
      *
      * To prevent `this` binding lost, we need to rebind it.
      *
-     * @param descriptor PropertyDescriptor
+     * @param desc PropertyDescriptor
      * @param native The native object
      */
-    function PatchThisOfDescriptorToNative(descriptor, native) {
-        const { get, set, value } = descriptor;
+    function PatchThisOfDescriptorToNative(desc, native) {
+        const { get, set, value } = desc;
         if (get)
-            descriptor.get = () => get.apply(native);
+            desc.get = () => get.apply(native);
         if (set)
-            descriptor.set = (val) => set.apply(native, val);
+            desc.set = (val) => set.apply(native, val);
         if (value && typeof value === 'function') {
-            const nextDescriptor = Object.getOwnPropertyDescriptors(value);
-            const f = {
-                [value.name]: function () {
-                    if (new.target)
-                        return Reflect.construct(value, arguments, new.target);
-                    return Reflect.apply(value, native, arguments);
-                },
-            }[value.name];
-            descriptor.value = f;
-            // Hmm give it a better view.
-            f.toString = ((f) => () => `function ${f}() { [native code] }`)(value.name);
-            delete nextDescriptor.arguments;
-            delete nextDescriptor.caller;
-            delete nextDescriptor.callee;
-            Object.defineProperties(f, nextDescriptor);
-            Object.setPrototypeOf(f, value.__proto__);
+            const desc2 = Object.getOwnPropertyDescriptors(value);
+            desc.value = function () {
+                if (new.target)
+                    return Reflect.construct(value, arguments, new.target);
+                return Reflect.apply(value, native, arguments);
+            };
+            delete desc2.arguments;
+            delete desc2.caller;
+            delete desc2.callee;
+            Object.defineProperties(desc.value, desc2);
+            try {
+                // ? For unknown reason this fail for some objects on Safari.
+                value.prototype && Object.setPrototypeOf(desc.value, value.prototype);
+            }
+            catch { }
         }
     }
     function PatchThisOfDescriptors(desc, native) {
         const _ = Object.entries(desc).map(([x, y]) => [x, { ...y }]);
-        Object.getOwnPropertySymbols(desc).forEach((x) => _.push([x, { ...desc[x] }]));
-        _.forEach((x) => PatchThisOfDescriptorToNative(x[1], native));
+        _.forEach(x => PatchThisOfDescriptorToNative(x[1], native));
         return Object.fromEntries(_);
     }
 
@@ -2632,7 +2314,7 @@ ${(req.origins || []).join('\n')}`);
      *
      * ## Checklist:
      * - [o] ContentScript cannot access main thread
-     * - [ ] Main thread cannot access ContentScript
+     * - [?] Main thread cannot access ContentScript
      * - [o] ContentScript can access main thread's DOM
      * - [ ] ContentScript modification on DOM prototype is not discoverable by main thread
      * - [ ] Main thread modification on DOM prototype is not discoverable by ContentScript
@@ -2643,45 +2325,39 @@ ${(req.origins || []).join('\n')}`);
     const PrepareWebAPIs = (() => {
         // ? replace Function with polluted version by Realms
         // ! this leaks the sandbox!
-        // We're no longer using realms now.
-        // Object.defineProperty(
-        //     Object.getPrototypeOf(() => {}),
-        //     'constructor',
-        //     {
-        //         value: globalThis.Function,
-        //     },
-        // )
+        Object.defineProperty(Object.getPrototypeOf(() => { }), 'constructor', {
+            value: globalThis.Function,
+        });
         const realWindow = window;
         const webAPIs = Object.getOwnPropertyDescriptors(window);
+        Reflect.deleteProperty(webAPIs, 'globalThis');
+        Reflect.deleteProperty(webAPIs, 'self');
+        Reflect.deleteProperty(webAPIs, 'global');
         return (sandboxRoot, locationProxy) => {
-            // ?
-            // const sandboxDocument = cloneObjectWithInternalSlot(document, sandboxRoot, {
-            //     descriptorsModifier(obj, desc) {
-            //         if ('defaultView' in desc) desc.defaultView.get = () => sandboxRoot
-            //         return desc
-            //     },
-            // })
+            const sandboxDocument = cloneObjectWithInternalSlot(document, sandboxRoot, {
+                descriptorsModifier(obj, desc) {
+                    if ('defaultView' in desc)
+                        desc.defaultView.get = () => sandboxRoot;
+                    return desc;
+                },
+            });
             const clonedWebAPIs = {
                 ...webAPIs,
+                window: { configurable: false, writable: false, enumerable: true, value: sandboxRoot },
+                document: { configurable: false, enumerable: true, get: () => sandboxDocument },
             };
-            for (const key in clonedWebAPIs)
-                if (clonedWebAPIs[key].value === globalThis)
-                    clonedWebAPIs[key].value = sandboxRoot;
             if (locationProxy)
                 clonedWebAPIs.location.value = locationProxy;
             for (const key in clonedWebAPIs)
                 if (key in sandboxRoot)
                     delete clonedWebAPIs[key];
+            Object.assign(sandboxRoot, { globalThis: sandboxRoot, self: sandboxRoot });
             cloneObjectWithInternalSlot(realWindow, sandboxRoot, {
                 nextObject: sandboxRoot,
                 designatedOwnDescriptors: clonedWebAPIs,
             });
-            // restore the identity continuity
-            sandboxRoot.Object = Object;
-            sandboxRoot.Function = Function;
         };
     })();
-    const { log, warn: warn$1 } = console;
     /**
      * Execution environment of managed Realm (including content script in production and all env in runtime).
      */
@@ -2695,21 +2371,35 @@ ${(req.origins || []).join('\n')}`);
             super();
             this.extensionID = extensionID;
             this.manifest = manifest;
-            log('[WebExtension] Managed Realm created.');
-            PrepareWebAPIs(this.globalThis, locationProxy);
-            const browser = BrowserFactory(this.extensionID, this.manifest, this.globalThis.Object.prototype);
-            Object.defineProperty(this.globalThis, 'browser', {
+            console.log('[WebExtension] Managed Realm created.');
+            PrepareWebAPIs(this.global, locationProxy);
+            const browser = BrowserFactory(this.extensionID, this.manifest, this.global.Object.prototype);
+            Object.defineProperty(this.global, 'browser', {
                 // ? Mozilla's polyfill may overwrite this. Figure this out.
                 get: () => browser,
                 set: () => false,
             });
-            this.globalThis.URL = enhanceURL(this.globalThis.URL, extensionID);
-            this.globalThis.fetch = createFetch(extensionID);
-            this.globalThis.open = openEnhanced(extensionID);
-            this.globalThis.close = closeEnhanced(extensionID);
-            this.globalThis.Worker = enhancedWorker(extensionID);
+            this.global.URL = enhanceURL(this.global.URL, extensionID);
+            this.global.fetch = createFetch(extensionID);
+            this.global.open = openEnhanced(extensionID);
+            this.global.close = closeEnhanced(extensionID);
+            this.global.Worker = enhancedWorker(extensionID);
             if (locationProxy)
-                this.globalThis.location = locationProxy;
+                this.global.location = locationProxy;
+            function globalThisFix() {
+                var originalFunction = Function;
+                function newFunction(...args) {
+                    const fn = new originalFunction(...args);
+                    return new Proxy(fn, {
+                        apply(a, b, c) {
+                            return Reflect.apply(a, b || globalThis, c);
+                        },
+                    });
+                }
+                // @ts-ignore
+                globalThis.Function = newFunction;
+            }
+            this.esRealm.evaluate(globalThisFix.toString() + '\n' + globalThisFix.name + '()');
         }
         async fetchPrebuilt(kind, url) {
             const res = await this.fetchSourceText(url + `.prebuilt-${PrebuiltVersion}-${kind}`);
@@ -2806,13 +2496,6 @@ ${(req.origins || []).join('\n')}`);
             const opt = parseDebugModeURL(extensionID, manifest);
             environment = opt.env;
             debugModeURL = opt.src;
-            const g = () => registeredWebExtension.get(extensionID);
-            Object.defineProperties(globalThis, {
-                ['e' + extensionID]: { get: () => g() },
-                ['r' + extensionID]: { get: () => g().environment },
-                ['g' + extensionID]: { get: () => g().environment.globalThis },
-            });
-            console.log(`Extension ${extensionID} registered. Access it's WebExtensionRecord by e${extensionID}; it's Realm by r${extensionID}; it's globalThis object by g${extensionID}`);
         }
         console.debug(`[WebExtension] Loading extension ${manifest.name}(${extensionID}) with manifest`, manifest, `and preloaded resource`, preloadedResources, `in ${environment} mode`);
         try {
@@ -2853,12 +2536,12 @@ ${(req.origins || []).join('\n')}`);
             const installHandler = EventPools['browser.runtime.onInstall'].get(extensionID);
             if (installHandler) {
                 setTimeout(() => {
-                    useInternalStorage(extensionID, (o) => {
+                    useInternalStorage(extensionID, o => {
                         const handlers = Array.from(installHandler.values());
                         if (o.previousVersion)
-                            handlers.forEach((x) => x({ previousVersion: o.previousVersion, reason: 'update' }));
+                            handlers.forEach(x => x({ previousVersion: o.previousVersion, reason: 'update' }));
                         else
-                            handlers.forEach((x) => x({ reason: 'install' }));
+                            handlers.forEach(x => x({ reason: 'install' }));
                         o.previousVersion = manifest.version;
                     });
                 }, 2000);
@@ -2888,7 +2571,7 @@ ${(req.origins || []).join('\n')}`);
     function untilDocumentReady() {
         if (document.readyState === 'complete')
             return Promise.resolve();
-        return new Promise((resolve) => {
+        return new Promise(resolve => {
             document.addEventListener('readystatechange', () => document.readyState === 'complete' && resolve());
         });
     }
@@ -2990,8 +2673,11 @@ It's running in the background page mode`;
         if (!isDebug)
             throw new TypeError('Run in the wrong scope');
         const { src } = parseDebugModeURL(extensionID, manifest);
+        const locationProxy = createLocationProxy(extensionID, manifest, currentPage || src);
         // ? Transform ESM into SystemJS to run in debug mode.
-        const _ = createManagedECMAScriptRealm(manifest, extensionID, {}, currentPage || src).environment;
+        const _ = Reflect.get(globalThis, 'env') ||
+            (console.log('Debug by globalThis.env'), new WebExtensionManagedRealm(extensionID, manifest, locationProxy));
+        Object.assign(globalThis, { env: _ });
         if (code.type === 'file') {
             if (esModule)
                 await _.evaluateModule(code.path, currentPage);
@@ -3015,7 +2701,6 @@ It's running in the background page mode`;
             };
             registeredWebExtension.set(extensionID, ext);
         }
-        return registeredWebExtension.get(extensionID);
     }
     async function loadContentScriptByManifest(manifest, extensionID, debugModePretendedURL) {
         if (!isDebug && debugModePretendedURL)
@@ -3066,18 +2751,15 @@ document.write(html);">Remove script tags and go</button>
             console.warn(`run_at not supported yet. Defined at manifest.content_scripts[${index}].run_at`);
     }
 
-    var _a;
-    const log$1 = (rt) => async (...args) => {
+    const log = rt => async (...args) => {
         console.log('Mocked Host', ...args);
         return rt;
     };
-    const myTabID = parseInt((_a = new URLSearchParams(location.search).get('id')) !== null && _a !== void 0 ? _a : ~~(Math.random() * 100));
     class CrossPageDebugChannel {
         constructor() {
-            this.tabsQuery = new BroadcastChannel('query-tabs');
             this.broadcast = new BroadcastChannel('webext-polyfill-debug');
             this.listener = [];
-            this.broadcast.addEventListener('message', (e) => {
+            this.broadcast.addEventListener('message', e => {
                 if (e.origin !== location.origin)
                     console.warn(e.origin, location.origin);
                 const detail = e.data;
@@ -3087,24 +2769,6 @@ document.write(html);">Remove script tags and go</button>
                     }
                     catch { }
                 }
-            });
-            this.tabsQuery.addEventListener('message', (e) => {
-                if (e.origin !== location.origin)
-                    console.warn(e.origin, location.origin);
-                if (e.data === 'req')
-                    this.tabsQuery.postMessage({ id: myTabID });
-            });
-        }
-        queryTabs() {
-            return new Promise((resolve) => {
-                const id = new Set();
-                this.tabsQuery.addEventListener('message', (e) => {
-                    var _a;
-                    if ((_a = e.data) === null || _a === void 0 ? void 0 : _a.id)
-                        id.add(e.data.id);
-                });
-                this.tabsQuery.postMessage('req');
-                setTimeout(() => resolve([...id]), 300);
             });
         }
         on(_, cb) {
@@ -3116,36 +2780,36 @@ document.write(html);">Remove script tags and go</button>
     }
     const origFetch$1 = fetch;
     if (isDebug) {
-        const crossPage = new CrossPageDebugChannel();
         const mockHost = AsyncCall({
             onMessage: ThisSideImplementation.onMessage,
             onCommitted: ThisSideImplementation['browser.webNavigation.onCommitted'],
         }, {
             key: 'mock',
             log: false,
-            messageChannel: crossPage,
+            messageChannel: new CrossPageDebugChannel(),
         });
+        const myTabID = Math.random();
         setTimeout(() => {
-            const obj = parseDebugModeURL('', { id: myTabID });
+            const obj = parseDebugModeURL('', {});
             // webNavigation won't sent holoflows-extension pages.
             if (obj.src.startsWith('holoflows-'))
                 return;
             mockHost.onCommitted({ tabId: myTabID, url: obj.src });
         }, 2000);
         const host = {
-            'URL.createObjectURL': log$1(void 0),
-            'URL.revokeObjectURL': log$1(void 0),
-            'browser.downloads.download': log$1(void 0),
+            'URL.createObjectURL': log(void 0),
+            'URL.revokeObjectURL': log(void 0),
+            'browser.downloads.download': log(void 0),
             async sendMessage(e, t, tt, m, mm) {
-                mockHost.onMessage(e, t, m, mm, { id: myTabID });
+                mockHost.onMessage(e, t, m, mm, { id: new URLSearchParams(location.search).get('id') });
             },
-            'browser.storage.local.clear': log$1(void 0),
+            'browser.storage.local.clear': log(void 0),
             async 'browser.storage.local.get'(extensionID, k) {
                 return (await useInternalStorage(extensionID)).debugModeStorage || {};
             },
-            'browser.storage.local.remove': log$1(void 0),
+            'browser.storage.local.remove': log(void 0),
             async 'browser.storage.local.set'(extensionID, d) {
-                useInternalStorage(extensionID, (o) => (o.debugModeStorage = Object.assign({}, o.debugModeStorage, d)));
+                useInternalStorage(extensionID, o => (o.debugModeStorage = Object.assign({}, o.debugModeStorage, d)));
             },
             async 'browser.tabs.create'(extensionID, options) {
                 if (!options.url)
@@ -3155,18 +2819,16 @@ document.write(html);">Remove script tags and go</button>
                 const param = new URLSearchParams();
                 param.set('url', options.url);
                 param.set('type', options.url.startsWith('holoflows-extension://') ? 'p' : 'm');
-                const id = ~~(Math.random() * 100);
-                param.set('id', id.toString());
                 a.href = '/?' + param;
-                a.innerText = 'browser.tabs.create: Please click to open it: ' + options.url;
+                a.innerText = 'browser.tabs.create: ' + options.url;
                 a.target = '_blank';
                 a.style.color = 'white';
                 document.body.appendChild(a);
-                return { id };
+                return { id: Math.random() };
             },
-            'browser.tabs.query': () => crossPage.queryTabs().then((x) => x.map((id) => ({ id }))),
-            'browser.tabs.remove': log$1(void 0),
-            'browser.tabs.update': log$1({}),
+            'browser.tabs.query': log([]),
+            'browser.tabs.remove': log(void 0),
+            'browser.tabs.update': log({}),
             async fetch(extensionID, r) {
                 const req = await origFetch$1(debugModeURLRewrite(extensionID, r.url));
                 if (req.ok)
@@ -3177,17 +2839,6 @@ document.write(html);">Remove script tags and go</button>
                     };
                 return { data: { content: '', mimeType: '', type: 'text' }, status: 404, statusText: 'Not found' };
             },
-            async eval(eid, string) {
-                const x = eval;
-                try {
-                    x(string);
-                }
-                catch (e) {
-                    console.log(string);
-                    console.error(e);
-                    throw e;
-                }
-            },
         };
         AsyncCall(host, {
             key: '',
@@ -3196,22 +2847,30 @@ document.write(html);">Remove script tags and go</button>
         });
     }
 
-    console.log('Loading dependencies from external', ts);
+    console.log('Loading dependencies from external', Realm, ts);
     // ## Inject here
     if (isDebug) {
         // leaves your id here, and put your extension to /extension/{id}/
         const testIDs = ['eofkdgkhfoebecmamljfaepckoecjhib'];
-        // const testIDs = ['eofkdgkhfoebecmamljfaepckoecjhib', 'griesruigerhuigreuijghrehgerhgerge']
         // const testIDs = ['griesruigerhuigreuijghrehgerhgerge']
-        testIDs.forEach((id) => fetch('/extension/' + id + '/manifest.json')
-            .then((x) => x.text())
-            .then((x) => registerWebExtension(id, JSON.parse(x))));
+        testIDs.forEach(id => fetch('/extension/' + id + '/manifest.json')
+            .then(x => x.text())
+            .then(x => {
+            console.log(`Loading test WebExtension ${id}. Use globalThis.exts to access env`);
+            Object.assign(globalThis, {
+                registerWebExtension,
+                WebExtensionManagedRealm,
+            });
+            return registerWebExtension(id, JSON.parse(x));
+        })
+            .then(v => Object.assign(globalThis, { exts: v })));
     }
     else {
         /** ? Can't delete a global variable */
         Object.assign(globalThis, {
             ts: undefined,
             TypeScript: undefined,
+            Realm: undefined,
         });
     }
     /**
@@ -3222,5 +2881,5 @@ document.write(html);">Remove script tags and go</button>
      * )
      */
 
-}(ts));
+}(Realm, ts));
 //# sourceMappingURL=out.js.map
