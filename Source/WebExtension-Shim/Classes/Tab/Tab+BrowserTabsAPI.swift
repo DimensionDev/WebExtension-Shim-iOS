@@ -8,7 +8,6 @@
 import Foundation
 import SwiftyJSON
 import ConsolePrint
-import SafariServices
 
 extension Tab {
 
@@ -17,9 +16,6 @@ extension Tab {
         switch messageResult {
         case let .success(create):
             if let taDelegate = delegate, let tabUrlString = create.options.url, let tabUrl = URL(string: tabUrlString), taDelegate.tab(self, shouldOpenExternallyForURL: tabUrl) {
-                return
-            }
-            if let tabUrl = create.options.url?.host, tabUrl.hasSuffix("arweave.net") {
                 return
             }
             guard let tabs = self.browser?.tabs else {

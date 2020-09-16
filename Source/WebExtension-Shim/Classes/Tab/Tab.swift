@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import SafariServices
 import WebKit
 import ConsolePrint
 import SwiftyJSON

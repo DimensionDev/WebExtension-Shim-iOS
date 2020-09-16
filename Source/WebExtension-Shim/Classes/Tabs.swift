@@ -95,7 +95,6 @@ extension Tabs {
     public func create(options: WebExtension.Browser.Tabs.Create.Options?, webViewConfiguration: WKWebViewConfiguration? = nil) -> Tab {
         os_log("^ %{public}s[%{public}ld], %{public}s: %{public}s", ((#file as NSString).lastPathComponent), #line, #function, String(describing: options))
 
-        if
         let tab: Tab = {
             let pluginForContentScript = self.plugin(forScriptType: .contentScript)
             let webViewConfiguration = self.webViewConfiguration(forOptions: options, scriptType: .contentScript)
