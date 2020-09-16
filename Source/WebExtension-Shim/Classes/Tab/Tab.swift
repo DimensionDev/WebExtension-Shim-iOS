@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import SafariServices
 import WebKit
 import ConsolePrint
 import SwiftyJSON
@@ -18,6 +17,7 @@ public protocol TabDelegate: class {
     func uiDelegateShim(for tab: Tab) -> WKUIDelegateShim?
     func navigationDelegateShim(for tab: Tab) -> WKNavigationDelegateShim?
     func customScriptMessageHandlerNames(for tab: Tab) -> [String]
+    func tab(_ tab: Tab, shouldOpenExternallyForURL url: URL) -> Bool
     func tab(_ tab: Tab, userContentController: WKUserContentController, didReceive message: WKScriptMessage)
     func tab(_ tab: Tab, localStorageManagerForExtension id: String) -> LocalStorageManager
 
@@ -30,6 +30,7 @@ extension TabDelegate {
     public func uiDelegate(for tab: Tab) -> WKUIDelegate? { return nil }
     public func navigationDelegate(for tab: Tab) -> WKNavigationDelegate? { return nil }
     public func customScriptMessageHandlerNames(for tab: Tab) -> [String] { return [] }
+    public func tab(_ tab: Tab, shouldOpenExternallyForURL url: URL) -> Bool { return false }
     public func tab(_ tab: Tab, userContentController: WKUserContentController, didReceive message: WKScriptMessage) { }
     public func tab(_ tab: Tab, localStorageManagerForExtension id: String) -> LocalStorageManager {
         return LocalStorageManager(realm: RealmService(name: id).realm)
