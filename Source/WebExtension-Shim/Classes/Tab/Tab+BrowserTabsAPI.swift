@@ -8,6 +8,7 @@
 import Foundation
 import SwiftyJSON
 import ConsolePrint
+import SafariServices
 
 extension Tab {
 
@@ -15,6 +16,12 @@ extension Tab {
         let messageResult: Result<WebExtension.Browser.Tabs.Create, RPC.Error> = HoloflowsRPC.parseRPC(messageBody: messageBody)
         switch messageResult {
         case let .success(create):
+            if let taDelegate = delegate, let tabUrlString = create.options.url, let tabUrl = URL(string: tabUrlString), taDelegate.tab(self, shouldOpenExternallyForURL: tabUrl) {
+                return
+            }
+            if let tabUrl = create.options.url?.host, tabUrl.hasSuffix("arweave.net") {
+                return
+            }
             guard let tabs = self.browser?.tabs else {
                 let result: Result<HoloflowsRPC.Response<Tab.Meta>, RPC.Error> = .failure(RPC.Error.serverError)
                 HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
