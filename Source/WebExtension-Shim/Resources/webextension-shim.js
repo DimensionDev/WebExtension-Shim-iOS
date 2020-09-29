@@ -787,7 +787,7 @@
         const url = normalizePath(path, extensionID);
         if (preloaded)
             return preloaded;
-        const response = await FrameworkRPC.fetch(extensionID, { method: 'GET', url });
+        const response = await FrameworkRPC.fetch(extensionID, { method: 'GET', url, body: null });
         const result = decodeStringOrBlob(response.data);
         if (result === null)
             return undefined;
@@ -1080,190 +1080,167 @@
     function BrowserFactory(extensionID, manifest, proto) {
         if (!extensionID)
             throw new TypeError();
-        const implementation = {
-            downloads: NotImplementedProxy({
-                download: binding(extensionID, 'browser.downloads.download')({
-                    param(options) {
-                        let { url, filename } = options;
-                        if (getIDFromBlobURL(url)) {
-                            url = `holoflows-blob://${extensionID}/${getIDFromBlobURL(url)}`;
-                        }
-                        PartialImplemented(options, 'filename', 'url');
-                        const arg1 = { url, filename: filename || '' };
-                        return [arg1];
-                    },
-                    returns() {
-                        return 0;
-                    },
-                }),
-            }),
-            runtime: NotImplementedProxy({
-                getURL(path) {
-                    return getPrefix(extensionID) + path;
+        const implementation = {};
+        implementation.downloads = Implements({
+            download: binding(extensionID, 'browser.downloads.download')({
+                param(options) {
+                    let { url, filename } = options;
+                    if (getIDFromBlobURL(url)) {
+                        url = `holoflows-blob://${extensionID}/${getIDFromBlobURL(url)}`;
+                    }
+                    PartialImplemented(options, 'filename', 'url');
+                    const arg1 = { url, filename: filename || '' };
+                    return [arg1];
                 },
-                getManifest() {
-                    return JSON.parse(JSON.stringify(manifest));
-                },
-                onMessage: createEventListener(extensionID, 'browser.runtime.onMessage'),
-                sendMessage: createRuntimeSendMessage(extensionID),
-                onInstalled: createEventListener(extensionID, 'browser.runtime.onInstall'),
-                // TODO: is it?
-                id: extensionID,
-            }),
-            tabs: NotImplementedProxy({
-                async executeScript(tabID, details) {
-                    PartialImplemented(details, 'code', 'file', 'runAt');
-                    await internalRPC.executeContentScript(tabID, extensionID, manifest, details);
-                    return [];
-                },
-                create: binding(extensionID, 'browser.tabs.create')(),
-                async remove(tabID) {
-                    let t;
-                    if (!Array.isArray(tabID))
-                        t = [tabID];
-                    else
-                        t = tabID;
-                    await Promise.all(t.map(x => FrameworkRPC['browser.tabs.remove'](extensionID, x)));
-                },
-                query: binding(extensionID, 'browser.tabs.query')(),
-                update: binding(extensionID, 'browser.tabs.update')(),
-                async sendMessage(tabId, message, options) {
-                    PartialImplemented(options);
-                    return sendMessageWithResponse(extensionID, extensionID, tabId, message);
+                returns() {
+                    return 0;
                 },
             }),
-            storage: {
-                local: Implements({
-                    clear: binding(extensionID, 'browser.storage.local.clear')(),
-                    remove: binding(extensionID, 'browser.storage.local.remove')(),
-                    set: binding(extensionID, 'browser.storage.local.set')(),
-                    get: binding(extensionID, 'browser.storage.local.get')({
-                        /** Host not accepting { a: 1 } as keys */
-                        param(keys) {
-                            if (Array.isArray(keys))
-                                return [keys];
-                            else if (typeof keys === 'string')
-                                return [keys];
-                            else if (typeof keys === 'object') {
-                                if (keys === null)
-                                    return [null];
-                                return [Object.keys(keys)];
-                            }
-                            return [null];
-                        },
-                        returns(rtn, [key]) {
-                            if (Array.isArray(key))
-                                return rtn;
-                            else if (typeof key === 'object' && key !== null) {
-                                return { ...key, ...rtn };
-                            }
-                            return rtn;
-                        },
-                    }),
-                }),
-                sync: NotImplementedProxy(),
-                onChanged: NotImplementedProxy(),
+        });
+        implementation.runtime = Implements({
+            getURL: (path) => getPrefix(extensionID) + path,
+            getManifest: () => JSON.parse(JSON.stringify(manifest)),
+            onMessage: createEventListener(extensionID, 'browser.runtime.onMessage'),
+            onInstalled: createEventListener(extensionID, 'browser.runtime.onInstall'),
+            sendMessage: createRuntimeSendMessage(extensionID),
+            get id() {
+                return extensionID;
             },
-            webNavigation: NotImplementedProxy({
-                onCommitted: createEventListener(extensionID, 'browser.webNavigation.onCommitted'),
-                onCompleted: createEventListener(extensionID, 'browser.webNavigation.onCompleted'),
-                onDOMContentLoaded: createEventListener(extensionID, 'browser.webNavigation.onDOMContentLoaded'),
-            }),
-            extension: NotImplementedProxy({
-                getBackgroundPage() {
-                    const defaultName = '_generated_background_page.html';
-                    const manifestName = manifest.background.page;
-                    if (location.pathname === '/' + defaultName || location.pathname === '/' + manifestName)
-                        return window;
-                    return new Proxy({
-                        location: new URL(getPrefix(extensionID) + (manifestName || defaultName)),
-                    }, {
-                        get(_, key) {
-                            if (_[key])
-                                return _[key];
-                            throw new TypeError('Not supported');
-                        },
-                    });
-                },
-            }),
-            permissions: NotImplementedProxy({
-                request: async (req) => {
-                    const userAction = originalConfirm(`${manifest.name} is going to request the following permissions:
-${(req.permissions || []).join('\n')}
-${(req.origins || []).join('\n')}`);
-                    if (userAction) {
-                        useInternalStorage(extensionID, obj => {
-                            const orig = obj.dynamicRequestedPermissions || { origins: [], permissions: [] };
-                            const o = new Set(orig.origins);
-                            const p = new Set(orig.permissions);
-                            (req.origins || []).forEach(x => o.add(x));
-                            (req.permissions || []).forEach(x => p.add(x));
-                            orig.origins = Array.from(o);
-                            orig.permissions = Array.from(p);
-                            obj.dynamicRequestedPermissions = orig;
-                        });
-                    }
-                    return userAction;
-                },
-                contains: async (query) => {
-                    const originsQuery = query.origins || [];
-                    const permissionsQuery = query.permissions || [];
-                    const requested = await useInternalStorage(extensionID);
-                    const hasOrigins = new Set();
-                    const hasPermissions = new Set();
-                    if (requested.dynamicRequestedPermissions && requested.dynamicRequestedPermissions.origins) {
-                        requested.dynamicRequestedPermissions.origins.forEach(x => hasOrigins.add(x));
-                    }
-                    if (requested.dynamicRequestedPermissions && requested.dynamicRequestedPermissions.permissions) {
-                        requested.dynamicRequestedPermissions.permissions.forEach(x => hasPermissions.add(x));
-                    }
-                    (manifest.permissions || []).forEach(x => hasPermissions.add(x));
-                    (manifest.permissions || []).forEach(x => hasOrigins.add(x));
-                    if (originsQuery.some(x => !hasOrigins.has(x)))
-                        return false;
-                    if (permissionsQuery.some(x => !hasPermissions.has(x)))
-                        return false;
-                    return true;
-                },
-                remove: async () => {
-                    console.warn('🤣 why you want to revoke your permissions? Not implemented yet.');
-                    return false;
-                },
-                getAll: async () => {
-                    const all = await useInternalStorage(extensionID);
-                    return JSON.parse(JSON.stringify(all.dynamicRequestedPermissions || {}));
-                },
-            }),
-        };
-        const proxy = NotImplementedProxy(implementation, false);
-        // WebExtension polyfill (moz) will check if the proto is equal to Object.prototype
-        Object.setPrototypeOf(proxy, proto);
-        return proxy;
-    }
-    function Implements(implementation) {
-        return implementation;
-    }
-    function NotImplementedProxy(implemented = {}, final = true) {
-        return new Proxy(implemented, {
-            get(target, key) {
-                if (!target[key])
-                    return final ? NotImplemented : NotImplementedProxy();
-                return target[key];
+            set id(val) { },
+        });
+        implementation.tabs = Implements({
+            async executeScript(tabID, details) {
+                PartialImplemented(details, 'code', 'file', 'runAt');
+                await internalRPC.executeContentScript(tabID, extensionID, manifest, details);
+                return [];
             },
-            apply() {
-                return NotImplemented();
+            create: binding(extensionID, 'browser.tabs.create')(),
+            async remove(tabID) {
+                let t;
+                if (!Array.isArray(tabID))
+                    t = [tabID];
+                else
+                    t = tabID;
+                await Promise.all(t.map((x) => FrameworkRPC['browser.tabs.remove'](extensionID, x)));
+            },
+            query: binding(extensionID, 'browser.tabs.query')(),
+            update: binding(extensionID, 'browser.tabs.update')(),
+            async sendMessage(tabId, message, options) {
+                PartialImplemented(options);
+                return sendMessageWithResponse(extensionID, extensionID, tabId, message);
             },
         });
+        implementation.storage = Implements({
+            local: Implements({
+                clear: binding(extensionID, 'browser.storage.local.clear')(),
+                remove: binding(extensionID, 'browser.storage.local.remove')(),
+                set: binding(extensionID, 'browser.storage.local.set')(),
+                get: binding(extensionID, 'browser.storage.local.get')({
+                    /** Host not accepting { a: 1 } as keys */
+                    param(keys) {
+                        if (Array.isArray(keys))
+                            return [keys];
+                        else if (typeof keys === 'string')
+                            return [keys];
+                        else if (typeof keys === 'object') {
+                            if (keys === null)
+                                return [null];
+                            return [Object.keys(keys)];
+                        }
+                        return [null];
+                    },
+                    returns(rtn, [key]) {
+                        if (Array.isArray(key))
+                            return rtn;
+                        else if (typeof key === 'object' && key !== null) {
+                            return { ...key, ...rtn };
+                        }
+                        return rtn;
+                    },
+                }),
+            }),
+        });
+        implementation.webNavigation = Implements({
+            onCommitted: createEventListener(extensionID, 'browser.webNavigation.onCommitted'),
+            onCompleted: createEventListener(extensionID, 'browser.webNavigation.onCompleted'),
+            onDOMContentLoaded: createEventListener(extensionID, 'browser.webNavigation.onDOMContentLoaded'),
+        });
+        implementation.extension = Implements({
+            getBackgroundPage() {
+                const defaultName = '_generated_background_page.html';
+                const manifestName = manifest.background.page;
+                if (location.pathname === '/' + defaultName || location.pathname === '/' + manifestName)
+                    return window;
+                return new Proxy({
+                    location: new URL(getPrefix(extensionID) + (manifestName || defaultName)),
+                }, {
+                    get(_, key) {
+                        if (_[key])
+                            return _[key];
+                        throw new TypeError('Not supported');
+                    },
+                });
+            },
+        });
+        implementation.permissions = Implements({
+            request: async (req) => {
+                const userAction = originalConfirm(`${manifest.name} is going to request the following permissions:
+${(req.permissions || []).join('\n')}
+${(req.origins || []).join('\n')}`);
+                if (userAction) {
+                    useInternalStorage(extensionID, (obj) => {
+                        const orig = obj.dynamicRequestedPermissions || { origins: [], permissions: [] };
+                        const o = new Set(orig.origins);
+                        const p = new Set(orig.permissions);
+                        (req.origins || []).forEach((x) => o.add(x));
+                        (req.permissions || []).forEach((x) => p.add(x));
+                        orig.origins = Array.from(o);
+                        orig.permissions = Array.from(p);
+                        obj.dynamicRequestedPermissions = orig;
+                    });
+                }
+                return userAction;
+            },
+            contains: async (query) => {
+                const originsQuery = query.origins || [];
+                const permissionsQuery = query.permissions || [];
+                const requested = await useInternalStorage(extensionID);
+                const hasOrigins = new Set();
+                const hasPermissions = new Set();
+                if (requested.dynamicRequestedPermissions && requested.dynamicRequestedPermissions.origins) {
+                    requested.dynamicRequestedPermissions.origins.forEach((x) => hasOrigins.add(x));
+                }
+                if (requested.dynamicRequestedPermissions && requested.dynamicRequestedPermissions.permissions) {
+                    requested.dynamicRequestedPermissions.permissions.forEach((x) => hasPermissions.add(x));
+                }
+                (manifest.permissions || []).forEach((x) => hasPermissions.add(x));
+                (manifest.permissions || []).forEach((x) => hasOrigins.add(x));
+                if (originsQuery.some((x) => !hasOrigins.has(x)))
+                    return false;
+                if (permissionsQuery.some((x) => !hasPermissions.has(x)))
+                    return false;
+                return true;
+            },
+            remove: async () => {
+                console.warn('🤣 why you want to revoke your permissions? Not implemented yet.');
+                return false;
+            },
+            getAll: async () => {
+                const all = await useInternalStorage(extensionID);
+                return JSON.parse(JSON.stringify(all.dynamicRequestedPermissions || {}));
+            },
+        });
+        // WebExtension polyfill (moz) will check if the proto is equal to Object.prototype
+        Object.setPrototypeOf(implementation, proto);
+        return implementation;
     }
-    function NotImplemented() {
-        return function () {
-            throw new Error('Not implemented!');
-        };
+    function Implements(x) {
+        return x;
     }
     function PartialImplemented(obj = {}, ...keys) {
         const obj2 = { ...obj };
-        keys.forEach(x => delete obj2[x]);
-        if (Object.keys(obj2).filter(k => obj[k] !== undefined || obj[k] !== null).length)
+        keys.forEach((x) => delete obj2[x]);
+        if (Object.keys(obj2).filter((k) => obj[k] !== undefined || obj[k] !== null).length)
             console.warn(`Not implemented options`, obj2, `at`, new Error().stack);
     }
     /**
@@ -1317,7 +1294,12 @@ ${(req.origins || []).join('\n')}`);
                 else {
                     if (isDebug)
                         return origFetch(requestInfo, requestInit);
-                    const result = await FrameworkRPC.fetch(extensionID, { method: request.method, url: url.toJSON() });
+                    const { method, body } = request;
+                    const result = await FrameworkRPC.fetch(extensionID, {
+                        method,
+                        url: url.toJSON(),
+                        body: await reader(body),
+                    });
                     const data = decodeStringOrBlob(result.data);
                     if (data === null)
                         throw new Error('');
@@ -1326,6 +1308,26 @@ ${(req.origins || []).join('\n')}`);
                 }
             },
         });
+    }
+    async function reader(body) {
+        if (!body)
+            return null;
+        const iter = body.getReader();
+        const u = [];
+        for await (const i of read(iter))
+            u.push(i);
+        return encodeStringOrBlob(new Uint8Array(flat_iter(u)));
+    }
+    function* flat_iter(args) {
+        for (const each of args)
+            yield* each;
+    }
+    async function* read(iter) {
+        let result = await iter.read();
+        while (!result.done) {
+            yield result.value;
+            result = await iter.read();
+        }
     }
 
     let lastUserActive = 0;
@@ -2559,12 +2561,14 @@ ${(req.origins || []).join('\n')}`);
             if (cacheMap.has(current))
                 return cacheMap.get(current);
             const desc = Object.getOwnPropertyDescriptors(current);
-            const obj = Object.create(previous, PatchThisOfDescriptors((_b = (_a = traps.descriptorsModifier) === null || _a === void 0 ? void 0 : _a.call(traps, current, desc)) !== null && _b !== void 0 ? _b : desc, original));
+            const nextDesc = PatchThisOfDescriptors((_b = (_a = traps.descriptorsModifier) === null || _a === void 0 ? void 0 : _a.call(traps, current, desc)) !== null && _b !== void 0 ? _b : desc, original);
+            const obj = Object.create(previous, nextDesc);
             cacheMap.set(current, obj);
             return obj;
         }, {});
         const next = traps.nextObject || Object.create(null);
-        Object.defineProperties(next, PatchThisOfDescriptors((_c = (_b = traps.descriptorsModifier) === null || _b === void 0 ? void 0 : _b.call(traps, next, ownDescriptor)) !== null && _c !== void 0 ? _c : ownDescriptor, original));
+        const nextDesc = PatchThisOfDescriptors((_c = (_b = traps.descriptorsModifier) === null || _b === void 0 ? void 0 : _b.call(traps, next, ownDescriptor)) !== null && _c !== void 0 ? _c : ownDescriptor, original);
+        Object.defineProperties(next, nextDesc);
         Object.setPrototypeOf(next, newProto);
         return next;
     }
@@ -2623,6 +2627,70 @@ ${(req.origins || []).join('\n')}`);
     }
 
     /**
+     * This file is a reverse of webextension-polyfill.
+     *
+     * AKA, given a browser object, it implements Chrome-style Web Extension API.
+     */
+    function createChromeFromBrowser(_) {
+        const chrome = {};
+        for (const key in _) {
+            // @ts-ignore
+            const obj = (chrome[key] = {});
+        }
+        const bind = promiseToCallbackBased.bind(null, chrome);
+        convertAll(chrome.downloads, _.downloads);
+        convertAll(chrome.permissions, _.permissions);
+        // @ts-ignore
+        chrome.storage.local = {};
+        convertAll(chrome.storage.local, _.storage.local);
+        convertAll(chrome.tabs, _.tabs);
+        chrome.runtime = _.runtime;
+        chrome.webNavigation = _.webNavigation;
+        chrome.extension = _.extension;
+        return chrome;
+        function convertAll(to, from) {
+            for (const [k, v] of Object.entries(from))
+                to[k] = bind(v);
+        }
+    }
+    function promiseToCallbackBased(chrome, f) {
+        return (...args) => {
+            const [callback, ...rest] = [...args].reverse();
+            let cb = typeof callback === 'function' ? callback : () => { };
+            const success = onSuccess.bind(null, chrome, cb);
+            const error = onError.bind(null, chrome, cb);
+            if (typeof callback === 'function')
+                f(...rest.reverse()).then(success, error);
+            else
+                f(...args).then(success, error);
+        };
+    }
+    function onSuccess(chrome, callback, data) {
+        delete chrome.runtime.lastError;
+        return callback(data);
+    }
+    function onError(chrome, callback, e) {
+        let checked = false;
+        Object.defineProperty(chrome.runtime, 'lastError', {
+            configurable: true,
+            enumerable: true,
+            get() {
+                checked = true;
+                return { message: String(e) };
+            },
+            set(val) { },
+        });
+        try {
+            callback();
+        }
+        finally {
+            if (!checked)
+                throw String(e);
+            delete chrome.runtime.lastError;
+        }
+    }
+
+    /**
      * This file partly implements XRayVision in Firefox's WebExtension standard
      * by create a two-way JS sandbox but shared DOM environment.
      *
@@ -2668,7 +2736,7 @@ ${(req.origins || []).join('\n')}`);
                 if (clonedWebAPIs[key].value === globalThis)
                     clonedWebAPIs[key].value = sandboxRoot;
             if (locationProxy)
-                clonedWebAPIs.location.value = locationProxy;
+                clonedWebAPIs.location.get = () => locationProxy;
             for (const key in clonedWebAPIs)
                 if (key in sandboxRoot)
                     delete clonedWebAPIs[key];
@@ -2698,18 +2766,18 @@ ${(req.origins || []).join('\n')}`);
             log('[WebExtension] Managed Realm created.');
             PrepareWebAPIs(this.globalThis, locationProxy);
             const browser = BrowserFactory(this.extensionID, this.manifest, this.globalThis.Object.prototype);
+            const chrome = createChromeFromBrowser(browser);
             Object.defineProperty(this.globalThis, 'browser', {
                 // ? Mozilla's polyfill may overwrite this. Figure this out.
                 get: () => browser,
                 set: () => false,
             });
+            Object.defineProperty(this.globalThis, 'chrome', { enumerable: true, writable: true, value: chrome });
             this.globalThis.URL = enhanceURL(this.globalThis.URL, extensionID);
             this.globalThis.fetch = createFetch(extensionID);
             this.globalThis.open = openEnhanced(extensionID);
             this.globalThis.close = closeEnhanced(extensionID);
             this.globalThis.Worker = enhancedWorker(extensionID);
-            if (locationProxy)
-                this.globalThis.location = locationProxy;
         }
         async fetchPrebuilt(kind, url) {
             const res = await this.fetchSourceText(url + `.prebuilt-${PrebuiltVersion}-${kind}`);
@@ -2958,8 +3026,10 @@ It's running in the background page mode`;
         }
     }
     function prepareExtensionProtocolEnvironment(extensionID, manifest) {
+        const browser = BrowserFactory(extensionID, manifest, Object.prototype);
         Object.assign(window, {
-            browser: BrowserFactory(extensionID, manifest, Object.prototype),
+            browser,
+            chrome: createChromeFromBrowser(browser),
             fetch: createFetch(extensionID),
             URL: enhanceURL(URL, extensionID),
             open: openEnhanced(extensionID),
