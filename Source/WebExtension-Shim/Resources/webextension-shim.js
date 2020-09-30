@@ -695,6 +695,9 @@
         if (val instanceof ArrayBuffer) {
             return { type: 'array buffer', content: base64EncArr(new Uint8Array(val)) };
         }
+        if (val instanceof Uint8Array) {
+            return { type: 'array buffer', content: base64EncArr(val) };
+        }
         throw new TypeError('Invalid data');
     }
     //#region // ? Code from https://developer.mozilla.org/en-US/docs/Web/API/WindowBase64/Base64_encoding_and_decoding#Appendix.3A_Decode_a_Base64_string_to_Uint8Array_or_ArrayBuffer
