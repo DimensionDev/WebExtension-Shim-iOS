@@ -39,10 +39,10 @@ extension BundleResourceManager {
             scriptPath = bundle.url(forResource: filePath, withExtension: nil)?.path
 
             if scriptPath == nil {
-                scriptPath = bundle.url(forResource: filePath.replacingOccurrences(of: ".prebuilt-1-script.js", with: ""), withExtension: nil)?.path
+                scriptPath = bundle.url(forResource: filePath.replacingOccurrences(of: ".prebuilt-1-script", with: ""), withExtension: nil)?.path
             }
             if scriptPath == nil {
-                scriptPath = bundle.url(forResource: filePath.replacingOccurrences(of: ".prebuilt-1-module.js", with: ""), withExtension: nil)?.path
+                scriptPath = bundle.url(forResource: filePath.replacingOccurrences(of: ".prebuilt-1-module", with: ""), withExtension: nil)?.path
             }
         }
         guard let path = scriptPath else {
