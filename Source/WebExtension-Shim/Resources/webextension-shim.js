@@ -685,7 +685,7 @@
         }
         return null;
     }
-    async function encodeStringOrBlob(val) {
+    async function encodeStringOrBufferSource(val) {
         if (typeof val === 'string')
             return { type: 'text', content: val };
         if (val instanceof Blob) {
@@ -695,10 +695,11 @@
         if (val instanceof ArrayBuffer) {
             return { type: 'array buffer', content: base64EncArr(new Uint8Array(val)) };
         }
-        if (val instanceof Uint8Array) {
-            return { type: 'array buffer', content: base64EncArr(val) };
+        if ('buffer' in val && val.buffer instanceof ArrayBuffer) {
+            return encodeStringOrBufferSource(val.buffer);
         }
-        throw new TypeError('Invalid data');
+        console.error(val);
+        throw new TypeError('Invalid type');
     }
     //#region // ? Code from https://developer.mozilla.org/en-US/docs/Web/API/WindowBase64/Base64_encoding_and_decoding#Appendix.3A_Decode_a_Base64_string_to_Uint8Array_or_ArrayBuffer
     function b64ToUint6(nChr) {
@@ -1068,7 +1069,7 @@
             const url = createObjectURL(obj);
             const resourceID = getIDFromBlobURL(url);
             if (obj instanceof Blob) {
-                encodeStringOrBlob(obj).then(blob => FrameworkRPC['URL.createObjectURL'](extensionID, resourceID, blob));
+                encodeStringOrBufferSource(obj).then((blob) => FrameworkRPC['URL.createObjectURL'](extensionID, resourceID, blob));
             }
             return url;
         };
@@ -1319,7 +1320,7 @@ ${(req.origins || []).join('\n')}`);
         const u = [];
         for await (const i of read(iter))
             u.push(i);
-        return encodeStringOrBlob(new Uint8Array(flat_iter(u)));
+        return encodeStringOrBufferSource(new Uint8Array(flat_iter(u)));
     }
     function* flat_iter(args) {
         for (const each of args)
