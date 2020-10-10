@@ -1513,7 +1513,7 @@ ${(req.origins || []).join('\n')}`);
 
     const scriptTransformCache = new Map();
     const moduleTransformCache = new Map();
-    const PrebuiltVersion = 1;
+    const PrebuiltVersion = 2;
     /**
      * For scripts, we treat it as a module with no static import/export.
      */
@@ -2784,13 +2784,13 @@ ${(req.origins || []).join('\n')}`);
             this.globalThis.Worker = enhancedWorker(extensionID);
         }
         async fetchPrebuilt(kind, url) {
-            const res = await this.fetchSourceText(url + `.prebuilt-${PrebuiltVersion}-${kind}`);
-            if (!res)
+            const content = await this.fetchSourceText(url + `.prebuilt-${PrebuiltVersion}-${kind}`);
+            if (!content)
                 return null;
             if (kind === 'module')
-                return { content: res, asSystemJS: true };
-            const [flag] = res;
-            return { content: res.slice(1), asSystemJS: flag === 'd' };
+                return { content: content, asSystemJS: true };
+            const flag = content.slice(0, 4);
+            return { content, asSystemJS: flag === '//d\n' };
         }
         async fetchSourceText(url) {
             const res = await getResourceAsync(this.extensionID, {}, url);
