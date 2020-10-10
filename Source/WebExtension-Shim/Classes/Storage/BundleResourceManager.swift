@@ -41,9 +41,9 @@ extension BundleResourceManager {
             if scriptPath == nil {
                 scriptPath = bundle.url(forResource: filePath.replacingOccurrences(of: ".prebuilt-1-script", with: ""), withExtension: nil)?.path
             }
-            if scriptPath == nil {
-                scriptPath = bundle.url(forResource: filePath.replacingOccurrences(of: ".prebuilt-1-module", with: ""), withExtension: nil)?.path
-            }
+//            if scriptPath == nil {
+//                scriptPath = bundle.url(forResource: filePath.replacingOccurrences(of: ".prebuilt-1-module", with: ""), withExtension: nil)?.path
+//            }
         }
         guard let path = scriptPath else {
             handler(.failure(Error.fileNotFound))
