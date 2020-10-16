@@ -9,17 +9,17 @@ PODS:
   - RealmSwift (5.3.5):
     - Realm (= 5.3.5)
   - SwiftyJSON (5.0.0)
-  - WebExtension-Shim (0.5.5):
+  - WebExtension-Shim (0.5.6):
     - ConsolePrint
     - SwiftyJSON (~> 5.0.0)
-    - WebExtension-Shim/WebExtension-Shim (= 0.5.5)
-  - WebExtension-Shim/JSONRPC (0.5.5):
+    - WebExtension-Shim/WebExtension-Shim (= 0.5.6)
+  - WebExtension-Shim/JSONRPC (0.5.6):
     - ConsolePrint
     - SwiftyJSON (~> 5.0.0)
-  - WebExtension-Shim/Tests (0.5.5):
+  - WebExtension-Shim/Tests (0.5.6):
     - ConsolePrint
     - SwiftyJSON (~> 5.0.0)
-  - WebExtension-Shim/WebExtension-Shim (0.5.5):
+  - WebExtension-Shim/WebExtension-Shim (0.5.6):
     - Alamofire (~> 4.7)
     - AlamofireNetworkActivityLogger (~> 2.4)
     - ConsolePrint
@@ -51,7 +51,7 @@ SPEC CHECKSUMS:
   Realm: 2b52fcc86fc0ed3d75a56ac0eb1e73c4f1a60e16
   RealmSwift: a6ea2ea561039fc3833c08dec81371a9a3bb5ca6
   SwiftyJSON: 36413e04c44ee145039d332b4f4e2d3e8d6c4db7
-  WebExtension-Shim: d10cfe42a238134387bfaa139da001ecc050d957
+  WebExtension-Shim: ff08496946be97fd1f3028df1b8b3b2269878da1
 
 PODFILE CHECKSUM: 746328a3cae26e6064836f83dfd71f0575f32aec
 
