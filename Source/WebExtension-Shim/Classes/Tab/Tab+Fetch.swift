@@ -118,7 +118,7 @@ extension Tab {
                         fetchResponse = WebExtension.Fetch.Response(status: response.statusCode,
                                                                     statusText: HTTPURLResponse.localizedString(forStatusCode: response.statusCode),
                                                                     data: data)
-                        consolePrint(data)
+                        consolePrint(data.content.prefix(300))
                     }
 
                     let result: Result<HoloflowsRPC.Response<WebExtension.Fetch.Response>, RPC.Error> = .success(HoloflowsRPC.Response(result: fetchResponse, id: id))

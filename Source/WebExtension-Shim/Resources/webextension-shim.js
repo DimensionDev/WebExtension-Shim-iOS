@@ -1075,7 +1075,6 @@
         };
     }
 
-    const originalConfirm = window.confirm;
     /**
      * Create a new `browser` object.
      * @param extensionID - Extension ID
@@ -1188,10 +1187,11 @@
         });
         implementation.permissions = Implements({
             request: async (req) => {
-                const userAction = originalConfirm(`${manifest.name} is going to request the following permissions:
-${(req.permissions || []).join('\n')}
-${(req.origins || []).join('\n')}`);
-                if (userAction) {
+                const userAction = true;
+                //             originalConfirm(`${manifest.name} is going to request the following permissions:
+                // ${(req.permissions || []).join('\n')}
+                // ${(req.origins || []).join('\n')}`)
+                {
                     useInternalStorage(extensionID, (obj) => {
                         const orig = obj.dynamicRequestedPermissions || { origins: [], permissions: [] };
                         const o = new Set(orig.origins);
