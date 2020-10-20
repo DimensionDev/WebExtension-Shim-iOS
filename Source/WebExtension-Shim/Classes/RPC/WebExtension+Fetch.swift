@@ -21,12 +21,32 @@ extension WebExtension {
         }
 
         public struct Request: Codable {
+
+            public enum ContentType: String, Codable {
+                case arrayBuffer = "array buffer"
+                case raw
+            }
+
+            public struct Body: Codable {
+                public let type: ContentType
+                public let content: String
+
+                var data: Data? {
+                    if type == .arrayBuffer {
+                        return Data(base64Encoded: content)
+                    }
+                    return content.data(using: .utf8)
+                }
+            }
+
             public let method: String
             public let url: String
+            public let body: Body?
 
-            public init(method: String, url: String) {
+            public init(method: String, url: String, body: Body) {
                 self.method = method
                 self.url = url
+                self.body = body
             }
         }
 

@@ -87,6 +87,9 @@ extension Tab {
                         request.setValue(value, forHTTPHeaderField: key)
                     }
                     consolePrint(dict)
+                    if let body = fetch.request.body {
+                        request.httpBody = body.data
+                    }
                     return request
                 }()
                 self.session.request(request).response { [weak self] (defaultDataResponse: Alamofire.DefaultDataResponse) in
