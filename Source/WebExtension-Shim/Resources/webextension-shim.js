@@ -2648,13 +2648,13 @@
       return typeof obj.readFloatLE === 'function' && typeof obj.slice === 'function' && isFastBuffer(obj.slice(0, 0))
     }
 
-    function decodeStringOrBlob(val) {
+    function decodeStringOrBufferSource(val) {
         if (val.type === 'text')
             return val.content;
         if (val.type === 'blob')
-            return new Blob([val.content], { type: val.mimeType });
+            return new Blob([Uint8ArrayFromBase64(val.content)], { type: val.mimeType });
         if (val.type === 'array buffer') {
-            return base64DecToArr(val.content).buffer;
+            return Uint8ArrayFromBase64(val.content).buffer;
         }
         return null;
     }
@@ -2663,10 +2663,10 @@
             return { type: 'text', content: val };
         if (val instanceof Blob) {
             const buffer = new Uint8Array(await new Response(val).arrayBuffer());
-            return { type: 'blob', mimeType: val.type, content: base64EncArr(buffer) };
+            return { type: 'blob', mimeType: val.type, content: Uint8ArrayToBase64(buffer) };
         }
         if (val instanceof ArrayBuffer) {
-            return { type: 'array buffer', content: base64EncArr(new Uint8Array(val)) };
+            return { type: 'array buffer', content: Uint8ArrayToBase64(new Uint8Array(val)) };
         }
         if ('buffer' in val && val.buffer instanceof ArrayBuffer) {
             return encodeStringOrBufferSource(val.buffer);
@@ -2674,10 +2674,10 @@
         console.error(val);
         throw new TypeError('Invalid type');
     }
-    function base64DecToArr(sBase64, nBlockSize) {
+    function Uint8ArrayFromBase64(sBase64, nBlockSize) {
         return new Uint8Array(Buffer.from(sBase64, 'base64'));
     }
-    function base64EncArr(aBytes) {
+    function Uint8ArrayToBase64(aBytes) {
         return Buffer.from(aBytes).toString('base64');
     }
 
@@ -2714,7 +2714,7 @@
         if (preloaded)
             return preloaded;
         const response = await FrameworkRPC.fetch(extensionID, { method: 'GET', url, body: null });
-        const result = decodeStringOrBlob(response.data);
+        const result = decodeStringOrBufferSource(response.data);
         if (result === null)
             return undefined;
         if (typeof result === 'string')
@@ -3223,7 +3223,7 @@
                         url: url.toJSON(),
                         body: await reader(body),
                     });
-                    const data = decodeStringOrBlob(result.data);
+                    const data = decodeStringOrBufferSource(result.data);
                     if (data === null)
                         throw new Error('');
                     const returnValue = new Response(data, result);
