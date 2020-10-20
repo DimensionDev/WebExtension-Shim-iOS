@@ -87,6 +87,9 @@ extension Tab {
                         request.setValue(value, forHTTPHeaderField: key)
                     }
                     consolePrint(dict)
+                    if let body = fetch.request.body {
+                        request.httpBody = body.data
+                    }
                     return request
                 }()
                 self.session.request(request).response { [weak self] (defaultDataResponse: Alamofire.DefaultDataResponse) in
@@ -118,7 +121,7 @@ extension Tab {
                         fetchResponse = WebExtension.Fetch.Response(status: response.statusCode,
                                                                     statusText: HTTPURLResponse.localizedString(forStatusCode: response.statusCode),
                                                                     data: data)
-                        consolePrint(data)
+                        consolePrint(data.content.prefix(300))
                     }
 
                     let result: Result<HoloflowsRPC.Response<WebExtension.Fetch.Response>, RPC.Error> = .success(HoloflowsRPC.Response(result: fetchResponse, id: id))

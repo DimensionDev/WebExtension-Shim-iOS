@@ -34,11 +34,25 @@ extension BundleResourceManager {
             return components
         }()
         let urlComponents = URLComponents(string: pathComponents.joined(separator: "/"))
-        guard let filePath = urlComponents?.path,
-            let path = bundle.url(forResource: filePath, withExtension: nil)?.path else {
-                handler(.failure(Error.fileNotFound))
-                return
+        var scriptPath: String?
+        if let filePath = urlComponents?.path {
+            scriptPath = bundle.url(forResource: filePath, withExtension: nil)?.path
+
+            if scriptPath == nil {
+                scriptPath = bundle.url(forResource: filePath.replacingOccurrences(of: ".prebuilt-1-script", with: ""), withExtension: nil)?.path
+            }
+            if scriptPath == nil {
+                scriptPath = bundle.url(forResource: filePath.replacingOccurrences(of: ".prebuilt-2-script", with: ""), withExtension: nil)?.path
+            }
+//            if scriptPath == nil {
+//                scriptPath = bundle.url(forResource: filePath.replacingOccurrences(of: ".prebuilt-1-module", with: ""), withExtension: nil)?.path
+//            }
         }
+        guard let path = scriptPath else {
+            handler(.failure(Error.fileNotFound))
+            return
+        }
+
         consolePrint(path)
 
         URLSession.shared.dataTask(with: URL(fileURLWithPath: path)) { data, response, error in
