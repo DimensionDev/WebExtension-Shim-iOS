@@ -8,7 +8,7 @@ target 'Example' do
 
   target 'Tests' do
     inherit! :search_paths
-
+ ·
     
   end
 end
