@@ -37,8 +37,8 @@ public class Tabs: NSObject {
     public private(set) var storage: [Tab] = []
     private var nextTabID = 1
     
-    /// store active tab order. The last is top-most.
-    public internal(set) var activeTabStack = WeakArray<Tab>([])
+    /// store active tab order. The last is top -most.
+    public private(set) var activeTabStack = WeakArray<Tab>([])
 
 
     init(browser: Browser) {
@@ -116,6 +116,10 @@ extension Tabs {
         nextTabID += 1
         storage.append(tab)
 
+        if tab.isActive {
+            activeTabStack.append(tab)
+        }
+
         return tab
     }
 
@@ -134,11 +138,16 @@ extension Tabs {
 
         for tab in removed {
             tab.resignMessageHandler()
+            activeTabStack.removeAll(where: { tab == $0 })
         }
 
         return removed
     }
 
+    public func update(tab: Tab) {
+        activeTabStack.removeAll(where: { tab == $0 })
+        activeTabStack.append(tab)
+    }
 }
 
 extension Tabs {
