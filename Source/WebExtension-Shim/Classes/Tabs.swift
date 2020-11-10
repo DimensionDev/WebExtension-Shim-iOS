@@ -144,6 +144,14 @@ extension Tabs {
         return removed
     }
 
+    @discardableResult
+    public func removeAll() -> [Tab] {
+        let allTabs = storage
+        allTabs.forEach { $0.resignMessageHandler() }
+        activeTabStack.removeAll()
+        return allTabs
+    }
+
     public func update(tab: Tab) {
         activeTabStack.removeAll(where: { tab == $0 })
         activeTabStack.append(tab)
