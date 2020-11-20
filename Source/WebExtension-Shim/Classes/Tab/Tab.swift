@@ -78,7 +78,7 @@ public class Tab: NSObject {
     public let webView: WKWebView
     public let isActive: Bool
 
-    let plugin: Plugin?
+    public let plugin: Plugin?
     let userContentController = WKUserContentController()
 
     weak var uiDelegateShim: WKUIDelegateShim? {
