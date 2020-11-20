@@ -196,7 +196,7 @@ extension Tabs {
 
         let tab: Tab = {
             let pluginForBackgroundScript = browser.flatMap { $0.delegate?.browser($0, pluginForScriptType: .backgroundScript) } ??
-                    Plugin(id: UUID().uuidString, manifest: JSON.null, environment: .backgroundScript, resources: JSON.null)
+                    Plugin(id: UUID().uuidString, manifest: JSON.null, environment: .backgroundScript, resources: JSON.null, externalURIs: [], universalLinks: [])
             let options: WebExtension.Browser.Tabs.Create.Options = {
                 let url = Tabs.backgroundTabPath(for: pluginForBackgroundScript)
                 let options = WebExtension.Browser.Tabs.Create.Options(active: true, url: url)
