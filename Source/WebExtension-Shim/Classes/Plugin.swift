@@ -14,6 +14,8 @@ public struct Plugin {
     public let manifest: JSON
     public let environment: ScriptType
     public let resources: JSON
+    public let externalURIs: [String]
+    public let universalLinks: [String]
 
     public var userScripts: [WKUserScript] = []
 
@@ -22,10 +24,12 @@ public struct Plugin {
         case contentScript = "content script"
     }
 
-    public init(id: String, manifest: JSON, environment: ScriptType, resources: JSON) {
+    public init(id: String, manifest: JSON, environment: ScriptType, resources: JSON, externalURIs: [String], universalLinks: [String]) {
         self.id = id
         self.manifest = manifest
         self.environment = environment
         self.resources = resources
+        self.externalURIs = externalURIs
+        self.universalLinks = universalLinks
     }
 }
