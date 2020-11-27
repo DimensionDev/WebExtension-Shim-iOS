@@ -71,7 +71,7 @@ extension ViewController: BrowserDelegate {
     }
     
     func browser(_ browser: Browser, pluginForScriptType scriptType: Plugin.ScriptType) -> Plugin {
-        return Plugin(id: UUID().uuidString, manifest: JSON(), environment: scriptType, resources: JSON())
+        return Plugin(id: UUID().uuidString, manifest: JSON(), environment: scriptType, resources: JSON(), externalURIs: [], universalLinks: [])
     }
     
     func browser(_ browser: Browser, webViewConfigurationForOptions options: WebExtension.Browser.Tabs.Create.Options?) -> WKWebViewConfiguration {

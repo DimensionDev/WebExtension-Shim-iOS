@@ -37,14 +37,18 @@ extension Tab {
                 } else {
                     DispatchQueue.main.async { [weak self] in
                         guard let `self` = self else { return }
-                        if let extensionTab = self.browser?.tabs.backgroundTab {
-                            HoloflowsRPC.dispathRequest(webView: extensionTab.webView, id: id, request: request, completionHandler: self.completionHandler())
+
+                        if let browser = self.browser {
+                            var allTabs = [Tab]()
+                            allTabs.append(contentsOf: browser.tabs.storage)
+                            allTabs.append(browser.tabs.backgroundTab)
+
+                            for targetTab in allTabs {
+                                guard targetTab.id != self.id else { continue }
+                                HoloflowsRPC.dispathRequest(webView: targetTab.webView, id: id, request: request, completionHandler: self.completionHandler())
+                            }
                         }
-                        for targetTab in self.browser?.tabs.storage ?? [] {
-                            guard targetTab.id != self.id else { return }
-                            HoloflowsRPC.dispathRequest(webView: targetTab.webView, id: id, request: request, completionHandler: self.completionHandler())
-                        }
-                        
+
                         let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .success(.init(result: "", id: id))
                         HoloflowsRPC.dispatchResponse(webView: self.webView, id: id, result: result, completionHandler: self.completionHandler())
                     }
