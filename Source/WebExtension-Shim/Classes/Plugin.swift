@@ -24,7 +24,7 @@ public struct Plugin {
         case contentScript = "content script"
     }
 
-    public init(id: String, manifest: JSON, environment: ScriptType, resources: JSON, externalURIs: [String], universalLinks: [String]) {
+    public init(id: String, manifest: JSON, environment: ScriptType, resources: JSON, externalURIs: [String] = [], universalLinks: [String] = []) {
         self.id = id
         self.manifest = manifest
         self.environment = environment

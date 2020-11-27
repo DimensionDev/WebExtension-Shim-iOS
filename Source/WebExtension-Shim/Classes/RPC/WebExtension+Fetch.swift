@@ -43,7 +43,7 @@ extension WebExtension {
             public let url: String
             public let body: Body?
 
-            public init(method: String, url: String, body: Body) {
+            public init(method: String, url: String, body: Body? = nil) {
                 self.method = method
                 self.url = url
                 self.body = body
