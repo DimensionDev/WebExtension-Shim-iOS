@@ -24,12 +24,7 @@ extension Tab {
                 return
             }
 
-            let tab = tabs.create(options: create.options)
-            
-            if tab.isActive {
-                tabs.activeTabStack.append(tab)
-            }
-            
+            tabs.create(options: create.options)
 
         case let .failure(error):
             consolePrint(error.localizedDescription)
@@ -42,12 +37,8 @@ extension Tab {
         let messageResult: Result<WebExtension.Browser.Tabs.Remove, RPC.Error> = HoloflowsRPC.parseRPC(messageBody: messageBody)
         switch messageResult {
         case let .success(remove):
-            if let removedTabs = self.browser?.tabs.remove(ids: [remove.tabId]) {
+            if (self.browser?.tabs.remove(ids: [remove.tabId])) != nil {
                 let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .success(.init(result: "", id: id))
-                
-                for removedTab in removedTabs {
-                    browser?.tabs.activeTabStack.removeAll(where: { removedTab == $0 })
-                }
                 
                 HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
 
@@ -104,8 +95,7 @@ extension Tab {
             
             if let active = update.updateProperties.active, active == true {
                 // Pop target to stack top
-                browser?.tabs.activeTabStack.removeAll(where: { targetTab == $0 })
-                browser?.tabs.activeTabStack.append(targetTab)
+                browser?.tabs.update(tab: targetTab)
                 targetTab.delegate?.tab(targetTab, shouldActive: true)
             }
 

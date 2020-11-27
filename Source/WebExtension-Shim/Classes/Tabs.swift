@@ -37,8 +37,8 @@ public class Tabs: NSObject {
     public private(set) var storage: [Tab] = []
     private var nextTabID = 1
     
-    /// store active tab order. The last is top-most.
-    public internal(set) var activeTabStack = WeakArray<Tab>([])
+    /// store active tab order. The last is top -most.
+    public private(set) var activeTabStack = WeakArray<Tab>([])
 
 
     init(browser: Browser) {
@@ -116,6 +116,10 @@ extension Tabs {
         nextTabID += 1
         storage.append(tab)
 
+        if tab.isActive {
+            activeTabStack.append(tab)
+        }
+
         return tab
     }
 
@@ -134,11 +138,24 @@ extension Tabs {
 
         for tab in removed {
             tab.resignMessageHandler()
+            activeTabStack.removeAll(where: { tab == $0 })
         }
 
         return removed
     }
 
+    @discardableResult
+    public func removeAll() -> [Tab] {
+        let allTabs = storage
+        allTabs.forEach { $0.resignMessageHandler() }
+        activeTabStack.removeAll()
+        return allTabs
+    }
+
+    public func update(tab: Tab) {
+        activeTabStack.removeAll(where: { tab == $0 })
+        activeTabStack.append(tab)
+    }
 }
 
 extension Tabs {
@@ -179,7 +196,7 @@ extension Tabs {
 
         let tab: Tab = {
             let pluginForBackgroundScript = browser.flatMap { $0.delegate?.browser($0, pluginForScriptType: .backgroundScript) } ??
-                    Plugin(id: UUID().uuidString, manifest: JSON.null, environment: .backgroundScript, resources: JSON.null)
+                    Plugin(id: UUID().uuidString, manifest: JSON.null, environment: .backgroundScript, resources: JSON.null, externalURIs: [], universalLinks: [])
             let options: WebExtension.Browser.Tabs.Create.Options = {
                 let url = Tabs.backgroundTabPath(for: pluginForBackgroundScript)
                 let options = WebExtension.Browser.Tabs.Create.Options(active: true, url: url)

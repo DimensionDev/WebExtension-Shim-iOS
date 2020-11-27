@@ -522,6 +522,9 @@
         'browser.webNavigation.onCompleted': new Map(),
         'browser.runtime.onMessage': new Map(),
         'browser.runtime.onInstall': new Map(),
+        'browser.runtime.onConnect': new Map(),
+        'browser.runtime.onConnect:Port:onMessage': new Map(),
+        'browser.runtime.onConnect:Port:onDisconnect': new Map(),
     };
     /**
      * Dispatch a normal event (that not have a "response").
@@ -544,6 +547,34 @@
                 }
             }
         }
+    }
+    async function dispatchPortEvent(event, toPortID, message) {
+        const pool = event === 'message'
+            ? EventPools['browser.runtime.onConnect:Port:onMessage']
+            : EventPools['browser.runtime.onConnect:Port:onDisconnect'];
+        if (!pool)
+            return;
+        const portID = 'port://' + toPortID;
+        const fns = pool.get(portID);
+        if (!fns)
+            return;
+        for (const f of fns) {
+            try {
+                f(message);
+            }
+            catch (e) {
+                console.error(e);
+            }
+        }
+    }
+    function createPortListener(portID, event) {
+        return createEventListener('port://' + portID, event === 'disconnected'
+            ? 'browser.runtime.onConnect:Port:onDisconnect'
+            : 'browser.runtime.onConnect:Port:onMessage');
+    }
+    function clearPortListener(portID) {
+        EventPools['browser.runtime.onConnect:Port:onDisconnect'].delete('port://' + portID);
+        EventPools['browser.runtime.onConnect:Port:onMessage'].delete('port://' + portID);
     }
     /**
      * Create a `EventObject<ListenerType>` object.
@@ -604,7 +635,7 @@
                 type: 'message',
                 data: message,
                 response: false,
-            }).catch(e => {
+            }).catch((e) => {
                 reject(e);
                 TwoWayMessagePromiseResolver.delete(messageID);
             });
@@ -2861,6 +2892,57 @@
     })();
 
     /**
+     *
+     * @param portID If portID is undefined, means it is a new created port and need to broadcast.
+     * @param sender also for sender.
+     * @param extensionId
+     * @param connectionInfo
+     */
+    function createPort(creatorExtensionID, portID, sender, extensionId, connectionInfo) {
+        if (typeof extensionId === 'string')
+            console.warn('Cross-extension connect is not implemented yet.');
+        const info = (typeof extensionId === 'string' ? connectionInfo : extensionId) || connectionInfo || { name: '' };
+        const { includeTlsChannelId, name } = info;
+        if (includeTlsChannelId)
+            console.warn('includeTlsChannelId is not implemented yet.');
+        const newCreated = portID === undefined;
+        if (portID === undefined)
+            portID = _generateRandomID();
+        if (newCreated) {
+            FrameworkRPC.sendMessage(creatorExtensionID, creatorExtensionID, null, '', {
+                type: 'onPortCreate',
+                name: name,
+                portID: portID,
+            });
+        }
+        const onDisconnect = createPortListener(portID, 'disconnected');
+        onDisconnect.addListener(() => {
+            clearPortListener(portID);
+        });
+        return {
+            error: undefined,
+            name: '' + name,
+            sender: sender === undefined ? sender : deepClone(sender),
+            postMessage(message) {
+                FrameworkRPC.sendMessage(creatorExtensionID, creatorExtensionID, null, '', {
+                    type: 'onPortMessage',
+                    portID: portID,
+                    message,
+                });
+            },
+            disconnect() {
+                clearPortListener(portID);
+                FrameworkRPC.sendMessage(creatorExtensionID, creatorExtensionID, null, '', {
+                    type: 'onPortDisconnect',
+                    portID: portID,
+                });
+            },
+            onMessage: createPortListener(portID, 'message'),
+            onDisconnect,
+        };
+    }
+
+    /**
      * how webextension-shim communicate with native code.
      */
     const key = 'holoflowsjsonrpc';
@@ -2888,6 +2970,7 @@
                 window.webkit.messageHandlers[key].postMessage(data);
         }
     }
+    /** Don't call this directly! Call FrameworkRPC.* instead */
     const ThisSideImplementation = {
         // todo: check dispatch target's manifest
         'browser.webNavigation.onCommitted': dispatchNormalEvent.bind(null, 'browser.webNavigation.onCommitted', '*'),
@@ -2896,9 +2979,8 @@
         async onMessage(extensionID, toExtensionID, messageID, message, sender) {
             switch (message.type) {
                 case 'internal-rpc':
-                    internalRPCChannel.onReceiveMessage('', message.message);
-                    break;
-                case 'message':
+                    return internalRPCChannel.onReceiveMessage('', message.message);
+                case 'message': {
                     // ? this is a response to the message
                     if (TwoWayMessagePromiseResolver.has(messageID) && message.response) {
                         const [resolve, reject] = TwoWayMessagePromiseResolver.get(messageID);
@@ -2909,7 +2991,8 @@
                         onNormalMessage(message.data, sender, toExtensionID, extensionID, messageID);
                     }
                     break;
-                case 'onWebNavigationChanged':
+                }
+                case 'onWebNavigationChanged': {
                     if (!sender.tab || sender.tab.id === undefined)
                         break;
                     const param = {
@@ -2928,6 +3011,13 @@
                             break;
                     }
                     break;
+                }
+                case 'onPortCreate':
+                    return dispatchNormalEvent('browser.runtime.onConnect', extensionID, createPort(extensionID, message.portID, sender, undefined, { name: message.name }));
+                case 'onPortMessage':
+                    return dispatchPortEvent('message', message.portID, message.message);
+                case 'onPortDisconnect':
+                    return dispatchPortEvent('disconnected', message.portID, undefined);
             }
         },
     };
@@ -3027,6 +3117,8 @@
             getManifest: () => JSON.parse(JSON.stringify(manifest)),
             onMessage: createEventListener(extensionID, 'browser.runtime.onMessage'),
             onInstalled: createEventListener(extensionID, 'browser.runtime.onInstall'),
+            connect: (...args) => createPort(extensionID, undefined, undefined, ...args),
+            onConnect: createEventListener(extensionID, 'browser.runtime.onConnect'),
             sendMessage: createRuntimeSendMessage(extensionID),
             get id() {
                 return extensionID;
@@ -4841,19 +4933,22 @@
             console.error(e);
         }
         if (environment === Environment.backgroundScript) {
-            const installHandler = EventPools['browser.runtime.onInstall'].get(extensionID);
-            if (installHandler) {
-                setTimeout(() => {
-                    useInternalStorage(extensionID, (o) => {
-                        const handlers = Array.from(installHandler.values());
-                        if (o.previousVersion)
-                            handlers.forEach((x) => x({ previousVersion: o.previousVersion, reason: 'update' }));
-                        else
-                            handlers.forEach((x) => x({ reason: 'install' }));
-                        o.previousVersion = manifest.version;
-                    });
-                }, 2000);
-            }
+            setTimeout(() => {
+                useInternalStorage(extensionID, (o) => {
+                    if (o.previousVersion) {
+                        dispatchNormalEvent('browser.runtime.onInstall', extensionID, {
+                            previousVersion: o.previousVersion,
+                            reason: 'update',
+                        });
+                    }
+                    else {
+                        dispatchNormalEvent('browser.runtime.onInstall', extensionID, {
+                            reason: 'install',
+                        });
+                    }
+                    o.previousVersion = manifest.version;
+                });
+            }, 2000);
         }
         return registeredWebExtension;
     }
@@ -5193,9 +5288,9 @@ document.write(html);">Remove script tags and go</button>
     // ## Inject here
     if (isDebug) {
         // leaves your id here, and put your extension to /extension/{id}/
-        const testIDs = ['eofkdgkhfoebecmamljfaepckoecjhib'];
+        // const testIDs = ['eofkdgkhfoebecmamljfaepckoecjhib']
         // const testIDs = ['eofkdgkhfoebecmamljfaepckoecjhib', 'griesruigerhuigreuijghrehgerhgerge']
-        // const testIDs = ['griesruigerhuigreuijghrehgerhgerge']
+        const testIDs = ['griesruigerhuigreuijghrehgerhgerge'];
         testIDs.forEach((id) => fetch('/extension/' + id + '/manifest.json')
             .then((x) => x.text())
             .then((x) => registerWebExtension(id, JSON.parse(x))));
