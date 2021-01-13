@@ -148,6 +148,7 @@ extension Tabs {
     public func removeAll() -> [Tab] {
         let allTabs = storage
         allTabs.forEach { $0.resignMessageHandler() }
+        storage.removeAll()
         activeTabStack.removeAll()
         return allTabs
     }
