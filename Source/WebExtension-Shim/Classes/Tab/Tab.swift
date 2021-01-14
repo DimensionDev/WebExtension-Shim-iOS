@@ -172,7 +172,6 @@ public class Tab: NSObject {
 
     deinit {
         delegate?.tab(self, webViewWillRemoveFromSuperview: webView)
-        webView.removeFromSuperview()
         consolePrint("deinit")
     }
 
