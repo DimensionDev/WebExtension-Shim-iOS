@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name             = 'WebExtension-Shim'
-  s.version          = '0.5.7'
+  s.version          = '0.5.8'
   s.summary          = 'WebExtension-Shim on iOS.'
 
 
@@ -31,7 +31,7 @@ WebExtension-Shim for WKWebView. Drive the several basic web extension API to fu
       'WebExtensionShimScripts' => ['Source/WebExtension-Shim/Resources/*']
     }
 
-    default_spec.dependency 'RealmSwift', '~> 5.5.0'
+    default_spec.dependency 'RealmSwift', '5.5.0'
     default_spec.dependency 'Alamofire', '~> 4.7'
     default_spec.dependency 'AlamofireNetworkActivityLogger', '~> 2.4'
     default_spec.dependency 'WebExtension-Shim/JSONRPC'
