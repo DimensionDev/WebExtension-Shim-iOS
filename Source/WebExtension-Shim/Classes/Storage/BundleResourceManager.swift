@@ -36,13 +36,13 @@ extension BundleResourceManager {
         let urlComponents = URLComponents(string: pathComponents.joined(separator: "/"))
         var scriptPath: String?
         if let filePath = urlComponents?.path {
-            scriptPath = bundle.url(forResource: filePath, withExtension: nil)?.path
+            scriptPath = bundle.url(forResource: filePath, withExtension: nil, subdirectory: "js")?.path
 
             if scriptPath == nil {
-                scriptPath = bundle.url(forResource: filePath.replacingOccurrences(of: ".prebuilt-1-script", with: ""), withExtension: nil)?.path
+                scriptPath = bundle.url(forResource: filePath.replacingOccurrences(of: ".prebuilt-1-script", with: ""), withExtension: nil, subdirectory: "js")?.path
             }
             if scriptPath == nil {
-                scriptPath = bundle.url(forResource: filePath.replacingOccurrences(of: ".prebuilt-2-script", with: ""), withExtension: nil)?.path
+                scriptPath = bundle.url(forResource: filePath.replacingOccurrences(of: ".prebuilt-2-script", with: ""), withExtension: nil, subdirectory: "js")?.path
             }
 //            if scriptPath == nil {
 //                scriptPath = bundle.url(forResource: filePath.replacingOccurrences(of: ".prebuilt-1-module", with: ""), withExtension: nil)?.path
