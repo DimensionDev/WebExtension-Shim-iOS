@@ -32,6 +32,7 @@ WebExtension-Shim for WKWebView. Drive the several basic web extension API to fu
     }
 
     default_spec.dependency 'RealmSwift', '5.5.0'
+    default_spec.dependency 'Realm', '5.5.0'
     default_spec.dependency 'Alamofire', '~> 4.7'
     default_spec.dependency 'AlamofireNetworkActivityLogger', '~> 2.4'
     default_spec.dependency 'WebExtension-Shim/JSONRPC'
