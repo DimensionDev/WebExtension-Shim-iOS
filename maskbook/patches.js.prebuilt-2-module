@@ -1,0 +1,75 @@
+return (function () { arguments[0].register([], function (exports_1, context_1) {
+    var __moduleName = context_1 && context_1.id;
+    return {
+        setters: [],
+        execute: function () {
+            globalThis.regeneratorRuntime = undefined;
+            {
+                const fix = () => {
+                    if (typeof webkit === 'object' && webkit.messageHandlers)
+                        return;
+                    if (globalThis === window || typeof browser !== 'object')
+                        return;
+                    const brokenAPI = [
+                        'requestAnimationFrame',
+                        'setTimeout',
+                        'clearTimeout',
+                        'matchMedia',
+                        'getComputedStyle',
+                        'getSelection',
+                        'requestIdleCallback',
+                    ];
+                    const webAPIs = Object.getOwnPropertyDescriptors(window);
+                    Reflect.deleteProperty(webAPIs, 'window');
+                    Reflect.deleteProperty(webAPIs, 'globalThis');
+                    Reflect.deleteProperty(webAPIs, 'eval');
+                    function FixThisBindings() {
+                        const patch = { ...webAPIs };
+                        for (const key in webAPIs) {
+                            if (brokenAPI.includes(key))
+                                PatchThisOfDescriptorToGlobal(webAPIs[key], window);
+                            else
+                                delete webAPIs[key];
+                        }
+                        console.log('Applying patch', patch);
+                        Object.defineProperties(window, patch);
+                    }
+                    function PatchThisOfDescriptorToGlobal(desc, global) {
+                        const { get, set, value } = desc;
+                        if (get)
+                            desc.get = function () {
+                                if (this === globalThis)
+                                    return get.apply(window);
+                                return get.apply(this);
+                            };
+                        if (set)
+                            desc.set = function (val) {
+                                if (this === globalThis)
+                                    return set.apply(global, val);
+                                return set.apply(this, val);
+                            };
+                        if (value && typeof value === 'function') {
+                            const desc2 = Object.getOwnPropertyDescriptors(value);
+                            desc.value = function (...args) {
+                                if (new.target)
+                                    return Reflect.construct(value, args, new.target);
+                                return Reflect.apply(value, this === globalThis ? global : this, args);
+                            };
+                            Object.defineProperties(desc.value, desc2);
+                            try {
+                                desc.value.prototype = value.prototype;
+                            }
+                            catch { }
+                        }
+                    }
+                    FixThisBindings();
+                };
+                try {
+                    fix();
+                }
+                catch (e) { }
+            }
+            undefined;
+        }
+    };
+}); });
