@@ -36,17 +36,25 @@ extension BundleResourceManager {
         let urlComponents = URLComponents(string: pathComponents.joined(separator: "/"))
         var scriptPath: String?
         if let filePath = urlComponents?.path {
+            // Part of URLs from js is incorrect:
+            // 1. including unexpected `.prebuilt-1-script` or ".prebuilt-2-script" in name
+            // 2. including "js/" in name
             scriptPath = bundle.url(forResource: filePath, withExtension: nil)?.path
-
+            
             if scriptPath == nil {
                 scriptPath = bundle.url(forResource: filePath.replacingOccurrences(of: ".prebuilt-1-script", with: ""), withExtension: nil)?.path
             }
+            
             if scriptPath == nil {
                 scriptPath = bundle.url(forResource: filePath.replacingOccurrences(of: ".prebuilt-2-script", with: ""), withExtension: nil)?.path
             }
-//            if scriptPath == nil {
-//                scriptPath = bundle.url(forResource: filePath.replacingOccurrences(of: ".prebuilt-1-module", with: ""), withExtension: nil)?.path
-//            }
+
+            if scriptPath == nil {
+                scriptPath = bundle.url(forResource: filePath.replacingOccurrences(of: ".prebuilt-1-script", with: ""), withExtension: nil, subdirectory: "js")?.path
+            }
+            if scriptPath == nil {
+                scriptPath = bundle.url(forResource: filePath.replacingOccurrences(of: ".prebuilt-2-script", with: ""), withExtension: nil, subdirectory: "js")?.path
+            }
         }
         guard let path = scriptPath else {
             handler(.failure(Error.fileNotFound))
