@@ -72,7 +72,7 @@ public class Tab: NSObject {
     weak var delegate: TabDelegate?
     weak var downloadsDelegate: TabDownloadsDelegate?
 
-    let session: SessionManager
+    let session: Session
 
     public let id: Int
     public let webView: WKWebView
@@ -116,7 +116,7 @@ public class Tab: NSObject {
 
             let sessionConfiguration = URLSessionConfiguration.ephemeral
             sessionConfiguration.httpAdditionalHeaders = ["User-Agent" : userAgent]
-            let session = Alamofire.SessionManager(configuration: sessionConfiguration)
+            let session = Alamofire.Session(configuration: sessionConfiguration)
 
             return session
        }()

@@ -1,29 +1,30 @@
 PODS:
-  - Alamofire (4.9.1)
-  - AlamofireNetworkActivityLogger (2.4.0):
-    - Alamofire (~> 4.8)
+  - Alamofire (5.4.3)
+  - AlamofireNetworkActivityLogger (3.4.0):
+    - Alamofire (~> 5.4.0)
   - ConsolePrint (0.2.0)
-  - Realm (5.3.5):
-    - Realm/Headers (= 5.3.5)
-  - Realm/Headers (5.3.5)
-  - RealmSwift (5.3.5):
-    - Realm (= 5.3.5)
-  - SwiftyJSON (5.0.0)
-  - WebExtension-Shim (0.5.6):
+  - Realm (5.5.1):
+    - Realm/Headers (= 5.5.1)
+  - Realm/Headers (5.5.1)
+  - RealmSwift (5.5.1):
+    - Realm (= 5.5.1)
+  - SwiftyJSON (5.0.1)
+  - WebExtension-Shim (0.5.9):
     - ConsolePrint
     - SwiftyJSON (~> 5.0.0)
-    - WebExtension-Shim/WebExtension-Shim (= 0.5.6)
-  - WebExtension-Shim/JSONRPC (0.5.6):
+    - WebExtension-Shim/WebExtension-Shim (= 0.5.9)
+  - WebExtension-Shim/JSONRPC (0.5.9):
     - ConsolePrint
     - SwiftyJSON (~> 5.0.0)
-  - WebExtension-Shim/Tests (0.5.6):
+  - WebExtension-Shim/Tests (0.5.9):
     - ConsolePrint
     - SwiftyJSON (~> 5.0.0)
-  - WebExtension-Shim/WebExtension-Shim (0.5.6):
-    - Alamofire (~> 4.7)
-    - AlamofireNetworkActivityLogger (~> 2.4)
+  - WebExtension-Shim/WebExtension-Shim (0.5.9):
+    - Alamofire (~> 5.4)
+    - AlamofireNetworkActivityLogger (~> 3.4)
     - ConsolePrint
-    - RealmSwift
+    - Realm (= 5.5.1)
+    - RealmSwift (= 5.5.1)
     - SwiftyJSON (~> 5.0.0)
     - WebExtension-Shim/JSONRPC
 
@@ -45,14 +46,14 @@ EXTERNAL SOURCES:
     :path: "../"
 
 SPEC CHECKSUMS:
-  Alamofire: 85e8a02c69d6020a0d734f6054870d7ecb75cf18
-  AlamofireNetworkActivityLogger: 6d3398c692d2c5d83b0c58793537860aca1e383d
+  Alamofire: e447a2774a40c996748296fa2c55112fdbbc42f9
+  AlamofireNetworkActivityLogger: 162ab8aee00e6267a4304d7cc134e13ccfe3bcc5
   ConsolePrint: 2d5a73bb45f08efa259bef7583707d6dfa007141
-  Realm: 2b52fcc86fc0ed3d75a56ac0eb1e73c4f1a60e16
-  RealmSwift: a6ea2ea561039fc3833c08dec81371a9a3bb5ca6
-  SwiftyJSON: 36413e04c44ee145039d332b4f4e2d3e8d6c4db7
-  WebExtension-Shim: ff08496946be97fd1f3028df1b8b3b2269878da1
+  Realm: c2ffe0667f9c98c9ba65f608ba85684d39826145
+  RealmSwift: 5a35c1c35c3e1925e6fcd092c881d5cc4a826bff
+  SwiftyJSON: 2f33a42c6fbc52764d96f13368585094bfd8aa5e
+  WebExtension-Shim: 85896dc7084ee76cc90e40c6e8d5085e05651e4d
 
-PODFILE CHECKSUM: 746328a3cae26e6064836f83dfd71f0575f32aec
+PODFILE CHECKSUM: d32f3e359f9dc9a60bf0f83a2452a2c920f3fa31
 
-COCOAPODS: 1.9.3
+COCOAPODS: 1.10.1

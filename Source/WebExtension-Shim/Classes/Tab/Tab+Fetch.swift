@@ -92,7 +92,7 @@ extension Tab {
                     }
                     return request
                 }()
-                self.session.request(request).response { [weak self] (defaultDataResponse: Alamofire.DefaultDataResponse) in
+                self.session.request(request).response { [weak self] (defaultDataResponse: Alamofire.AFDataResponse<Data?>) in
                     let _data = defaultDataResponse.data
                     let _response = defaultDataResponse.response
                     let _error = defaultDataResponse.error
