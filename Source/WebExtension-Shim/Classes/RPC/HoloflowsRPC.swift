@@ -71,7 +71,7 @@ extension HoloflowsRPC {
     }
 
     private struct BasicRPCRequest: Decodable {
-        let jsonrpc: String = RPC.Version.default
+        var jsonrpc: String = RPC.Version.default
         let method: String
         let id: String
     }
@@ -81,7 +81,6 @@ extension HoloflowsRPC {
 extension HoloflowsRPC {
 
     public static func dispathRequest<T: RPC.Request & Encodable>(webView: WKWebView, name: String = ScriptEvent.holoflowsjsonrpc.rawValue, id: String, request: T, completionHandler: CompletionHandler?) {
-        DispatchQueue.global().async {
             guard let script = dispatchScript(name: name, id: id, request: request) else {
                 assertionFailure()
                 return
@@ -91,18 +90,15 @@ extension HoloflowsRPC {
                 webView.evaluateJavaScript(script, completionHandler: completionHandler?.completionHandler(id: id))
                 os_log("^ %{public}s[%{public}ld], %{public}s: webView: %{public}s, script: %{public}s", ((#file as NSString).lastPathComponent), #line, #function, webView.url?.absoluteString ?? "", script)
             }
-        }
     }
 
     public static func dispatchResponse<T: RPC.Response>(webView: WKWebView, name: String = ScriptEvent.holoflowsjsonrpc.rawValue, id: String, result: Result<T, RPC.Error>, completionHandler: CompletionHandler?) {
-        DispatchQueue.global().async {
             let script = dispatchScript(name: name, id: id, result: result)
 
             DispatchQueue.main.async {
                 webView.evaluateJavaScript(script, completionHandler: completionHandler?.completionHandler(id: id))
                 os_log("^ %{public}s[%{public}ld], %{public}s: webView: %{public}s, script: %{public}s", ((#file as NSString).lastPathComponent), #line, #function, webView.url?.absoluteString ?? "", script)
             }
-        }
     }
     
 }

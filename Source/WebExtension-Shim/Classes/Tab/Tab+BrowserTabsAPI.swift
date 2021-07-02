@@ -24,7 +24,10 @@ extension Tab {
                 return
             }
 
-            tabs.create(options: create.options)
+            DispatchQueue.main.async {
+                tabs.create(options: create.options)
+            }
+            
 
         case let .failure(error):
             consolePrint(error.localizedDescription)
