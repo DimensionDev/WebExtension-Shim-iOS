@@ -10,7 +10,7 @@ import WebKit
 
 class HoloflowsOperation: Operation {
     let script: String
-    let webView: WKWebView
+    weak var webView: WKWebView?
     
     private var _finished = false
     private var _executing = false
@@ -42,11 +42,11 @@ class HoloflowsOperation: Operation {
     override func main() {
         guard !isCancelled else { return }
         DispatchQueue.main.async { [weak self] in
-            guard let `self` = self else {
+            guard let `self` = self, let webView = self.webView else {
                 self?.completeOperation()
                 return
             }
-            self.webView.evaluateJavaScript(self.script) { data, error in
+            webView.evaluateJavaScript(self.script) { data, error in
                 self.completeOperation()
             }
         }
