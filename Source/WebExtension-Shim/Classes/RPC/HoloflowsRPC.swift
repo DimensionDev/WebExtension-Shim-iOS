@@ -14,6 +14,18 @@ public enum HoloflowsRPC {
 
     public static let encoder = JSONEncoder()
     public static let decoder = JSONDecoder()
+    
+    static var messageQueue: OperationQueue = {
+        var queue = OperationQueue()
+        queue.maxConcurrentOperationCount = 1
+        return queue
+    }()
+    
+    static func addScriptToQueue(script: String, webView: WKWebView) {
+        let operation = HoloflowsOperation(script: script, webView: webView)
+        operation.queuePriority = .veryHigh
+        messageQueue.addOperation(operation)
+    }
 
     public static func dispatchScript<T: RPC.Request & Encodable>(name: String = ScriptEvent.holoflowsjsonrpc.rawValue, id: String, request: T) -> String? {
         guard let jsonData = try? encoder.encode(request),
@@ -86,19 +98,13 @@ extension HoloflowsRPC {
                 return
             }
             
-            DispatchQueue.main.async {
-                webView.evaluateJavaScript(script, completionHandler: completionHandler?.completionHandler(id: id))
-                os_log("^ %{public}s[%{public}ld], %{public}s: webView: %{public}s, script: %{public}s", ((#file as NSString).lastPathComponent), #line, #function, webView.url?.absoluteString ?? "", script)
-            }
+            addScriptToQueue(script: script, webView: webView)
     }
 
     public static func dispatchResponse<T: RPC.Response>(webView: WKWebView, name: String = ScriptEvent.holoflowsjsonrpc.rawValue, id: String, result: Result<T, RPC.Error>, completionHandler: CompletionHandler?) {
             let script = dispatchScript(name: name, id: id, result: result)
 
-            DispatchQueue.main.async {
-                webView.evaluateJavaScript(script, completionHandler: completionHandler?.completionHandler(id: id))
-                os_log("^ %{public}s[%{public}ld], %{public}s: webView: %{public}s, script: %{public}s", ((#file as NSString).lastPathComponent), #line, #function, webView.url?.absoluteString ?? "", script)
-            }
+            addScriptToQueue(script: script, webView: webView)
     }
     
 }
