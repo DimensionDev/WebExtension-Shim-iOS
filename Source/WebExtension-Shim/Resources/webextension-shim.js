@@ -4807,8 +4807,9 @@
         }
     }
 
+    const originalScriptSrcDesc = Object.getOwnPropertyDescriptor(HTMLScriptElement.prototype, 'src');
     function hookedHTMLScriptElementSrc(extensionID, manifest, currentPage) {
-        const src = Object.getOwnPropertyDescriptor(HTMLScriptElement.prototype, 'src');
+        const src = originalScriptSrcDesc;
         Object.defineProperty(HTMLScriptElement.prototype, 'src', {
             get() {
                 return src.get.call(this);
@@ -5064,7 +5065,7 @@ It's running in the background page mode`;
             const script = document.createElement('script');
             script.type = esModule ? 'module' : 'text/javascript';
             if (code.type === 'file')
-                script.src = code.path;
+                originalScriptSrcDesc.set.call(script, code.path);
             else
                 script.innerHTML = code.source;
             script.defer = true;
