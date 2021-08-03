@@ -27,7 +27,7 @@ public enum HoloflowsRPC {
         messageQueue.addOperation(operation)
     }
 
-    public static func dispatchScript<T: RPC.Request & Encodable>(name: String = ScriptEvent.holoflowsjsonrpc.rawValue, id: String, request: T) -> String? {
+    public static func dispatchScript<T: RPC.Request & Encodable>(name: String = ScriptEvent.holoflowsjsonrpc.rawValue, request: T) -> String? {
         guard let jsonData = try? encoder.encode(request),
         let jsonString = String(data: jsonData, encoding: .utf8) else {
             return nil
@@ -92,8 +92,8 @@ extension HoloflowsRPC {
 
 extension HoloflowsRPC {
 
-    public static func dispathRequest<T: RPC.Request & Encodable>(webView: WKWebView, name: String = ScriptEvent.holoflowsjsonrpc.rawValue, id: String, request: T, completionHandler: CompletionHandler?) {
-            guard let script = dispatchScript(name: name, id: id, request: request) else {
+    public static func dispathRequest<T: RPC.Request & Encodable>(webView: WKWebView, name: String = ScriptEvent.holoflowsjsonrpc.rawValue, request: T, completionHandler: CompletionHandler?) {
+            guard let script = dispatchScript(name: name, request: request) else {
                 assertionFailure()
                 return
             }

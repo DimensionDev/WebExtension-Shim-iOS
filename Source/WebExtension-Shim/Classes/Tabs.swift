@@ -32,7 +32,7 @@ public class Tabs: NSObject {
 
     weak var browser: Browser?
     
-    private(set) lazy var backgroundTab: Tab = createExtensionTab()
+    public private(set) lazy var backgroundTab: Tab = createExtensionTab()
 
     public private(set) var storage: [Tab] = []
     private var nextTabID = 1
@@ -215,7 +215,7 @@ extension Tabs {
             return Tab(configuration: tabConfiguration)
         }()
 
-        tab.delegate?.tab(tab, shouldActive: tab.isActive)
+//        tab.delegate?.tab(tab, shouldActive: tab.isActive)
 
         return tab
     }

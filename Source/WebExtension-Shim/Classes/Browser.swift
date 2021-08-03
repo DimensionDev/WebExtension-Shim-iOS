@@ -21,12 +21,12 @@ public protocol BrowserDelegate: class {
 
 public class Browser: NSObject {
 
-    weak var delegate: BrowserDelegate?
+    public weak var delegate: BrowserDelegate?
     
     public private(set) var tabs: Tabs!
     public internal(set) var userAgent: String?
     
-    public init(delegate: BrowserDelegate) {
+    public init(delegate: BrowserDelegate?) {
         self.delegate = delegate
         super.init()
         self.tabs = Tabs(browser: self)
