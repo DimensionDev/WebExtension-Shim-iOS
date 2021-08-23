@@ -4761,6 +4761,7 @@
         };
     })();
     const { log: log$1, warn } = console;
+    const { get } = Reflect;
     /**
      * Execution environment of managed Realm (including content script in production and all env in runtime).
      */
@@ -4789,6 +4790,17 @@
             this.globalThis.open = openEnhanced(extensionID);
             this.globalThis.close = closeEnhanced(extensionID);
             this.globalThis.Worker = enhancedWorker(extensionID);
+            // Preserve webkit on it's first access.
+            let webkit;
+            Object.defineProperty(this.globalThis, 'webkit', {
+                enumerable: false,
+                configurable: true,
+                get: () => {
+                    if (webkit)
+                        return webkit;
+                    return (webkit = get(globalThis, 'webkit', globalThis));
+                },
+            });
         }
         async fetchPrebuilt(kind, url) {
             const content = await this.fetchSourceText(url + `.prebuilt-${PrebuiltVersion}-${kind}`);
