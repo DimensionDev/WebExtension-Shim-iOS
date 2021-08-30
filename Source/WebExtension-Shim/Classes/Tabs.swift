@@ -215,7 +215,7 @@ extension Tabs {
             return Tab(configuration: tabConfiguration)
         }()
 
-//        tab.delegate?.tab(tab, shouldActive: tab.isActive)
+        tab.delegate?.tab(tab, shouldActive: tab.isActive)
 
         return tab
     }
