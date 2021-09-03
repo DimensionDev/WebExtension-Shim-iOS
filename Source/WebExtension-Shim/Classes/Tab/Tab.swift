@@ -13,7 +13,7 @@ import Alamofire
 import os
 
 // MARK: - TabDelegate
-public protocol TabDelegate: class {
+public protocol TabDelegate: AnyObject {
     func uiDelegateShim(for tab: Tab) -> WKUIDelegateShim?
     func navigationDelegateShim(for tab: Tab) -> WKNavigationDelegateShim?
     func customScriptMessageHandlerNames(for tab: Tab) -> [String]
@@ -42,7 +42,7 @@ extension TabDelegate {
 }
 
 // MARK: - TabDownloadsDelegate
-public protocol TabDownloadsDelegate: class {
+public protocol TabDownloadsDelegate: AnyObject {
     typealias Result = Swift.Result
     
     func tab(_ tab: Tab, willDownloadBlobWithOptions options: WebExtension.Browser.Downloads.Download.Options)
@@ -59,8 +59,8 @@ public struct TabConfiguration {
     public let plugin: Plugin?
     public let createOptions: WebExtension.Browser.Tabs.Create.Options?
     public let webViewConfiguration: WKWebViewConfiguration
-    public let tabDelegate: (Tab) -> TabDelegate?
-    public let tabDownloadDelegate: (Tab) -> TabDownloadsDelegate?
+    public let tabDelegate: TabDelegate?
+    public let tabDownloadDelegate: TabDownloadsDelegate?
     
     public weak var browser: Browser?
 }
@@ -125,8 +125,8 @@ public class Tab: NSObject {
         
         super.init()
         
-        self.delegate = configuration.tabDelegate(self)
-        self.downloadsDelegate = configuration.tabDownloadDelegate(self)
+        self.delegate = configuration.tabDelegate
+        self.downloadsDelegate = configuration.tabDownloadDelegate
         
         webView.setNeedsLayout()
         webView.uiDelegate = self.delegate?.uiDelegateShim(for: self)

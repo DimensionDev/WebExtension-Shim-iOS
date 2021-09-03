@@ -61,7 +61,7 @@ public class Tabs: NSObject {
 
 extension Tabs {
     
-    var tabDelegate: (Tab) -> TabDelegate? {
+    var tabDelegate: (Tab?) -> TabDelegate? {
         return { tab in
             guard let browser = self.browser,
             let browserDelegate = self.browser?.delegate else {
@@ -72,7 +72,7 @@ extension Tabs {
         }
     }
     
-    var tabDownloadDelegate: (Tab) -> TabDownloadsDelegate? {
+    var tabDownloadDelegate: (Tab?) -> TabDownloadsDelegate? {
         return { tab in
             guard let browser = self.browser,
             let browserDelegate = self.browser?.delegate else {
@@ -92,7 +92,10 @@ extension Tabs {
     /// - Parameter properties: Properties to give the new tab.
     /// - Note: https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/tabs/create
     @discardableResult
-    public func create(options: WebExtension.Browser.Tabs.Create.Options?, webViewConfiguration: WKWebViewConfiguration? = nil) -> Tab {
+    public func create(options: WebExtension.Browser.Tabs.Create.Options?,
+                       tabDelegate: TabDelegate? = nil,
+                       tabDownloadDelegate: TabDownloadsDelegate? = nil,
+                       webViewConfiguration: WKWebViewConfiguration? = nil) -> Tab {
         os_log("^ %{public}s[%{public}ld], %{public}s: %{public}s", ((#file as NSString).lastPathComponent), #line, #function, String(describing: options))
 
         let tab: Tab = {
@@ -208,14 +211,14 @@ extension Tabs {
                                                     plugin: pluginForBackgroundScript,
                                                     createOptions: options,
                                                     webViewConfiguration: webViewConfiguration,
-                                                    tabDelegate: tabDelegate,
-                                                    tabDownloadDelegate: tabDownloadDelegate,
+                                                    tabDelegate: tabDelegate(nil),
+                                                    tabDownloadDelegate: tabDownloadDelegate(nil),
                                                     browser: browser)
 
             return Tab(configuration: tabConfiguration)
         }()
 
-        tab.delegate?.tab(tab, shouldActive: tab.isActive)
+//        tab.delegate?.tab(tab, shouldActive: tab.isActive)
 
         return tab
     }
