@@ -19,7 +19,7 @@ public protocol TabDelegate: AnyObject {
     func customScriptMessageHandlerNames(for tab: Tab) -> [String]
     func tab(_ tab: Tab, shouldOpenExternallyForURL url: URL) -> Bool
     func tab(_ tab: Tab, userContentController: WKUserContentController, didReceive message: WKScriptMessage)
-    func tab(_ tab: Tab, localStorageManagerForExtension id: String) -> LocalStorageManager
+    func tab(_ tab: Tab, localStorageManagerForExtension id: String) -> LocalStorageManager?
     
     func tab(_ tab: Tab, shouldActive: Bool)
     func tab(_ tab: Tab, webViewWillRemoveFromSuperview webView: WKWebView)
@@ -32,8 +32,9 @@ extension TabDelegate {
     public func customScriptMessageHandlerNames(for tab: Tab) -> [String] { return [] }
     public func tab(_ tab: Tab, shouldOpenExternallyForURL url: URL) -> Bool { return false }
     public func tab(_ tab: Tab, userContentController: WKUserContentController, didReceive message: WKScriptMessage) { }
-    public func tab(_ tab: Tab, localStorageManagerForExtension id: String) -> LocalStorageManager {
-        return LocalStorageManager(realm: RealmService(name: id).realm)
+    public func tab(_ tab: Tab, localStorageManagerForExtension id: String) -> LocalStorageManager? {
+        guard let realm = RealmService(name: id).realm else { return nil }
+        return LocalStorageManager(realm: realm)
     }
     
     public func tab(_ tab: Tab, shouldActive: Bool) { }

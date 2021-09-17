@@ -57,8 +57,9 @@ extension BrowserStorageLocalTests: TabDelegate {
         return nil
     }
     
-    func tab(_ tab: Tab, localStorageManagerForExtension id: String) -> LocalStorageManager {
-        return LocalStorageManager(realm: RealmService(name: id).realm)
+    func tab(_ tab: Tab, localStorageManagerForExtension id: String) -> LocalStorageManager? {
+        guard let realm = RealmService(name: id).realm else { return nil }
+        return LocalStorageManager(realm: realm)
     }
     
     func tab(_ tab: Tab, pluginResourceProviderForURL url: URL) -> PluginResourceProvider? {

@@ -15,7 +15,7 @@ public class RealmService {
     // MARK: - Singleton
     public static let `default` = RealmService()
 
-    public let realm: Realm
+    public let realm: Realm?
 
     public init(name: String? = nil) {
         var config = Realm.Configuration(
@@ -31,9 +31,12 @@ public class RealmService {
         })
         let realmName = name.flatMap { "holoflowsKit-\($0)" } ?? "holoflowsKit"
         config.fileURL = config.fileURL!.deletingLastPathComponent().appendingPathComponent("\(realmName).realm")
-
-        try? FileManager.default.createDirectory(at: config.fileURL!.deletingLastPathComponent(), withIntermediateDirectories: true, attributes: nil)
-        realm = try! Realm(configuration: config)
+        do {
+            try FileManager.default.createDirectory(at: config.fileURL!.deletingLastPathComponent(), withIntermediateDirectories: true, attributes: nil)
+            realm = try Realm(configuration: config)
+        } catch {
+            consolePrint("Fail to init realm, error: \(error.localizedDescription)")
+            realm = nil
+        }
     }
-
 }
