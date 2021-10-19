@@ -33,8 +33,7 @@ extension TabDelegate {
     public func tab(_ tab: Tab, shouldOpenExternallyForURL url: URL) -> Bool { return false }
     public func tab(_ tab: Tab, userContentController: WKUserContentController, didReceive message: WKScriptMessage) { }
     public func tab(_ tab: Tab, localStorageManagerForExtension id: String) -> LocalStorageManager? {
-        guard let realm = RealmService(name: id).realm else { return nil }
-        return LocalStorageManager(realm: realm)
+        return nil
     }
     
     public func tab(_ tab: Tab, shouldActive: Bool) { }

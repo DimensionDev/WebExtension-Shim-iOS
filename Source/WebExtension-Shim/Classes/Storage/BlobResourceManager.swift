@@ -5,17 +5,16 @@
 //  Created by Cirno MainasuK on 2019-6-18.
 //
 
+import ConsolePrint
+import CoreData
 import Foundation
 import WebKit
-import RealmSwift
-import ConsolePrint
 
 public class BlobResourceManager: NSObject, PluginResourceProvider {
+    public weak var delegate: CoreDataStackBridgeDelegate?
 
-    public let realm: Realm
-
-    public init(realm: Realm) {
-        self.realm = realm
+    public init(delegate: CoreDataStackBridgeDelegate) {
+        self.delegate = delegate
     }
 
     public enum Error: Swift.Error {
@@ -23,27 +22,27 @@ public class BlobResourceManager: NSObject, PluginResourceProvider {
         case notValidURL
         case blobNotFound
     }
-
 }
 
-extension BlobResourceManager {
-
-    public func data(from url: URL, handler: @escaping (Result<(Data, URLResponse), Swift.Error>) -> Void) {
-        let _ = url.pathExtension
-        let uuid = url.deletingPathExtension().lastPathComponent
-
-        guard let blobStorage = realm.object(ofType: BlobStorage.self, forPrimaryKey: uuid) else {
+public extension BlobResourceManager {
+    func data(from url: URL, handler: @escaping (Result<(Data, URLResponse), Swift.Error>) -> Void) {
+        guard let data = delegate?.data(from: url) else {
             handler(.failure(Error.blobNotFound))
             return
         }
-
-        let data = blobStorage.blob
-        let response = URLResponse(url: url,
-                                   mimeType: blobStorage.type,
-                                   expectedContentLength: data.count,
-                                   textEncodingName: nil)
-        let result = Result<(Data, URLResponse), Swift.Error>.success((data, response))
+        let result = Result<(Data, URLResponse), Swift.Error>.success(data)
         handler(result)
     }
 
+    func save(createObjectURL: WebExtension.URL.CreateObjectURL) throws {
+        guard let blobData = createObjectURL.blobData,
+              let mimeType = createObjectURL.data.mimeType
+        else {
+            return
+        }
+
+        let uuid = createObjectURL.uuid
+        let url = "holoflows-blob://" + createObjectURL.extensionID + "/" + createObjectURL.uuid
+        try delegate?.saveBlobToDB(uuid: uuid, blob: blobData, type: mimeType, url: url)
+    }
 }
