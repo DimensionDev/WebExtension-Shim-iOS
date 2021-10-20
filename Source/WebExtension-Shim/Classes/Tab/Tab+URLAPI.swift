@@ -14,7 +14,7 @@ extension Tab {
         let messageResult: Result<WebExtension.URL.CreateObjectURL, RPC.Error> = HoloflowsRPC.parseRPC(messageBody: messageBody)
         switch messageResult {
         case let .success(createObjectURL):
-            guard createObjectURL.isDataValide else {
+            guard createObjectURL.isDataValid else {
             let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .failure(.invalidParams)
                 HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
                 return

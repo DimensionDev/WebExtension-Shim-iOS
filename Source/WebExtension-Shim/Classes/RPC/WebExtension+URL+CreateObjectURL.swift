@@ -52,7 +52,7 @@ extension WebExtension.URL.CreateObjectURL {
         return Data(base64Encoded: data.content)
     }
 
-    public var isDataValide: Bool {
+    public var isDataValid: Bool {
         if blobData != nil, data.mimeType != nil {
             return true
         } else {
