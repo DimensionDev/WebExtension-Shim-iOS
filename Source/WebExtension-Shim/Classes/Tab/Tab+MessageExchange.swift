@@ -13,7 +13,7 @@ extension Tab {
         let meta = self.meta
         let url = webView.url?.absoluteString
         
-        DispatchQueue.global().sync { [weak self] in
+        DispatchQueue.global().async { [weak self] in
             guard let `self` = self else { return }
             let result: Result<WebExtension.SendMessage, RPC.Error> = HoloflowsRPC.parseRPC(messageBody: messageBody)
             
