@@ -52,19 +52,15 @@ extension WebExtension.URL.CreateObjectURL {
         return Data(base64Encoded: data.content)
     }
 
-    public var blobStorage: BlobStorage? {
-        guard let blobData = self.blobData,
-        let mimeType = data.mimeType else {
-            return nil
+    public var isDataValid: Bool {
+        if blobData != nil, data.mimeType != nil {
+            return true
+        } else {
+            return false
         }
-
-        let blobStorage = BlobStorage()
-        blobStorage.uuid = uuid
-        blobStorage.blob = blobData
-        blobStorage.type = mimeType
-        blobStorage.url = "holoflows-blob://" + extensionID + "/" + blobStorage.uuid
-
-        return blobStorage
     }
-
+    
+    public var url: String {
+        "holoflows-blob://" + extensionID + "/" + uuid
+    }
 }

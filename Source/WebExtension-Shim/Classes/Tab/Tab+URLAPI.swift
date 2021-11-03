@@ -14,24 +14,21 @@ extension Tab {
         let messageResult: Result<WebExtension.URL.CreateObjectURL, RPC.Error> = HoloflowsRPC.parseRPC(messageBody: messageBody)
         switch messageResult {
         case let .success(createObjectURL):
-            guard let blobStorage = createObjectURL.blobStorage else {
+            guard createObjectURL.isDataValid else {
             let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .failure(.invalidParams)
                 HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
                 return
             }
 
-            guard let url = URL(string: blobStorage.url),
+            guard let url = URL(string: createObjectURL.url),
             let blobResourceManager = delegate?.tab(self, pluginResourceProviderForURL: url) as? BlobResourceManager else {
                 let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .failure(.internalError)
                 HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
                 return
             }
 
-            let realm = blobResourceManager.realm
             do {
-                try realm.write {
-                    realm.add(blobStorage, update: .all)
-                }
+                try blobResourceManager.save(createObjectURL: createObjectURL)
 
                 let result: Result<HoloflowsRPC.Response<String>, RPC.Error> = .success(HoloflowsRPC.Response(result: "", id: id))
                 HoloflowsRPC.dispatchResponse(webView: webView, id: id, result: result, completionHandler: completionHandler())
