@@ -282,7 +282,10 @@ extension Tabs: WKURLSchemeHandler {
                     "Content-Type": response.mimeType ?? "",
                     "Content-Length" : String(response.expectedContentLength),
                 ]
+                // fix crash
+//                Call this method to provide WebKit with the MIME type of the requested resource and its expected size. You must call this method at least once for each task, and you may call it multiple times if needed. Always call it before sending any data back to WebKit using the didReceiveData: method.
                 guard let httpURLResponse = HTTPURLResponse(url: url, statusCode: 200, httpVersion: "HTTP/1.1", headerFields: header) else {
+                    urlSchemeTask.didReceive(response)
                     urlSchemeTask.didFailWithError(BundleResourceManager.Error.fileNotFound)
                     return
                 }
@@ -292,6 +295,11 @@ extension Tabs: WKURLSchemeHandler {
 
                 consolePrint("urlSchemeTask.didFinish() =: \(response)")
             case .failure(let error):
+                let schemeTaskResponse = URLResponse(url: url,
+                                                     mimeType: "",
+                                                     expectedContentLength: 0,
+                                                     textEncodingName: nil)
+                urlSchemeTask.didReceive(schemeTaskResponse)
                 urlSchemeTask.didFailWithError(error)
                 consolePrint("urlSchemeTask.didFailWithError() =: \(error.localizedDescription)")
             }
