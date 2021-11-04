@@ -7,14 +7,16 @@
 
 import Foundation
 
+private let exchangeMessageQueue = DispatchQueue(label: "com.dimension.mask.exchange")
+
 extension Tab {
 
     open func sendMessage(id: String, messageBody: String) {
         let meta = self.meta
         let url = webView.url?.absoluteString
         
-//        DispatchQueue.global().sync { [weak self] in
-//            guard let `self` = self else { return }
+        exchangeMessageQueue.async { [weak self] in
+            guard let `self` = self else { return }
             let result: Result<WebExtension.SendMessage, RPC.Error> = HoloflowsRPC.parseRPC(messageBody: messageBody)
             
             switch result {
@@ -61,7 +63,7 @@ extension Tab {
                     HoloflowsRPC.dispatchResponse(webView: self.webView, id: id, result: result, completionHandler: self.completionHandler())
                 }
             }   // end switch
-//        }
+        }
     }
     
 }
