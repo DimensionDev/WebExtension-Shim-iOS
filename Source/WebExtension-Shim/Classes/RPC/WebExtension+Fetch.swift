@@ -42,11 +42,16 @@ extension WebExtension {
             public let method: String
             public let url: String
             public let body: Body?
+            public let headers: [String: String]
 
-            public init(method: String, url: String, body: Body? = nil) {
+            public init(method: String,
+                        url: String,
+                        headers: [String: String] = [:],
+                        body: Body? = nil) {
                 self.method = method
                 self.url = url
                 self.body = body
+                self.headers = headers
             }
         }
 

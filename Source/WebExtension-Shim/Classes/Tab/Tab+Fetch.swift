@@ -86,6 +86,9 @@ extension Tab {
                     for (key, value) in dict {
                         request.setValue(value, forHTTPHeaderField: key)
                     }
+                    for (key, value) in fetch.request.headers {
+                        request.setValue(value, forHTTPHeaderField: key)
+                    }
                     consolePrint(dict)
                     if let body = fetch.request.body {
                         request.httpBody = body.data
