@@ -11,12 +11,12 @@ import WebKit
 import SwiftyJSON
 import ConsolePrint
 
-public protocol BrowserDelegate: class {
+public protocol BrowserDelegate: AnyObject {
     func pluginResourceURLScheme() -> [String]
     func browser(_ browser: Browser, pluginForScriptType scriptType: Plugin.ScriptType) -> Plugin
     func browser(_ browser: Browser, webViewConfigurationForOptions options: WebExtension.Browser.Tabs.Create.Options?) -> WKWebViewConfiguration
-    func browser(_ browser: Browser, tabDelegateForTab tab: Tab) -> TabDelegate?
-    func browser(_ browser: Browser, tabDownloadDelegateFor tab: Tab) -> TabDownloadsDelegate?
+    func browser(_ browser: Browser, tabDelegateForTab tab: Tab?) -> TabDelegate?
+    func browser(_ browser: Browser, tabDownloadDelegateFor tab: Tab?) -> TabDownloadsDelegate?
 }
 
 public class Browser: NSObject {

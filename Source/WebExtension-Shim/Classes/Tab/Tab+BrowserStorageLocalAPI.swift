@@ -9,7 +9,6 @@ import os
 import Foundation
 import ConsolePrint
 import SwiftyJSON
-import RealmSwift
 
 extension Tab {
 
@@ -51,11 +50,9 @@ extension Tab {
                 return
             }
 
-            let entries = set.entriesDict.map { (key, value) -> LocalStorage in
-                let entry = LocalStorage()
-                entry.key = key
-                entry.value = (try? JSONEncoder().encode(value)) ?? Data()
-                return entry
+            let entries = set.entriesDict.map { (key, value) -> KeyValuePair in
+                let data = (try? JSONEncoder().encode(value)) ?? Data()
+                return (key, data)
             }
 
             do {

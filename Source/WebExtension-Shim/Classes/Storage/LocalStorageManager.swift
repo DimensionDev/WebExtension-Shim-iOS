@@ -6,14 +6,16 @@
 //
 
 import Foundation
-import RealmSwift
 
 public class LocalStorageManager {
 
-    public let realm: Realm
+    public weak var delegate: CoreDataStackBridgeDelegate?
 
-    public init(realm: Realm) {
-        self.realm = realm
+    public var entensionID: String
+    
+    public init(delegate: CoreDataStackBridgeDelegate, extensionID: String) {
+        self.delegate = delegate
+        self.entensionID = extensionID
     }
 
 }
@@ -22,39 +24,22 @@ extension LocalStorageManager {
 
 
     /// Get values on keys. Return all values when keys is empty
-    /// - Parameter keys: <#keys description#>
-    public func get(keys: [String]) -> [LocalStorage] {
-        let objects = realm.objects(LocalStorage.self)
-        if keys.isEmpty {
-            return Array(objects)
-        } else {
-            return objects.filter { keys.contains($0.key) }
-        }
+    public func get(keys: [String]) -> [KeyValuePair] {
+        guard let delegate = delegate else { return [KeyValuePair]() }
+        return delegate.get(keys: keys, extensionID: entensionID)
     }
 
-    public func set(localStorages: [LocalStorage]) throws {
-        realm.beginWrite()
-        realm.add(localStorages, update: Realm.UpdatePolicy.all)
-        try realm.commitWrite()
+    public func set(localStorages: [KeyValuePair]) throws {
+        try delegate?.set(localStorages: localStorages, extensionID: entensionID)
     }
 
-    public func remove(keys: [String]) throws -> [LocalStorage] {
-        let entries = realm.objects(LocalStorage.self)
-            .filter { keys.contains($0.key) }
-        let copys = entries.map { LocalStorage(value: $0) }
-
-        realm.beginWrite()
-        realm.delete(entries)
-        try realm.commitWrite()
-
-        return Array(copys)
+    public func remove(keys: [String]) throws -> [KeyValuePair] {
+        guard let delegate = delegate else { return [KeyValuePair]() }
+        return try! delegate.remove(keys: keys, extensionID: entensionID)
     }
 
     public func clear() throws {
-        let entries = realm.objects(LocalStorage.self)
-        realm.beginWrite()
-        realm.delete(entries)
-        try realm.commitWrite()
+        try delegate?.clear(extensionID: entensionID)
     }
 
 }

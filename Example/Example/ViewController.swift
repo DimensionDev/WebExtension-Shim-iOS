@@ -65,6 +65,13 @@ extension ViewController {
 }
 
 extension ViewController: BrowserDelegate {
+    func browser(_ browser: Browser, tabDelegateForTab tab: Tab?) -> TabDelegate? {
+        return self
+    }
+    
+    func browser(_ browser: Browser, tabDownloadDelegateFor tab: Tab?) -> TabDownloadsDelegate? {
+        return self
+    }
     
     func pluginResourceURLScheme() -> [String] {
         return ["webextension"]
@@ -76,14 +83,6 @@ extension ViewController: BrowserDelegate {
     
     func browser(_ browser: Browser, webViewConfigurationForOptions options: WebExtension.Browser.Tabs.Create.Options?) -> WKWebViewConfiguration {
         return WKWebViewConfiguration()
-    }
-    
-    func browser(_ browser: Browser, tabDelegateForTab tab: Tab) -> TabDelegate? {
-        return self
-    }
-    
-    func browser(_ browser: Browser, tabDownloadDelegateFor tab: Tab) -> TabDownloadsDelegate? {
-        return self
     }
 }
 

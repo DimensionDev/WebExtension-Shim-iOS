@@ -26,9 +26,19 @@ extension WeakArray: Collection {
     public var startIndex: Int { return items.startIndex }
     public var endIndex: Int { return items.endIndex }
     
-    public subscript(_ index: Index) -> Element? {
-        get { items[index].unbox }
-        set (newValue) { items[index] = WeakBox(newValue ?? nil) }
+    public subscript(position: Int) -> Optional<Element> {
+        get { items[position].unbox }
+        set (newValue) { items[position] = WeakBox(newValue ?? nil) }
+    }
+    
+    public subscript(bounds: Range<Int>) -> WeakArray<Element> {
+        get {
+            let elements = items[bounds].map { $0.unbox }
+            return Self(elements)
+        }
+        set (newValue) {
+            items[bounds] = ArraySlice(newValue.map { WeakBox($0) })
+        }
     }
     
     public func index(after idx: Int) -> Int {
