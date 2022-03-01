@@ -10,8 +10,8 @@ import ConsolePrint
 
 extension Tab {
 
-    open func URLCreateObjectURL(id: String, messageBody: String) {
-        let messageResult: Result<WebExtension.URL.CreateObjectURL, RPC.Error> = HoloflowsRPC.parseRPC(messageBody: messageBody)
+    open func URLCreateObjectURL(id: String, messageData: Data) {
+        let messageResult: Result<WebExtension.URL.CreateObjectURL, RPC.Error> = HoloflowsRPC.parseRPC(messageData: messageData)
         switch messageResult {
         case let .success(createObjectURL):
             guard createObjectURL.isDataValid else {

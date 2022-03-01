@@ -11,8 +11,8 @@ import ConsolePrint
 
 extension Tab {
 
-    open func echo(id: String, messageBody: String) {
-        let result: Result<WebExtension._Echo, RPC.Error> = HoloflowsRPC.parseRPC(messageBody: messageBody)
+    open func echo(id: String, messageData: Data) {
+        let result: Result<WebExtension._Echo, RPC.Error> = HoloflowsRPC.parseRPC(messageData: messageData)
         switch result {
         case let .success(echo):
             consolePrint(echo.params)
