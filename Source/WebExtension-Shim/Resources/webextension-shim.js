@@ -10,14 +10,12 @@
                     var d = Object.getOwnPropertyDescriptor(e, k);
                     Object.defineProperty(n, k, d.get ? d : {
                         enumerable: true,
-                        get: function () {
-                            return e[k];
-                        }
+                        get: function () { return e[k]; }
                     });
                 }
             });
         }
-        n['default'] = e;
+        n["default"] = e;
         return Object.freeze(n);
     }
 
@@ -329,14 +327,13 @@
 
     var commonjsGlobal = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
 
-    function createCommonjsModule(fn) {
-      var module = { exports: {} };
-    	return fn(module, module.exports), module.exports;
-    }
+    var buffer = {};
 
-    var byteLength_1 = byteLength;
-    var toByteArray_1 = toByteArray;
-    var fromByteArray_1 = fromByteArray;
+    var base64Js = {};
+
+    base64Js.byteLength = byteLength;
+    base64Js.toByteArray = toByteArray;
+    base64Js.fromByteArray = fromByteArray;
 
     var lookup = [];
     var revLookup = [];
@@ -483,14 +480,11 @@
       return parts.join('')
     }
 
-    var base64Js = {
-    	byteLength: byteLength_1,
-    	toByteArray: toByteArray_1,
-    	fromByteArray: fromByteArray_1
-    };
+    var ieee754 = {};
 
     /*! ieee754. BSD-3-Clause License. Feross Aboukhadijeh <https://feross.org/opensource> */
-    var read$1 = function (buffer, offset, isLE, mLen, nBytes) {
+
+    ieee754.read = function (buffer, offset, isLE, mLen, nBytes) {
       var e, m;
       var eLen = (nBytes * 8) - mLen - 1;
       var eMax = (1 << eLen) - 1;
@@ -523,7 +517,7 @@
       return (s ? -1 : 1) * m * Math.pow(2, e - mLen)
     };
 
-    var write = function (buffer, value, offset, isLE, mLen, nBytes) {
+    ieee754.write = function (buffer, value, offset, isLE, mLen, nBytes) {
       var e, m, c;
       var eLen = (nBytes * 8) - mLen - 1;
       var eMax = (1 << eLen) - 1;
@@ -575,11 +569,6 @@
       buffer[offset + i - d] |= s * 128;
     };
 
-    var ieee754 = {
-    	read: read$1,
-    	write: write
-    };
-
     /*!
      * The buffer module from node.js, for the browser.
      *
@@ -587,10 +576,10 @@
      * @license  MIT
      */
 
-    var buffer = createCommonjsModule(function (module, exports) {
+    (function (exports) {
 
-
-
+    const base64 = base64Js;
+    const ieee754$1 = ieee754;
     const customInspectSymbol =
       (typeof Symbol === 'function' && typeof Symbol['for'] === 'function') // eslint-disable-line dot-notation
         ? Symbol['for']('nodejs.util.inspect.custom') // eslint-disable-line dot-notation
@@ -1524,9 +1513,9 @@
 
     function base64Slice (buf, start, end) {
       if (start === 0 && end === buf.length) {
-        return base64Js.fromByteArray(buf)
+        return base64.fromByteArray(buf)
       } else {
-        return base64Js.fromByteArray(buf.slice(start, end))
+        return base64.fromByteArray(buf.slice(start, end))
       }
     }
 
@@ -1950,25 +1939,25 @@
     Buffer.prototype.readFloatLE = function readFloatLE (offset, noAssert) {
       offset = offset >>> 0;
       if (!noAssert) checkOffset(offset, 4, this.length);
-      return ieee754.read(this, offset, true, 23, 4)
+      return ieee754$1.read(this, offset, true, 23, 4)
     };
 
     Buffer.prototype.readFloatBE = function readFloatBE (offset, noAssert) {
       offset = offset >>> 0;
       if (!noAssert) checkOffset(offset, 4, this.length);
-      return ieee754.read(this, offset, false, 23, 4)
+      return ieee754$1.read(this, offset, false, 23, 4)
     };
 
     Buffer.prototype.readDoubleLE = function readDoubleLE (offset, noAssert) {
       offset = offset >>> 0;
       if (!noAssert) checkOffset(offset, 8, this.length);
-      return ieee754.read(this, offset, true, 52, 8)
+      return ieee754$1.read(this, offset, true, 52, 8)
     };
 
     Buffer.prototype.readDoubleBE = function readDoubleBE (offset, noAssert) {
       offset = offset >>> 0;
       if (!noAssert) checkOffset(offset, 8, this.length);
-      return ieee754.read(this, offset, false, 52, 8)
+      return ieee754$1.read(this, offset, false, 52, 8)
     };
 
     function checkInt (buf, value, offset, ext, max, min) {
@@ -2237,7 +2226,7 @@
       if (!noAssert) {
         checkIEEE754(buf, value, offset, 4);
       }
-      ieee754.write(buf, value, offset, littleEndian, 23, 4);
+      ieee754$1.write(buf, value, offset, littleEndian, 23, 4);
       return offset + 4
     }
 
@@ -2255,7 +2244,7 @@
       if (!noAssert) {
         checkIEEE754(buf, value, offset, 8);
       }
-      ieee754.write(buf, value, offset, littleEndian, 52, 8);
+      ieee754$1.write(buf, value, offset, littleEndian, 52, 8);
       return offset + 8
     }
 
@@ -2638,7 +2627,7 @@
     }
 
     function base64ToBytes (str) {
-      return base64Js.toByteArray(base64clean(str))
+      return base64.toByteArray(base64clean(str))
     }
 
     function blitBuffer (src, dst, offset, length) {
@@ -2685,7 +2674,7 @@
     function BufferBigIntNotDefined () {
       throw new Error('BigInt not supported')
     }
-    });
+    }(buffer));
 
     function decodeStringOrBufferSource(val) {
         if (val.type === 'text')
@@ -2922,8 +2911,10 @@
                 portID: portID,
             });
         }
+        let disconnected = false;
         const onDisconnect = createPortListener(portID, 'disconnected');
         onDisconnect.addListener(() => {
+            disconnected = true;
             clearPortListener(portID);
         });
         return {
@@ -2938,6 +2929,7 @@
                 });
             },
             disconnect() {
+                disconnected = true;
                 clearPortListener(portID);
                 FrameworkRPC.sendMessage(creatorExtensionID, creatorExtensionID, null, '', {
                     type: 'onPortDisconnect',
@@ -3401,19 +3393,17 @@
     PERFORMANCE OF THIS SOFTWARE.
     ***************************************************************************** */
 
-    function __classPrivateFieldGet(receiver, privateMap) {
-        if (!privateMap.has(receiver)) {
-            throw new TypeError("attempted to get private field on non-instance");
-        }
-        return privateMap.get(receiver);
+    function __classPrivateFieldGet(receiver, state, kind, f) {
+        if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a getter");
+        if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
+        return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
     }
 
-    function __classPrivateFieldSet(receiver, privateMap, value) {
-        if (!privateMap.has(receiver)) {
-            throw new TypeError("attempted to set private field on non-instance");
-        }
-        privateMap.set(receiver, value);
-        return value;
+    function __classPrivateFieldSet(receiver, state, value, kind, f) {
+        if (kind === "m") throw new TypeError("Private method is not writable");
+        if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a setter");
+        if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot write private member to an object whose class did not declare it");
+        return (kind === "a" ? f.call(receiver, value) : f ? f.value = value : state.set(receiver, value)), value;
     }
 
     /**
@@ -3641,11 +3631,12 @@
     }
 
     /*
-    * SJS 6.3.2
+    * SJS 6.12.1
     * Minimal SystemJS Build
     */
 
     (function () {
+
       function errMsg(errCode, msg) {
         return (msg || "") + " (SystemJS https://git.io/JvFET#" + errCode + ")";
       }
@@ -3764,12 +3755,6 @@
         return resolveIfNotPlainOrUrl(relUrl, parentUrl) || (relUrl.indexOf(':') !== -1 ? relUrl : resolveIfNotPlainOrUrl('./' + relUrl, parentUrl));
       }
 
-      function objectAssign (to, from) {
-        for (var p in from)
-          to[p] = from[p];
-        return to;
-      }
-
       function resolveAndComposePackages (packages, outPackages, baseUrl, parentMap, parentUrl) {
         for (var p in packages) {
           var resolvedLhs = resolveIfNotPlainOrUrl(p, baseUrl) || p;
@@ -3786,19 +3771,21 @@
         }
       }
 
-      function resolveAndComposeImportMap (json, baseUrl, parentMap) {
-        var outMap = { imports: objectAssign({}, parentMap.imports), scopes: objectAssign({}, parentMap.scopes) };
-
+      function resolveAndComposeImportMap (json, baseUrl, outMap) {
         if (json.imports)
-          resolveAndComposePackages(json.imports, outMap.imports, baseUrl, parentMap, null);
+          resolveAndComposePackages(json.imports, outMap.imports, baseUrl, outMap, null);
 
-        if (json.scopes)
-          for (var s in json.scopes) {
-            var resolvedScope = resolveUrl(s, baseUrl);
-            resolveAndComposePackages(json.scopes[s], outMap.scopes[resolvedScope] || (outMap.scopes[resolvedScope] = {}), baseUrl, parentMap, resolvedScope);
-          }
+        var u;
+        for (u in json.scopes || {}) {
+          var resolvedScope = resolveUrl(u, baseUrl);
+          resolveAndComposePackages(json.scopes[u], outMap.scopes[resolvedScope] || (outMap.scopes[resolvedScope] = {}), baseUrl, outMap, resolvedScope);
+        }
 
-        return outMap;
+        for (u in json.depcache || {})
+          outMap.depcache[resolveUrl(u, baseUrl)] = json.depcache[u];
+        
+        for (u in json.integrity || {})
+          outMap.integrity[resolveUrl(u, baseUrl)] = json.integrity[u];
       }
 
       function getMatch (path, matchObj) {
@@ -3826,7 +3813,7 @@
       }
 
       function targetWarning (code, match, target, msg) {
-        console.warn(errMsg(code,  [target, match].join(', ') ));
+        console.warn(errMsg(code, [target, match].join(', ') ));
       }
 
       function resolveImportMap (importMap, resolvedOrPlain, parentUrl) {
@@ -3881,18 +3868,14 @@
 
       // Hookable createContext function -> allowing eg custom import meta
       systemJSPrototype.createContext = function (parentId) {
+        var loader = this;
         return {
-          url: parentId
+          url: parentId,
+          resolve: function (id, parentUrl) {
+            return Promise.resolve(loader.resolve(id, parentUrl || parentId));
+          }
         };
       };
-      function loadToId (load) {
-        return load.id;
-      }
-      function triggerOnload (loader, load, err) {
-        loader.onload(err, load.id, load.d && load.d.map(loadToId));
-        if (err)
-          throw err;
-      }
 
       var lastRegister;
       systemJSPrototype.register = function (deps, declare) {
@@ -3924,12 +3907,12 @@
         })
         .then(function (registration) {
           if (!registration)
-            throw Error(errMsg(2,  id ));
+            throw Error(errMsg(2, id ));
           function _export (name, value) {
             // note if we have hoisted exports (including reexports)
             load.h = true;
             var changed = false;
-            if (typeof name !== 'object') {
+            if (typeof name === 'string') {
               if (!(name in ns) || ns[name] !== value) {
                 ns[name] = value;
                 changed = true;
@@ -3944,13 +3927,15 @@
                 }
               }
 
-              if (name.__esModule) {
+              if (name && name.__esModule) {
                 ns.__esModule = name.__esModule;
               }
             }
             if (changed)
-              for (var i = 0; i < importerSetters.length; i++)
-                importerSetters[i](ns);
+              for (var i = 0; i < importerSetters.length; i++) {
+                var setter = importerSetters[i];
+                if (setter) setter(ns);
+              }
             return value;
           }
           var declared = registration[1](_export, registration[1].length === 2 ? {
@@ -3961,6 +3946,10 @@
           } : undefined);
           load.e = declared.execute || function () {};
           return [registration[0], declared.setters || []];
+        }, function (err) {
+          load.e = null;
+          load.er = err;
+          throw err;
         });
 
         var linkPromise = instantiatePromise
@@ -3982,16 +3971,11 @@
                 }
                 return depLoad;
               });
-            })
+            });
           }))
           .then(function (depLoads) {
             load.d = depLoads;
           });
-        });
-
-        linkPromise.catch(function (err) {
-          load.e = null;
-          load.er = err;
         });
 
         // Capital letter = a promise function
@@ -4014,8 +3998,6 @@
           // dependency load records
           d: undefined,
           // execution function
-          // set to NULL immediately after execution (or on any failure) to indicate execution has happened
-          // in such a case, C should be used, and E, I, L will be emptied
           e: undefined,
 
           // On execution we have populated:
@@ -4027,25 +4009,36 @@
           // On execution, L, I, E cleared
 
           // Promise for top-level completion
-          C: undefined
+          C: undefined,
+
+          // parent instantiator / executor
+          p: undefined
         };
       }
 
-      function instantiateAll (loader, load, loaded) {
+      function instantiateAll (loader, load, parent, loaded) {
         if (!loaded[load.id]) {
           loaded[load.id] = true;
           // load.L may be undefined for already-instantiated
           return Promise.resolve(load.L)
           .then(function () {
+            if (!load.p || load.p.e === null)
+              load.p = parent;
             return Promise.all(load.d.map(function (dep) {
-              return instantiateAll(loader, dep, loaded);
+              return instantiateAll(loader, dep, parent, loaded);
             }));
           })
+          .catch(function (err) {
+            if (load.er)
+              throw err;
+            load.e = null;
+            throw err;
+          });
         }
       }
 
       function topLevelLoad (loader, load) {
-        return load.C = instantiateAll(loader, load, {})
+        return load.C = instantiateAll(loader, load, load, {})
         .then(function () {
           return postOrderExec(loader, load, {});
         })
@@ -4075,10 +4068,15 @@
         // deps execute first, unless circular
         var depLoadPromises;
         load.d.forEach(function (depLoad) {
-          var depLoadPromise; {
+          try {
             var depLoadPromise = postOrderExec(loader, depLoad, seen);
-            if (depLoadPromise)
+            if (depLoadPromise) 
               (depLoadPromises = depLoadPromises || []).push(depLoadPromise);
+          }
+          catch (err) {
+            load.e = null;
+            load.er = err;
+            throw err;
           }
         });
         if (depLoadPromises)
@@ -4090,25 +4088,27 @@
           try {
             var execPromise = load.e.call(nullContext);
             if (execPromise) {
-              if (!true)
-                ;
-              else
-                execPromise = execPromise.then(function () {
-                  load.C = load.n;
-                  load.E = null;
-                });
-              return load.E = load.E || execPromise;
+              execPromise = execPromise.then(function () {
+                load.C = load.n;
+                load.E = null; // indicates completion
+                if (!true) ;
+              }, function (err) {
+                load.er = err;
+                load.E = null;
+                if (!true) ;
+                throw err;
+              });
+              return load.E = execPromise;
             }
             // (should be a promise, but a minify optimization to leave out Promise.resolve)
             load.C = load.n;
-            if (!true) ;
+            load.L = load.I = undefined;
           }
           catch (err) {
             load.er = err;
             throw err;
           }
           finally {
-            load.L = load.I = undefined;
             load.e = null;
           }
         }
@@ -4117,125 +4117,219 @@
       envGlobal.System = new SystemJS();
 
       /*
-       * Import map support for SystemJS
-       * 
-       * <script type="systemjs-importmap">{}</script>
-       * OR
-       * <script type="systemjs-importmap" src=package.json></script>
-       * 
-       * Only those import maps available at the time of SystemJS initialization will be loaded
-       * and they will be loaded in DOM order.
-       * 
-       * There is no support for dynamic import maps injection currently.
+       * SystemJS browser attachments for script and import map processing
        */
 
-      var IMPORT_MAP = hasSymbol ? Symbol() : '#';
-      var IMPORT_MAP_PROMISE = hasSymbol ? Symbol() : '$';
+      var importMapPromise = Promise.resolve();
+      var importMap = { imports: {}, scopes: {}, depcache: {}, integrity: {} };
 
-      iterateDocumentImportMaps(function (script) {
-        script._t = fetch(script.src).then(function (res) {
-          return res.text();
-        });
-      }, '[src]');
-
-      systemJSPrototype.prepareImport = function () {
-        var loader = this;
-        if (!loader[IMPORT_MAP_PROMISE]) {
-          loader[IMPORT_MAP] = { imports: {}, scopes: {} };
-          loader[IMPORT_MAP_PROMISE] = Promise.resolve();
-          iterateDocumentImportMaps(function (script) {
-            loader[IMPORT_MAP_PROMISE] = loader[IMPORT_MAP_PROMISE].then(function () {
-              return (script._t || script.src && fetch(script.src).then(function (res) { return res.text(); }) || Promise.resolve(script.innerHTML))
-              .then(function (text) {
-                try {
-                  return JSON.parse(text);
-                } catch (err) {
-                  throw Error( errMsg(1) );
-                }
-              })
-              .then(function (newMap) {
-                loader[IMPORT_MAP] = resolveAndComposeImportMap(newMap, script.src || baseUrl, loader[IMPORT_MAP]);
-              });
-            });
-          }, '');
+      // Scripts are processed immediately, on the first System.import, and on DOMReady.
+      // Import map scripts are processed only once (by being marked) and in order for each phase.
+      // This is to avoid using DOM mutation observers in core, although that would be an alternative.
+      var processFirst = hasDocument;
+      systemJSPrototype.prepareImport = function (doProcessScripts) {
+        if (processFirst || doProcessScripts) {
+          processScripts();
+          processFirst = false;
         }
-        return loader[IMPORT_MAP_PROMISE];
+        return importMapPromise;
       };
-
-      systemJSPrototype.resolve = function (id, parentUrl) {
-        parentUrl = parentUrl || !true  || baseUrl;
-        return resolveImportMap(this[IMPORT_MAP], resolveIfNotPlainOrUrl(id, parentUrl) || id, parentUrl) || throwUnresolved(id, parentUrl);
-      };
-
-      function throwUnresolved (id, parentUrl) {
-        throw Error(errMsg(8,  [id, parentUrl].join(', ') ));
+      if (hasDocument) {
+        processScripts();
+        window.addEventListener('DOMContentLoaded', processScripts);
       }
 
-      function iterateDocumentImportMaps(cb, extraSelector) {
-        if (hasDocument)
-          [].forEach.call(document.querySelectorAll('script[type="systemjs-importmap"]' + extraSelector), cb);
+      function processScripts () {
+        [].forEach.call(document.querySelectorAll('script'), function (script) {
+          if (script.sp) // sp marker = systemjs processed
+            return;
+          // TODO: deprecate systemjs-module in next major now that we have auto import
+          if (script.type === 'systemjs-module') {
+            script.sp = true;
+            if (!script.src)
+              return;
+            System.import(script.src.slice(0, 7) === 'import:' ? script.src.slice(7) : resolveUrl(script.src, baseUrl)).catch(function (e) {
+              // if there is a script load error, dispatch an "error" event
+              // on the script tag.
+              if (e.message.indexOf('https://git.io/JvFET#3') > -1) {
+                var event = document.createEvent('Event');
+                event.initEvent('error', false, false);
+                script.dispatchEvent(event);
+              }
+              return Promise.reject(e);
+            });
+          }
+          else if (script.type === 'systemjs-importmap') {
+            script.sp = true;
+            // The passThrough property is for letting the module types fetch implementation know that this is not a SystemJS module.
+            var fetchPromise = script.src ? (System.fetch || fetch)(script.src, { integrity: script.integrity, passThrough: true }).then(function (res) {
+              if (!res.ok)
+                throw Error(res.status );
+              return res.text();
+            }).catch(function (err) {
+              err.message = errMsg('W4', script.src ) + '\n' + err.message;
+              console.warn(err);
+              if (typeof script.onerror === 'function') {
+                  script.onerror();
+              }
+              return '{}';
+            }) : script.innerHTML;
+            importMapPromise = importMapPromise.then(function () {
+              return fetchPromise;
+            }).then(function (text) {
+              extendImportMap(importMap, text, script.src || baseUrl);
+            });
+          }
+        });
+      }
+
+      function extendImportMap (importMap, newMapText, newMapUrl) {
+        var newMap = {};
+        try {
+          newMap = JSON.parse(newMapText);
+        } catch (err) {
+          console.warn(Error((errMsg('W5')  )));
+        }
+        resolveAndComposeImportMap(newMap, newMapUrl, importMap);
       }
 
       /*
-       * Supports loading System.register via script tag injection
+       * Script instantiation loading
        */
-
-      var systemRegister = systemJSPrototype.register;
-      systemJSPrototype.register = function (deps, declare) {
-        systemRegister.call(this, deps, declare);
-      };
-
-      systemJSPrototype.createScript = function (url) {
-        var script = document.createElement('script');
-        script.charset = 'utf-8';
-        script.async = true;
-        script.crossOrigin = 'anonymous';
-        script.src = url;
-        return script;
-      };
-
-      var lastWindowErrorUrl, lastWindowError;
-      systemJSPrototype.instantiate = function (url, firstParentUrl) {
-        var loader = this;
-        return new Promise(function (resolve, reject) {
-          var script = systemJSPrototype.createScript(url);
-          script.addEventListener('error', function () {
-            reject(Error(errMsg(3,  [url, firstParentUrl].join(', ') )));
-          });
-          script.addEventListener('load', function () {
-            document.head.removeChild(script);
-            // Note that if an error occurs that isn't caught by this if statement,
-            // that getRegister will return null and a "did not instantiate" error will be thrown.
-            if (lastWindowErrorUrl === url) {
-              reject(lastWindowError);
-            }
-            else {
-              resolve(loader.getRegister());
-            }
-          });
-          document.head.appendChild(script);
-        });
-      };
 
       if (hasDocument) {
         window.addEventListener('error', function (evt) {
           lastWindowErrorUrl = evt.filename;
           lastWindowError = evt.error;
         });
-
-        window.addEventListener('DOMContentLoaded', loadScriptModules);
-        loadScriptModules();
+        var baseOrigin = location.origin;
       }
 
+      systemJSPrototype.createScript = function (url) {
+        var script = document.createElement('script');
+        script.async = true;
+        // Only add cross origin for actual cross origin
+        // this is because Safari triggers for all
+        // - https://bugs.webkit.org/show_bug.cgi?id=171566
+        if (url.indexOf(baseOrigin + '/'))
+          script.crossOrigin = 'anonymous';
+        var integrity = importMap.integrity[url];
+        if (integrity)
+          script.integrity = integrity;
+        script.src = url;
+        return script;
+      };
 
-      function loadScriptModules() {
-        [].forEach.call(
-          document.querySelectorAll('script[type=systemjs-module]'), function (script) {
-            if (script.src) {
-              System.import(script.src.slice(0, 7) === 'import:' ? script.src.slice(7) : resolveUrl(script.src, baseUrl));
-            }
+      // Auto imports -> script tags can be inlined directly for load phase
+      var lastAutoImportDeps, lastAutoImportTimeout;
+      var autoImportCandidates = {};
+      var systemRegister = systemJSPrototype.register;
+      systemJSPrototype.register = function (deps, declare) {
+        if (hasDocument && document.readyState === 'loading' && typeof deps !== 'string') {
+          var scripts = document.querySelectorAll('script[src]');
+          var lastScript = scripts[scripts.length - 1];
+          if (lastScript) {
+            lastAutoImportDeps = deps;
+            // if this is already a System load, then the instantiate has already begun
+            // so this re-import has no consequence
+            var loader = this;
+            lastAutoImportTimeout = setTimeout(function () {
+              autoImportCandidates[lastScript.src] = [deps, declare];
+              loader.import(lastScript.src);
+            });
+          }
+        }
+        else {
+          lastAutoImportDeps = undefined;
+        }
+        return systemRegister.call(this, deps, declare);
+      };
+
+      var lastWindowErrorUrl, lastWindowError;
+      systemJSPrototype.instantiate = function (url, firstParentUrl) {
+        var autoImportRegistration = autoImportCandidates[url];
+        if (autoImportRegistration) {
+          delete autoImportCandidates[url];
+          return autoImportRegistration;
+        }
+        var loader = this;
+        return Promise.resolve(systemJSPrototype.createScript(url)).then(function (script) {
+          return new Promise(function (resolve, reject) {
+            script.addEventListener('error', function () {
+              reject(Error(errMsg(3, [url, firstParentUrl].join(', ') )));
+            });
+            script.addEventListener('load', function () {
+              document.head.removeChild(script);
+              // Note that if an error occurs that isn't caught by this if statement,
+              // that getRegister will return null and a "did not instantiate" error will be thrown.
+              if (lastWindowErrorUrl === url) {
+                reject(lastWindowError);
+              }
+              else {
+                var register = loader.getRegister(url);
+                // Clear any auto import registration for dynamic import scripts during load
+                if (register && register[0] === lastAutoImportDeps)
+                  clearTimeout(lastAutoImportTimeout);
+                resolve(register);
+              }
+            });
+            document.head.appendChild(script);
           });
+        });
+      };
+
+      /*
+       * Fetch loader, sets up shouldFetch and fetch hooks
+       */
+      systemJSPrototype.shouldFetch = function () {
+        return false;
+      };
+      if (typeof fetch !== 'undefined')
+        systemJSPrototype.fetch = fetch;
+
+      var instantiate = systemJSPrototype.instantiate;
+      var jsContentTypeRegEx = /^(text|application)\/(x-)?javascript(;|$)/;
+      systemJSPrototype.instantiate = function (url, parent) {
+        var loader = this;
+        if (!this.shouldFetch(url))
+          return instantiate.apply(this, arguments);
+        return this.fetch(url, {
+          credentials: 'same-origin',
+          integrity: importMap.integrity[url]
+        })
+        .then(function (res) {
+          if (!res.ok)
+            throw Error(errMsg(7, [res.status, res.statusText, url, parent].join(', ') ));
+          var contentType = res.headers.get('content-type');
+          if (!contentType || !jsContentTypeRegEx.test(contentType))
+            throw Error(errMsg(4, contentType ));
+          return res.text().then(function (source) {
+            if (source.indexOf('//# sourceURL=') < 0)
+              source += '\n//# sourceURL=' + url;
+            (0, eval)(source);
+            return loader.getRegister(url);
+          });
+        });
+      };
+
+      systemJSPrototype.resolve = function (id, parentUrl) {
+        parentUrl = parentUrl || !true  || baseUrl;
+        return resolveImportMap((importMap), resolveIfNotPlainOrUrl(id, parentUrl) || id, parentUrl) || throwUnresolved(id, parentUrl);
+      };
+
+      function throwUnresolved (id, parentUrl) {
+        throw Error(errMsg(8, [id, parentUrl].join(', ') ));
       }
+
+      var systemInstantiate = systemJSPrototype.instantiate;
+      systemJSPrototype.instantiate = function (url, firstParentUrl) {
+        var preloads = (importMap).depcache[url];
+        if (preloads) {
+          for (var i = 0; i < preloads.length; i++)
+            getOrCreateLoad(this, this.resolve(preloads[i], url), url);
+        }
+        return systemInstantiate.call(this, url, firstParentUrl);
+      };
 
       /*
        * Supports loading System.register in workers
@@ -4246,11 +4340,11 @@
           var loader = this;
           return Promise.resolve().then(function () {
             importScripts(url);
-            return loader.getRegister();
+            return loader.getRegister(url);
           });
         };
 
-    }());
+    })();
 
     function static_eval_generated() {
         var _a;
@@ -4286,6 +4380,7 @@
         return value;
     }
     function generateEvalString(code, globalScopeSymbol, callbackSymbol) {
+        debugger;
         let x = static_eval_generated.toString();
         x = replace(x, 'if (arguments[0])', 'with (arguments[0])');
         x = replace(x, 'GLOBAL_SCOPE', globalScopeSymbol.description);
@@ -4582,6 +4677,19 @@
         Object.setPrototypeOf(next, newProto);
         return next;
     }
+    const toStringWeakMap = new WeakMap();
+    Object.defineProperties(toStringWeakMap, {
+        get: { value: toStringWeakMap.get },
+        set: { value: toStringWeakMap.set },
+        has: { value: toStringWeakMap.has },
+    });
+    Function.prototype.toString = new Proxy(Function.prototype.toString, {
+        apply(target, thisArg, args) {
+            if (toStringWeakMap.has(thisArg))
+                return toStringWeakMap.get(thisArg);
+            return Reflect.apply(target, thisArg, args);
+        }
+    });
     /**
      * Recursively get the prototype chain of an Object
      * @param o Object
@@ -4620,8 +4728,7 @@
                 },
             }[value.name];
             descriptor.value = f;
-            // Hmm give it a better view.
-            f.toString = ((f) => () => `function ${f}() { [native code] }`)(value.name);
+            toStringWeakMap.set(f, value.toString());
             delete nextDescriptor.arguments;
             delete nextDescriptor.caller;
             delete nextDescriptor.callee;
@@ -5294,9 +5401,7 @@ document.write(html);">Remove script tags and go</button>
     // ## Inject here
     if (isDebug) {
         // leaves your id here, and put your extension to /extension/{id}/
-        // const testIDs = ['eofkdgkhfoebecmamljfaepckoecjhib']
-        // const testIDs = ['eofkdgkhfoebecmamljfaepckoecjhib', 'griesruigerhuigreuijghrehgerhgerge']
-        const testIDs = ['griesruigerhuigreuijghrehgerhgerge'];
+        const testIDs = ['test'];
         testIDs.forEach((id) => fetch('/extension/' + id + '/manifest.json')
             .then((x) => x.text())
             .then((x) => registerWebExtension(id, JSON.parse(x))));
@@ -5316,5 +5421,5 @@ document.write(html);">Remove script tags and go</button>
      * )
      */
 
-}(ts));
+})(ts);
 //# sourceMappingURL=out.js.map
