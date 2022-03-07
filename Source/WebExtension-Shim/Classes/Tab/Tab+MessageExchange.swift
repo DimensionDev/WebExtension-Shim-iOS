@@ -11,14 +11,14 @@ private let exchangeMessageQueue = DispatchQueue(label: "com.dimension.mask.exch
 
 extension Tab {
 
-    open func sendMessage(id: String, messageData: Data) {
+    open func sendMessage(id: String, messageBody: String) {
         let meta = self.meta
         let url = webView.url?.absoluteString
         let completionHandler = completionHandler()
         
         exchangeMessageQueue.async { [weak self] in
             guard let `self` = self else { return }
-            let result: Result<WebExtension.SendMessage, RPC.Error> = HoloflowsRPC.parseRPC(messageData: messageData)
+            let result: Result<WebExtension.SendMessage, RPC.Error> = HoloflowsRPC.parseRPC(messageBody: messageBody)
             
             switch result {
             case let .success(sendMessage):

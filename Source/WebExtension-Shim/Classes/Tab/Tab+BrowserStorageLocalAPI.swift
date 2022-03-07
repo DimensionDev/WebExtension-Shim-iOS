@@ -12,8 +12,8 @@ import SwiftyJSON
 
 extension Tab {
 
-    open func browserStorageLocalGet(id: String, messageData: Data) {
-        let messageResult: Result<WebExtension.Browser.Storage.Local.Get, RPC.Error> = HoloflowsRPC.parseRPC(messageData: messageData)
+    open func browserStorageLocalGet(id: String, messageBody: String) {
+        let messageResult: Result<WebExtension.Browser.Storage.Local.Get, RPC.Error> = HoloflowsRPC.parseRPC(messageBody: messageBody)
         switch messageResult {
         case let .success(get):
             guard let localStorageManager = delegate?.tab(self, localStorageManagerForExtension: get.extensionID) else {
@@ -40,8 +40,8 @@ extension Tab {
         }
     }
 
-    open func browserStorageLocalSet(id: String, messageData: Data) {
-        let messageResult: Result<WebExtension.Browser.Storage.Local.Set, RPC.Error> = HoloflowsRPC.parseRPC(messageData: messageData)
+    open func browserStorageLocalSet(id: String, messageBody: String) {
+        let messageResult: Result<WebExtension.Browser.Storage.Local.Set, RPC.Error> = HoloflowsRPC.parseRPC(messageBody: messageBody)
         switch messageResult {
         case let .success(set):
             guard let localStorageManager = delegate?.tab(self, localStorageManagerForExtension: set.extensionID) else {
@@ -73,8 +73,8 @@ extension Tab {
         }
     }
 
-    open func browserStorageLocalRemove(id: String, messageData: Data) {
-        let messageResult: Result<WebExtension.Browser.Storage.Local.Remove, RPC.Error> = HoloflowsRPC.parseRPC(messageData: messageData)
+    open func browserStorageLocalRemove(id: String, messageBody: String) {
+        let messageResult: Result<WebExtension.Browser.Storage.Local.Remove, RPC.Error> = HoloflowsRPC.parseRPC(messageBody: messageBody)
         switch messageResult {
         case let .success(remove):
             guard let localStorageManager = delegate?.tab(self, localStorageManagerForExtension: remove.extensionID) else {
@@ -106,8 +106,8 @@ extension Tab {
         }
     }
 
-    open func browserStorageLocalClear(id: String, messageData: Data) {
-        let messageResult: Result<WebExtension.Browser.Storage.Local.Clear, RPC.Error> = HoloflowsRPC.parseRPC(messageData: messageData)
+    open func browserStorageLocalClear(id: String, messageBody: String) {
+        let messageResult: Result<WebExtension.Browser.Storage.Local.Clear, RPC.Error> = HoloflowsRPC.parseRPC(messageBody: messageBody)
         switch messageResult {
         case let .success(clear):
             guard let localStorageManager = delegate?.tab(self, localStorageManagerForExtension: clear.extensionID) else {
