@@ -13,8 +13,8 @@ extension Tab {
 
     typealias Result = Swift.Result
 
-    open func fetch(id: String, messageBody: String) {
-        let messageResult: Result<WebExtension.Fetch, RPC.Error> = HoloflowsRPC.parseRPC(messageBody: messageBody)
+    open func fetch(id: String, messageData: Data) {
+        let messageResult: Result<WebExtension.Fetch, RPC.Error> = HoloflowsRPC.parseRPC(messageData: messageData)
         switch messageResult {
         case let .success(fetch):
             consolePrint(fetch.request.url)

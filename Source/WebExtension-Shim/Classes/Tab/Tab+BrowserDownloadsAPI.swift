@@ -10,8 +10,8 @@ import ConsolePrint
 
 extension Tab {
 
-    open func browserDownloadsDownload(id: String, messageBody: String) {
-        let messageResult: Result<WebExtension.Browser.Downloads.Download, RPC.Error> = HoloflowsRPC.parseRPC(messageBody: messageBody)
+    open func browserDownloadsDownload(id: String, messageData: Data) {
+        let messageResult: Result<WebExtension.Browser.Downloads.Download, RPC.Error> = HoloflowsRPC.parseRPC(messageData: messageData)
         switch messageResult {
         case let .success(download):
             guard let url = URL(string: download.options.url) else {

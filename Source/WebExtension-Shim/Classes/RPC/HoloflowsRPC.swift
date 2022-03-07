@@ -65,15 +65,13 @@ public enum HoloflowsRPC {
 }
 
 extension HoloflowsRPC {
-
-    public static func parseRPCMeta(messageBody: String) throws -> (method: String, id: String) {
-        let messageData = Data(messageBody.utf8)
+    
+    public static func parseRPCMeta(messageData: Data) throws -> (method: String, id: String) {
         let request = try decoder.decode(BasicRPCRequest.self, from: messageData)
         return (request.method, request.id)
     }
-
-    public static func parseRPC<T: WebExtension.ClientRequest>(messageBody: String) -> Result<T, RPC.Error> {
-        let messageData = Data(messageBody.utf8)
+    
+    public static func parseRPC<T: WebExtension.ClientRequest>(messageData: Data) -> Result<T, RPC.Error> {
         do {
             let request = try decoder.decode(HoloflowsRPC.Request<T>.self, from: messageData)
             return .success(request.params)
