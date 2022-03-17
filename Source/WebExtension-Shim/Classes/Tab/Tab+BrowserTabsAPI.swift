@@ -11,8 +11,8 @@ import ConsolePrint
 
 extension Tab {
 
-    open func browserTabsCreate(id: String, messageData: Data) {
-        let messageResult: Result<WebExtension.Browser.Tabs.Create, RPC.Error> = HoloflowsRPC.parseRPC(messageData: messageData)
+    open func browserTabsCreate(id: String, messageBody: String) {
+        let messageResult: Result<WebExtension.Browser.Tabs.Create, RPC.Error> = HoloflowsRPC.parseRPC(messageBody: messageBody)
         switch messageResult {
         case let .success(create):
             if let taDelegate = delegate, let tabUrlString = create.options.url, let tabUrl = URL(string: tabUrlString), taDelegate.tab(self, shouldOpenExternallyForURL: tabUrl) {
@@ -36,8 +36,8 @@ extension Tab {
         }
     }
 
-    open func browserTabsRemove(id: String, messageData: Data) {
-        let messageResult: Result<WebExtension.Browser.Tabs.Remove, RPC.Error> = HoloflowsRPC.parseRPC(messageData: messageData)
+    open func browserTabsRemove(id: String, messageBody: String) {
+        let messageResult: Result<WebExtension.Browser.Tabs.Remove, RPC.Error> = HoloflowsRPC.parseRPC(messageBody: messageBody)
         switch messageResult {
         case let .success(remove):
             if (self.browser?.tabs.remove(ids: [remove.tabId])) != nil {
@@ -57,8 +57,8 @@ extension Tab {
         }
     }
 
-    open func browserTabsQuery(id: String, messageData: Data) {
-        let messageResult: Result<WebExtension.Browser.Tabs.Query, RPC.Error> = HoloflowsRPC.parseRPC(messageData: messageData)
+    open func browserTabsQuery(id: String, messageBody: String) {
+        let messageResult: Result<WebExtension.Browser.Tabs.Query, RPC.Error> = HoloflowsRPC.parseRPC(messageBody: messageBody)
         switch messageResult {
         case let .success(query):
             let tabMetas: [Tab.Meta]
@@ -80,8 +80,8 @@ extension Tab {
         }
     }
 
-    open func browserTabsUpdate(id: String, messageData: Data) {
-        let messageResult: Result<WebExtension.Browser.Tabs.Update, RPC.Error> = HoloflowsRPC.parseRPC(messageData: messageData)
+    open func browserTabsUpdate(id: String, messageBody: String) {
+        let messageResult: Result<WebExtension.Browser.Tabs.Update, RPC.Error> = HoloflowsRPC.parseRPC(messageBody: messageBody)
         switch messageResult {
         case let .success(update):
             let tab = self.browser?.tabs.storage.first(where: { $0.id == update.tabId })
@@ -112,8 +112,8 @@ extension Tab {
         }
     }
 
-    open func browserTabsExecuteScript(id: String, messageData: Data) {
-        let messageResult: Result<WebExtension.Browser.Tabs.ExecuteScript, RPC.Error> = HoloflowsRPC.parseRPC(messageData: messageData)
+    open func browserTabsExecuteScript(id: String, messageBody: String) {
+        let messageResult: Result<WebExtension.Browser.Tabs.ExecuteScript, RPC.Error> = HoloflowsRPC.parseRPC(messageBody: messageBody)
 
         switch messageResult {
         case let .success(executeScript):

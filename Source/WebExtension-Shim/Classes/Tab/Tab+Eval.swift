@@ -12,8 +12,8 @@ import SwiftyJSON
 extension Tab {
     
     // eval script on caller
-    open func eval(id: String, messageData: Data) {
-        let messageResult: Result<WebExtension.Eval, RPC.Error> = HoloflowsRPC.parseRPC(messageData: messageData)
+    open func eval(id: String, messageBody: String) {
+        let messageResult: Result<WebExtension.Eval, RPC.Error> = HoloflowsRPC.parseRPC(messageBody: messageBody)
         switch messageResult {
         case let .success(eval):
             let targetTab = self

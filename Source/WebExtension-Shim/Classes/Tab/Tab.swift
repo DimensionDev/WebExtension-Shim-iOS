@@ -200,12 +200,12 @@ extension Tab: WKScriptMessageHandler {
             assertionFailure()
             return
         }
-        guard let messageData = message.body as? Data else {
-            consolePrint(message.body)
-            return
-        }
-        guard let (method, id) = try? HoloflowsRPC.parseRPCMeta(messageData: messageData) else {
-            consolePrint(message.body)
+        let messageBody = JSON(rawValue: message.body)?.rawString() ?? ""
+        consolePrint("[\(eventType.rawValue)]: \(messageBody.prefix(300))")
+        
+        guard let (method, id) = try? HoloflowsRPC.parseRPCMeta(messageBody: messageBody) else {
+            //assertionFailure()
+            consolePrint(messageBody)
             return
         }
         
@@ -217,22 +217,22 @@ extension Tab: WKScriptMessageHandler {
         }
         
         switch api {
-        case ._echo:                                self.echo(id: id, messageData: messageData)
-        case .eval:                                 self.eval(id: id, messageData: messageData)
-        case .sendMessage:                          self.sendMessage(id: id, messageData: messageData)
-        case .fetch:                                self.fetch(id: id, messageData: messageData)
-        case .urlCreateObjectURL:                   self.URLCreateObjectURL(id: id, messageData: messageData)
-        case .browserDownloadsDownload:             self.browserDownloadsDownload(id: id, messageData: messageData)
-        case .browserRuntimeGetURL:                 self.browserRuntimeGetURL(id: id, messageData: messageData)
-        case .browserTabsExecuteScript:             self.browserTabsExecuteScript(id: id, messageData: messageData)
-        case .browserTabsCreate:                    self.browserTabsCreate(id: id, messageData: messageData)
-        case .browserTabsRemove:                    self.browserTabsRemove(id: id, messageData: messageData)
-        case .browserTabsQuery:                     self.browserTabsQuery(id: id, messageData: messageData)
-        case .browserTabsUpdate:                    self.browserTabsUpdate(id: id, messageData: messageData)
-        case .browserStorageLocalGet:               self.browserStorageLocalGet(id: id, messageData: messageData)
-        case .browserStorageLocalSet:               self.browserStorageLocalSet(id: id, messageData: messageData)
-        case .browserStorageLocalRemove:            self.browserStorageLocalRemove(id: id, messageData: messageData)
-        case .browserStorageLocalClear:             self.browserStorageLocalClear(id: id, messageData: messageData)
+        case ._echo:                                self.echo(id: id, messageBody: messageBody)
+        case .eval:                                 self.eval(id: id, messageBody: messageBody)
+        case .sendMessage:                          self.sendMessage(id: id, messageBody: messageBody)
+        case .fetch:                                self.fetch(id: id, messageBody: messageBody)
+        case .urlCreateObjectURL:                   self.URLCreateObjectURL(id: id, messageBody: messageBody)
+        case .browserDownloadsDownload:             self.browserDownloadsDownload(id: id, messageBody: messageBody)
+        case .browserRuntimeGetURL:                 self.browserRuntimeGetURL(id: id, messageBody: messageBody)
+        case .browserTabsExecuteScript:             self.browserTabsExecuteScript(id: id, messageBody: messageBody)
+        case .browserTabsCreate:                    self.browserTabsCreate(id: id, messageBody: messageBody)
+        case .browserTabsRemove:                    self.browserTabsRemove(id: id, messageBody: messageBody)
+        case .browserTabsQuery:                     self.browserTabsQuery(id: id, messageBody: messageBody)
+        case .browserTabsUpdate:                    self.browserTabsUpdate(id: id, messageBody: messageBody)
+        case .browserStorageLocalGet:               self.browserStorageLocalGet(id: id, messageBody: messageBody)
+        case .browserStorageLocalSet:               self.browserStorageLocalSet(id: id, messageBody: messageBody)
+        case .browserStorageLocalRemove:            self.browserStorageLocalRemove(id: id, messageBody: messageBody)
+        case .browserStorageLocalClear:             self.browserStorageLocalClear(id: id, messageBody: messageBody)
         }
         
     }   // end func userContentController
