@@ -3300,7 +3300,18 @@
             async apply(origFetch, thisArg, [requestInfo, requestInit]) {
                 const request = new Request(requestInfo, requestInit);
                 const url = new URL(request.url);
-                const headers = Object.fromEntries(request.headers.entries());
+                // Note: we cannot use headers from request.headers, because it will remove some headers due to security reason
+                // e.g. "Referer"
+                let headers = {};
+                {
+                    const originalHeaders = (requestInit === null || requestInit === void 0 ? void 0 : requestInit.headers) || {};
+                    if (originalHeaders instanceof Headers || Array.isArray(originalHeaders)) {
+                        headers = Object.fromEntries(originalHeaders);
+                    }
+                    else {
+                        headers = originalHeaders;
+                    }
+                }
                 // Debug mode
                 if (isDebug && (url.origin === location.origin || url.protocol === 'holoflows-extension:')) {
                     return origFetch(debugModeURLRewrite(extensionID, request.url), requestInit);
