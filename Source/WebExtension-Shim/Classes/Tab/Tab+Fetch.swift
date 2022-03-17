@@ -72,7 +72,7 @@ extension Tab {
 
             group.enter()
             self.webView.configuration.websiteDataStore.httpCookieStore.getAllCookies { cookies in
-                HTTPCookieStorage.shared.setCookies(cookies, for: URL(string: "https://m.facebook.com")!, mainDocumentURL: nil)
+                cookies.forEach { HTTPCookieStorage.shared.setCookie($0) }
                 group.leave()
             }
 
