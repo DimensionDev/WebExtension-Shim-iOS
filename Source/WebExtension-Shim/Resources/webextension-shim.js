@@ -4363,7 +4363,8 @@
         const value = (function () {
             if (arguments[0]) {
                 return function () {
-                    throw 'use strict';
+                    console.log('use strict');
+                    throw '';
                 }.call(undefined);
             }
             // @ts-ignore
@@ -4396,7 +4397,7 @@
         x = replace(x, 'if (arguments[0])', 'with (arguments[0])');
         x = replace(x, 'GLOBAL_SCOPE', globalScopeSymbol.description);
         x = replace(x, 'CALLBACK_HERE', callbackSymbol.description);
-        x = replace(x, `throw 'use strict'`, `'use strict';`);
+        x = replace(x, `console.log('use strict')`, `'use strict';`);
         x = replace(x, `throw ''`, code + '\n') + ';' + static_eval_generated.name.toString() + '()';
         return x;
     }
