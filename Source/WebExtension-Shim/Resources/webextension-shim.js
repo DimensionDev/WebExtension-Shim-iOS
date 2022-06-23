@@ -4861,6 +4861,12 @@
                 ...webAPIs,
                 // document: { configurable: false, enumerable: true, get: () => sandboxDocument },
             };
+            if ('window' in realWindow) {
+                clonedWebAPIs.window = { value: sandboxRoot };
+            }
+            if ('self' in realWindow) {
+                clonedWebAPIs.self = { value: sandboxRoot };
+            }
             for (const key in clonedWebAPIs)
                 if (clonedWebAPIs[key].value === globalThis)
                     clonedWebAPIs[key].value = sandboxRoot;
