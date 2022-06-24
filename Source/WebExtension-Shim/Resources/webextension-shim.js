@@ -4363,6 +4363,7 @@
         const value = (function () {
             if (arguments[0]) {
                 return function () {
+                    console.log('use strict');
                     throw '';
                 }.call(undefined);
             }
@@ -4396,6 +4397,7 @@
         x = replace(x, 'if (arguments[0])', 'with (arguments[0])');
         x = replace(x, 'GLOBAL_SCOPE', globalScopeSymbol.description);
         x = replace(x, 'CALLBACK_HERE', callbackSymbol.description);
+        x = replace(x, `console.log('use strict')`, `'use strict';`);
         x = replace(x, `throw ''`, code + '\n') + ';' + static_eval_generated.name.toString() + '()';
         return x;
     }
@@ -4861,6 +4863,12 @@
                 ...webAPIs,
                 // document: { configurable: false, enumerable: true, get: () => sandboxDocument },
             };
+            if ('window' in realWindow) {
+                clonedWebAPIs.window = { value: sandboxRoot };
+            }
+            if ('self' in realWindow) {
+                clonedWebAPIs.self = { value: sandboxRoot };
+            }
             for (const key in clonedWebAPIs)
                 if (clonedWebAPIs[key].value === globalThis)
                     clonedWebAPIs[key].value = sandboxRoot;
